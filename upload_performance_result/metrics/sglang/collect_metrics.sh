@@ -33,7 +33,7 @@ for subdir in "${SRC_BASE}"/*/; do
     if [ -f "${src_file}" ]; then
         cp "${src_file}" "${TARGET_DIR}/${subdir_name}.txt"
         echo "[OK] ${subdir_name}"
-        ((count++))
+        count=$((count + 1))
     else
         echo "[SKIP] ${subdir_name} (无 bench_serving_metrics.txt)"
     fi
