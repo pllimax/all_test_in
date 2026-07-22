@@ -1,0 +1,245 @@
+"""
+Prometheus exporter for sglang benchmark results.
+Scans date-foldered benchmark files and exposes key metrics via HTTP.
+"""
+import os
+import re
+import time
+import glob
+from prometheus_client import start_http_server, Gauge, Info
+from prometheus_client.core import REGISTRY
+
+METRICS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "metrics", "sglang")
+
+# Define the 4 key metrics as Gauges with labels
+LABELS = ["date", "model", "quantization", "parallelism", "input_len", "output_len", "request_rate", "dataset"]
+
+mean_ttft = Gauge(
+    "sglang_mean_ttft_ms",
+    "Mean Time to First Token (ms)",
+    LABELS,
+)
+
+mean_tpot = Gauge(
+    "sglang_mean_tpot_ms",
+    "Mean Time per Output Token excluding first token (ms)",
+    LABELS,
+)
+
+mean_e2e_latency = Gauge(
+    "sglang_mean_e2e_latency_ms",
+    "Mean End-to-End Latency (ms)",
+    LABELS,
+)
+
+output_token_throughput = Gauge(
+    "sglang_output_token_throughput_tok_per_s",
+    "Output token throughput (tok/s)",
+    LABELS,
+)
+
+
+def parse_filename(filename):
+    """Extract labels from benchmark filename.
+    Examples:
+      test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26.txt
+      test_npu_qwen3_6_35b_a3b_1p_in1080p_30_out256_50ms.txt
+      test_npu_mimo_v2_flash_1p1d_12p_in32k_out1_ttft_5s.txt
+      test_npu_qwen3_6_27b_w8a8_2p_in16k_out1k_50ms_1.txt
+    """
+    name = os.path.splitext(filename)[0]
+    name = name.replace("test_npu_", "", 1)
+
+    # Strip numeric run suffix (e.g., _1, _2, ..., _19)
+    name = re.sub(r"_\d+$", "", name)
+
+    # Extract extra parameters that distinguish test cases:
+    #   _prefix\d+  (prefix cache ratio) -> appended to input_len
+    #   _bs\d+      (batch size)         -> appended to output_len
+    extra_prefix = ""
+    extra_bs = ""
+    pm = re.search(r"_(prefix\d+)", name)
+    if pm:
+        extra_prefix = pm.group(1)
+        name = name[:pm.start()] + name[pm.end():]
+    bm = re.search(r"_(bs\d+)", name)
+    if bm:
+        extra_bs = bm.group(1)
+        name = name[:bm.start()] + name[bm.end():]
+
+    # Extract dataset suffix (e.g., _aime26, _gpqa)
+    dataset = ""
+    dataset_match = re.search(r"_(aime\d+|gpqa|random)$", name)
+    if dataset_match:
+        dataset = dataset_match.group(1)
+        name = name[: dataset_match.start()]
+
+    # Extract request_rate (e.g., _50ms, _5s, _inf)
+    request_rate = ""
+    rr_match = re.search(r"_(\d+ms|\d+s|inf)$", name)
+    if rr_match:
+        request_rate = rr_match.group(1)
+        name = name[: rr_match.start()]
+
+    # Handle special benchmark type suffixes (_ttft, _tpot)
+    bench_type = ""
+    bt_match = re.search(r"_(ttft|tpot)$", name)
+    if bt_match:
+        bench_type = bt_match.group(1)
+        name = name[: bt_match.start()]
+        if not dataset:
+            dataset = bench_type
+
+    # Extract input_len for multimodal cases first (e.g., _in1024x1024_30, _in1080p_30)
+    # Resolution -> input_len, frame count -> output_len
+    input_len = ""
+    output_len = ""
+    mm_match = re.search(r"_in(1024x1024|1080p)_(\d+)", name)
+    if mm_match:
+        input_len = mm_match.group(1)
+        output_len = mm_match.group(2)
+        name = name[: mm_match.start()]
+        # Strip the _out part for multimodal cases (output_len already set from frame count)
+        out_strip = re.search(r"_out\d+k?\d*$", name)
+        if out_strip:
+            name = name[: out_strip.start()]
+    else:
+        # Extract output_len (e.g., _out1k, _out1k5, _out100, _out256)
+        out_match = re.search(r"_out(\d+k?\d*)$", name)
+        if out_match:
+            output_len = out_match.group(1)
+            name = name[: out_match.start()]
+
+        # Extract input_len (e.g., _in64k, _in3k5)
+        in_match = re.search(r"_in(\d+k?\d*)$", name)
+        if in_match:
+            input_len = in_match.group(1)
+            name = name[: in_match.start()]
+
+    # Append extra parameters to distinguish cases
+    if extra_prefix:
+        input_len = (input_len + "_" + extra_prefix) if input_len else extra_prefix
+    if extra_bs:
+        output_len = (output_len + "_" + extra_bs) if output_len else extra_bs
+
+    # Extract parallelism (e.g., _1p1d_32p, _8p, _2p1d_32p, _1p)
+    parallelism = ""
+    p_match = re.search(r"_(\d+p\d*d?(?:_\d+p)?)$", name)
+    if p_match:
+        parallelism = p_match.group(1)
+        name = name[: p_match.start()]
+
+    # Extract quantization (e.g., _w4a8, _w8a8, _bf16)
+    quantization = ""
+    q_match = re.search(r"_(w\d+a\d+|bf16|fp8|fp16)$", name)
+    if q_match:
+        quantization = q_match.group(1)
+        name = name[: q_match.start()]
+
+    model = name
+
+    return {
+        "model": model,
+        "quantization": quantization,
+        "parallelism": parallelism,
+        "input_len": input_len,
+        "output_len": output_len,
+        "request_rate": request_rate,
+        "dataset": dataset,
+    }
+
+
+def parse_benchmark_file(filepath):
+    """Parse a benchmark result file and extract the 4 key metrics."""
+    metrics = {}
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception:
+        return None
+
+    patterns = {
+        "mean_ttft": r"Mean TTFT \(ms\):\s+([\d.]+)",
+        "mean_tpot": r"Mean TPOT \(ms\):\s+([\d.]+)",
+        "mean_e2e_latency": r"Mean E2E Latency \(ms\):\s+([\d.]+)",
+        "output_token_throughput": r"Output token throughput \(tok/s\):\s+([\d.]+)",
+    }
+
+    for key, pattern in patterns.items():
+        match = re.search(pattern, content)
+        if match:
+            metrics[key] = float(match.group(1))
+        else:
+            return None  # File missing required metrics
+
+    return metrics
+
+
+def collect_metrics():
+    """Scan all date folders and update Prometheus metrics."""
+    # Clear existing metrics
+    mean_ttft.clear()
+    mean_tpot.clear()
+    mean_e2e_latency.clear()
+    output_token_throughput.clear()
+
+    if not os.path.isdir(METRICS_DIR):
+        print(f"Metrics directory not found: {METRICS_DIR}")
+        return
+
+    for date_folder in sorted(os.listdir(METRICS_DIR)):
+        date_path = os.path.join(METRICS_DIR, date_folder)
+        if not os.path.isdir(date_path):
+            continue
+
+        for filename in os.listdir(date_path):
+            if not filename.endswith(".txt"):
+                continue
+
+            filepath = os.path.join(date_path, filename)
+            parsed = parse_benchmark_file(filepath)
+            if parsed is None:
+                continue
+
+            labels = parse_filename(filename)
+            labels["date"] = date_folder
+
+            label_values = [labels[k] for k in LABELS]
+
+            mean_ttft.labels(*label_values).set(parsed["mean_ttft"])
+            mean_tpot.labels(*label_values).set(parsed["mean_tpot"])
+            mean_e2e_latency.labels(*label_values).set(parsed["mean_e2e_latency"])
+            output_token_throughput.labels(*label_values).set(parsed["output_token_throughput"])
+
+    print(f"Metrics updated at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+
+
+def update_loop(interval=300):
+    """Periodically update metrics."""
+    while True:
+        collect_metrics()
+        time.sleep(interval)
+
+
+if __name__ == "__main__":
+    import threading
+
+    # Initial collection
+    collect_metrics()
+
+    # Start background updater
+    updater = threading.Thread(target=update_loop, args=(300,), daemon=True)
+    updater.start()
+
+    # Start HTTP server
+    port = int(os.environ.get("EXPORTER_PORT", "9099"))
+    start_http_server(port)
+    print(f"Prometheus exporter listening on port {port}")
+    print(f"Metrics directory: {METRICS_DIR}")
+
+    # Keep main thread alive
+    try:
+        while True:
+            time.sleep(60)
+    except KeyboardInterrupt:
+        print("Shutting down...")
