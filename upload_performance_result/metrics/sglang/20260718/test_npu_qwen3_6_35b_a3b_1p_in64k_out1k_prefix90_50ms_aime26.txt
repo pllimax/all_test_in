@@ -1,0 +1,93 @@
+memfabric_hybrid          1.0.8
+sgl_kernel_npu            2026.6.1
+sglang                    0.5.15.post2.dev512+gece02ffc9 /sgl-workspace/sglang/python
+sglang-router             0.3.2
+torch                     2.10.0+cpu
+torch_npu                 2.10.0
+torchao                   0.9.0
+torchaudio                2.10.0+cpu
+torchvision               0.25.0+cpu
+CANN: 9.0.0
+transformers: 5.12.1
+/sgl-workspace/sglang/python/sglang/bench_serving.py:13: FutureWarning: `sglang.bench_serving` is deprecated and will be removed in a future release; use `sglang.benchmark.serving` instead (e.g. `python -m sglang.benchmark.serving`).
+  warnings.warn(
+benchmark_args=Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=20166, ready_check_timeout_sec=60, dataset_name='generated-shared-prefix', dataset_path='', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Qwen/Qwen3.6-35B-A3B', served_model_name=None, tokenizer=None, num_prompts=40, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=1024, random_output_len=1024, random_range_ratio=0.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=40, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=42, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=1, gsp_prompts_per_group=40, gsp_system_prompt_len=58982, gsp_question_len=6553, gsp_output_len=1024, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+Waiting up to 60s for http://127.0.0.1:20166/v1/models to become ready...
+Server ready in 0.0s.
+Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=20166, ready_check_timeout_sec=60, dataset_name='generated-shared-prefix', dataset_path='', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Qwen/Qwen3.6-35B-A3B', served_model_name=None, tokenizer=None, num_prompts=40, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=1024, random_output_len=1024, random_range_ratio=0.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=40, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=42, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=1, gsp_prompts_per_group=40, gsp_system_prompt_len=58982, gsp_question_len=6553, gsp_output_len=1024, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+
+
+Loading cached generated input data from /root/.cache/sglang/benchmark/gen_shared_prefix_42_1_40_58982_6553_1024_Qwen2Tokenizer.pkl
+Starting warmup with 1 sequences...
+Warmup completed with 1 sequences. Starting main benchmark run...
+
+  0%|          | 0/40 [00:00<?, ?it/s]
+  2%|▎         | 1/40 [00:41<27:02, 41.61s/it]
+  5%|▌         | 2/40 [00:41<10:56, 17.29s/it]
+ 12%|█▎        | 5/40 [00:42<02:53,  4.95s/it]
+ 18%|█▊        | 7/40 [00:43<01:44,  3.17s/it]
+ 20%|██        | 8/40 [00:43<01:21,  2.54s/it]
+ 22%|██▎       | 9/40 [00:43<01:02,  2.03s/it]
+ 28%|██▊       | 11/40 [00:44<00:35,  1.23s/it]
+ 32%|███▎      | 13/40 [00:44<00:22,  1.19it/s]
+ 35%|███▌      | 14/40 [00:44<00:18,  1.40it/s]
+ 38%|███▊      | 15/40 [00:45<00:15,  1.60it/s]
+ 45%|████▌     | 18/40 [00:45<00:07,  2.86it/s]
+ 48%|████▊     | 19/40 [00:45<00:06,  3.23it/s]
+ 55%|█████▌    | 22/40 [00:45<00:03,  4.99it/s]
+ 60%|██████    | 24/40 [00:45<00:02,  6.23it/s]
+ 65%|██████▌   | 26/40 [00:45<00:01,  7.19it/s]
+ 70%|███████   | 28/40 [00:46<00:01,  6.60it/s]
+ 75%|███████▌  | 30/40 [00:46<00:01,  7.07it/s]
+ 78%|███████▊  | 31/40 [00:46<00:01,  7.27it/s]
+ 82%|████████▎ | 33/40 [00:46<00:00,  9.22it/s]
+ 88%|████████▊ | 35/40 [00:46<00:00,  9.45it/s]
+ 92%|█████████▎| 37/40 [00:47<00:00,  5.28it/s]
+ 95%|█████████▌| 38/40 [00:47<00:00,  4.78it/s]
+100%|██████████| 40/40 [00:48<00:00,  3.47it/s]
+100%|██████████| 40/40 [00:48<00:00,  1.22s/it]
+
+============ Serving Benchmark Result ============
+Backend:                                 sglang    
+Traffic request rate:                    inf       
+Max request concurrency:                 40        
+Successful requests:                     40        
+Benchmark duration (s):                  48.83     
+Total input tokens:                      2804291   
+Total input text tokens:                 2804291   
+Total generated tokens:                  40960     
+Total generated tokens (retokenized):    34748     
+Request throughput (req/s):              0.82      
+Input token throughput (tok/s):          57432.58  
+Output token throughput (tok/s):         838.87    
+Peak output token throughput (tok/s):    1686.00   
+Peak concurrent requests:                40        
+Total token throughput (tok/s):          58271.45  
+Concurrency:                             36.96     
+Accept length:                           3.40      
+----------------End-to-End Latency----------------
+Mean E2E Latency (ms):                   45113.07  
+Median E2E Latency (ms):                 45355.59  
+P90 E2E Latency (ms):                    46943.44  
+P95 E2E Latency (ms):                    47866.75  
+P99 E2E Latency (ms):                    48438.08  
+---------------Time to First Token----------------
+Mean TTFT (ms):                          19249.67  
+Median TTFT (ms):                        19281.25  
+P90 TTFT (ms):                           19343.15  
+P95 TTFT (ms):                           19346.88  
+P99 TTFT (ms):                           19355.36  
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          25.28     
+Median TPOT (ms):                        25.57     
+P90 TPOT (ms):                           27.18     
+P95 TPOT (ms):                           27.94     
+P99 TPOT (ms):                           28.62     
+---------------Inter-Token Latency----------------
+Mean ITL (ms):                           25.29     
+Median ITL (ms):                         21.79     
+P90 ITL (ms):                            29.51     
+P95 ITL (ms):                            43.59     
+P99 ITL (ms):                            86.96     
+Max ITL (ms):                            172.11    
+==================================================
