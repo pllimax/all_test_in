@@ -1,0 +1,228 @@
+2026-07-22 10:28:05 - evalscope - INFO: Running with native backend
+2026-07-22 10:28:05 - evalscope - INFO: Dump task config to /root/.cache/tests/output/perf/20260722/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26/20260722_102805/configs/task_config.yaml
+2026-07-22 10:28:05 - evalscope - INFO: {
+    "model": "GLM-5.1-w4a8",
+    "model_id": "GLM-5.1-w4a8",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "aime26"
+    ],
+    "dataset_args": {
+        "aime26": {
+            "name": "aime26",
+            "dataset_id": "evalscope/aime26",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "default"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "test",
+            "prompt_template": "\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "AIME-2026",
+            "description": "\n## Overview\n\nAIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2026 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536,
+        "temperature": 1.0
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/perf/20260722/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26/20260722_102805",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://172.22.3.138:6677/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-07-22 10:28:05 - evalscope - INFO: Start loading benchmark dataset: aime26
+2026-07-22 10:28:05 - evalscope - INFO: Start evaluating 1 subsets of aime26: ['default']
+2026-07-22 10:28:05 - evalscope - INFO: Unified pool: 30 items to process, 0 already fully cached (30 total across all subsets).
+2026-07-22 10:28:05 - evalscope - INFO: Loading model for prediction...
+2026-07-22 10:28:05 - evalscope - INFO: Creating model GLM-5.1-w4a8 with eval_type=openai_api base_url=http://172.22.3.138:6677/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536, 'temperature': 1.0}, model_args={}
+2026-07-22 10:28:05 - evalscope - INFO: Model loaded successfully.
+2026-07-22 10:29:05 - evalscope - INFO: Evaluating[aime26]   0%| 0/30 [Elapsed: 01:00 < Remaining: ?, ?it/s]
+2026-07-22 10:30:05 - evalscope - INFO: Evaluating[aime26]   0%| 0/30 [Elapsed: 02:00 < Remaining: ?, ?it/s]
+2026-07-22 10:31:05 - evalscope - INFO: Evaluating[aime26]   3%| 1/30 [Elapsed: 03:00 < Remaining: 1:11:36, 148.14s/it]
+2026-07-22 10:32:06 - evalscope - INFO: Evaluating[aime26]   7%| 2/30 [Elapsed: 04:00 < Remaining: 48:38, 104.22s/it]
+2026-07-22 10:33:06 - evalscope - INFO: Evaluating[aime26]   7%| 2/30 [Elapsed: 05:01 < Remaining: 48:38, 104.22s/it]
+2026-07-22 10:34:06 - evalscope - INFO: Evaluating[aime26]   7%| 2/30 [Elapsed: 06:01 < Remaining: 48:38, 104.22s/it]
+2026-07-22 10:35:07 - evalscope - INFO: Evaluating[aime26]  10%| 3/30 [Elapsed: 07:01 < Remaining: 55:11, 122.66s/it]
+2026-07-22 10:36:07 - evalscope - INFO: Evaluating[aime26]  13%| 4/30 [Elapsed: 08:01 < Remaining: 44:52, 103.57s/it]
+2026-07-22 10:37:07 - evalscope - INFO: Evaluating[aime26]  13%| 4/30 [Elapsed: 09:01 < Remaining: 44:52, 103.57s/it]
+2026-07-22 10:38:07 - evalscope - INFO: Evaluating[aime26]  17%| 5/30 [Elapsed: 10:01 < Remaining: 43:51, 105.25s/it]
+2026-07-22 10:39:07 - evalscope - INFO: Evaluating[aime26]  20%| 6/30 [Elapsed: 11:02 < Remaining: 37:35, 93.97s/it]
+2026-07-22 10:40:07 - evalscope - INFO: Evaluating[aime26]  27%| 8/30 [Elapsed: 12:02 < Remaining: 21:15, 57.99s/it]
+2026-07-22 10:41:07 - evalscope - INFO: Evaluating[aime26]  33%| 10/30 [Elapsed: 13:02 < Remaining: 15:50, 47.55s/it]
+2026-07-22 10:42:07 - evalscope - INFO: Evaluating[aime26]  33%| 10/30 [Elapsed: 14:02 < Remaining: 15:50, 47.55s/it]
+2026-07-22 10:43:08 - evalscope - INFO: Evaluating[aime26]  33%| 10/30 [Elapsed: 15:02 < Remaining: 15:50, 47.55s/it]
+2026-07-22 10:44:08 - evalscope - INFO: Evaluating[aime26]  33%| 10/30 [Elapsed: 16:02 < Remaining: 15:50, 47.55s/it]
+2026-07-22 10:45:08 - evalscope - INFO: Evaluating[aime26]  40%| 12/30 [Elapsed: 17:02 < Remaining: 20:42, 69.04s/it]
+2026-07-22 10:46:08 - evalscope - INFO: Evaluating[aime26]  47%| 14/30 [Elapsed: 18:02 < Remaining: 14:36, 54.78s/it]
+2026-07-22 10:47:09 - evalscope - INFO: Evaluating[aime26]  47%| 14/30 [Elapsed: 19:03 < Remaining: 14:36, 54.78s/it]
+2026-07-22 10:48:09 - evalscope - INFO: Evaluating[aime26]  47%| 14/30 [Elapsed: 20:03 < Remaining: 14:36, 54.78s/it]
+2026-07-22 10:49:09 - evalscope - INFO: Evaluating[aime26]  47%| 14/30 [Elapsed: 21:03 < Remaining: 14:36, 54.78s/it]
+2026-07-22 10:50:09 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 22:03 < Remaining: 23:55, 95.72s/it]
+2026-07-22 10:51:09 - evalscope - INFO: Evaluating[aime26]  53%| 16/30 [Elapsed: 23:03 < Remaining: 22:55, 98.23s/it]
+2026-07-22 10:52:09 - evalscope - INFO: Evaluating[aime26]  53%| 16/30 [Elapsed: 24:04 < Remaining: 22:55, 98.23s/it]
+2026-07-22 10:53:09 - evalscope - INFO: Evaluating[aime26]  53%| 16/30 [Elapsed: 25:04 < Remaining: 22:55, 98.23s/it]
+2026-07-22 10:54:09 - evalscope - INFO: Evaluating[aime26]  53%| 16/30 [Elapsed: 26:04 < Remaining: 22:55, 98.23s/it]
+2026-07-22 10:55:10 - evalscope - INFO: Evaluating[aime26]  57%| 17/30 [Elapsed: 27:04 < Remaining: 30:22, 140.20s/it]
+2026-07-22 10:56:10 - evalscope - INFO: Evaluating[aime26]  57%| 17/30 [Elapsed: 28:04 < Remaining: 30:22, 140.20s/it]
+2026-07-22 10:57:10 - evalscope - INFO: Evaluating[aime26]  57%| 17/30 [Elapsed: 29:04 < Remaining: 30:22, 140.20s/it]
+2026-07-22 10:58:06 - evalscope - ERROR: Processing item in subset='default' failed: peer closed connection without sending complete message body (incomplete chunked read)
+Traceback:
+Traceback (most recent call last):
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 127, in __iter__
+    for part in self._httpcore_stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 407, in __iter__
+    raise exc from None
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 403, in __iter__
+    for part in self._stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 342, in __iter__
+    raise exc
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 334, in __iter__
+    for chunk in self._connection._receive_response_body(**kwargs):
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 203, in _receive_response_body
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 213, in _receive_event
+    with map_exceptions({h11.RemoteProtocolError: RemoteProtocolError}):
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 422, in run_in_threads_with_progress
+    result = fut.result()
+             ^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 377, in _worker_with_loop_cleanup
+    return worker(item)
+           ^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 292, in worker
+    return self._process_work_item(item, context.model_prediction_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 336, in _process_work_item
+    self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 454, in _predict_sample
+    task_state = self.benchmark.run_inference(model=self.model, sample=sample, output_dir=model_prediction_dir)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 546, in run_inference
+    result = self._on_inference(model, sample)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 433, in _on_inference
+    model_output = model.generate(input=sample.input, tools=sample.tools)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/model/model.py", line 196, in generate
+    output = self.api.generate(
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/openai_compatible.py", line 155, in generate
+    completion, ttft = collect_stream_response(completion, request_start=t_start)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/utils/openai.py", line 717, in collect_stream_response
+    for chunk in response_stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 49, in __iter__
+    for item in self._iterator:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 62, in __stream__
+    for sse in iterator:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 53, in _iter_events
+    yield from self._decoder.iter_bytes(self.response.iter_bytes())
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 297, in iter_bytes
+    for chunk in self._iter_chunks(iterator):
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 308, in _iter_chunks
+    for chunk in iterator:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 897, in iter_bytes
+    for raw_bytes in self.iter_raw():
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 951, in iter_raw
+    for raw_stream_bytes in self.stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_client.py", line 153, in __iter__
+    for chunk in self._stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 126, in __iter__
+    with map_httpcore_exceptions():
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+
+2026-07-22 10:58:06 - evalscope - INFO: Evaluating[aime26]  60%| 18/30 [Elapsed: 30:00 < Remaining: 31:17, 156.42s/it]
+2026-07-22 10:58:06 - evalscope - INFO: Running[eval]   0%| 0/1 [Elapsed: 30:00 < Remaining: ?, ?benchmark/s]
