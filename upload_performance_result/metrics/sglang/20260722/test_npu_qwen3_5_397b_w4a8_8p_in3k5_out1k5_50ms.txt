@@ -1,0 +1,179 @@
+memfabric_hybrid          1.0.8
+sgl_kernel_npu            2026.6.1
+sglang                    0.5.15.post2.dev596+g604b1507d /sgl-workspace/sglang/python
+sglang-router             0.3.2
+torch                     2.10.0+cpu
+torch_npu                 2.10.0
+torchao                   0.9.0
+torchaudio                2.10.0+cpu
+torchvision               0.25.0+cpu
+CANN: 9.0.0
+transformers: 5.12.1
+/sgl-workspace/sglang/python/sglang/bench_serving.py:13: FutureWarning: `sglang.bench_serving` is deprecated and will be removed in a future release; use `sglang.benchmark.serving` instead (e.g. `python -m sglang.benchmark.serving`).
+  warnings.warn(
+benchmark_args=Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=20166, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Eco-Tech/Qwen3.5-397B-A17B-w4a8-mtp', served_model_name=None, tokenizer=None, num_prompts=432, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=3500, random_output_len=1500, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=432, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.6, top_p=0.95, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, warmup_requests=16, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+Waiting up to 60s for http://127.0.0.1:20166/v1/models to become ready...
+Server ready in 0.0s.
+Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=20166, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Eco-Tech/Qwen3.5-397B-A17B-w4a8-mtp', served_model_name=None, tokenizer=None, num_prompts=432, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=3500, random_output_len=1500, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=432, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.6, top_p=0.95, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, warmup_requests=16, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+
+#Input tokens: 1512000
+#Output tokens: 648000
+Starting warmup with 16 sequences...
+Warmup completed with 16 sequences. Starting main benchmark run...
+
+  0%|          | 0/432 [00:00<?, ?it/s]
+  0%|          | 1/432 [01:41<12:06:06, 101.08s/it]
+ 23%|██▎       | 100/432 [01:41<03:56,  1.40it/s]  
+ 34%|███▎      | 145/432 [01:44<02:11,  2.19it/s]
+ 38%|███▊      | 165/432 [01:47<01:47,  2.49it/s]
+ 41%|████      | 176/432 [01:49<01:34,  2.72it/s]
+ 42%|████▏     | 183/432 [01:49<01:22,  3.00it/s]
+ 44%|████▍     | 189/432 [01:50<01:13,  3.30it/s]
+ 45%|████▍     | 193/432 [01:50<01:07,  3.55it/s]
+ 46%|████▌     | 197/432 [01:50<00:58,  4.00it/s]
+ 47%|████▋     | 201/432 [01:51<00:53,  4.35it/s]
+ 47%|████▋     | 204/432 [01:51<00:46,  4.92it/s]
+ 48%|████▊     | 207/432 [01:51<00:41,  5.48it/s]
+ 49%|████▊     | 210/432 [01:51<00:36,  6.15it/s]
+ 50%|████▉     | 215/432 [01:51<00:25,  8.45it/s]
+ 50%|█████     | 218/432 [01:51<00:21,  9.96it/s]
+ 51%|█████▏    | 222/432 [01:52<00:17, 12.23it/s]
+ 52%|█████▏    | 225/432 [01:52<00:16, 12.30it/s]
+ 53%|█████▎    | 228/432 [01:52<00:14, 14.12it/s]
+ 53%|█████▎    | 231/432 [01:52<00:12, 16.16it/s]
+ 55%|█████▍    | 236/432 [01:52<00:09, 21.01it/s]
+ 55%|█████▌    | 239/432 [01:52<00:08, 21.89it/s]
+ 56%|█████▌    | 242/432 [01:52<00:08, 23.10it/s]
+ 57%|█████▋    | 246/432 [01:53<00:07, 25.78it/s]
+ 58%|█████▊    | 249/432 [01:53<00:06, 26.73it/s]
+ 58%|█████▊    | 252/432 [01:53<00:06, 26.63it/s]
+ 59%|█████▉    | 255/432 [01:53<00:06, 27.13it/s]
+ 60%|█████▉    | 258/432 [01:53<00:06, 27.41it/s]
+ 60%|██████    | 261/432 [01:53<00:06, 27.06it/s]
+ 62%|██████▏   | 267/432 [01:53<00:04, 35.05it/s]
+ 63%|██████▎   | 271/432 [01:53<00:04, 36.18it/s]
+ 65%|██████▍   | 279/432 [01:53<00:03, 48.01it/s]
+ 66%|██████▌   | 284/432 [01:54<00:04, 36.72it/s]
+ 67%|██████▋   | 289/432 [01:54<00:04, 32.05it/s]
+ 68%|██████▊   | 294/432 [01:54<00:03, 35.05it/s]
+ 69%|██████▉   | 298/432 [01:56<00:23,  5.80it/s]
+ 70%|███████   | 304/432 [01:56<00:15,  8.18it/s]
+ 72%|███████▏  | 310/432 [01:57<00:10, 11.36it/s]
+ 73%|███████▎  | 316/432 [01:57<00:08, 14.21it/s]
+ 76%|███████▌  | 327/432 [01:57<00:04, 21.71it/s]
+ 77%|███████▋  | 333/432 [01:57<00:04, 23.84it/s]
+ 79%|███████▉  | 343/432 [01:57<00:03, 27.65it/s]
+ 81%|████████  | 349/432 [01:58<00:02, 28.67it/s]
+ 82%|████████▏ | 356/432 [01:58<00:02, 30.95it/s]
+ 84%|████████▍ | 362/432 [01:58<00:02, 31.49it/s]
+ 85%|████████▍ | 367/432 [01:58<00:02, 30.78it/s]
+ 87%|████████▋ | 376/432 [01:58<00:01, 36.61it/s]
+ 88%|████████▊ | 381/432 [01:59<00:01, 34.76it/s]
+ 89%|████████▉ | 385/432 [01:59<00:01, 31.38it/s]
+ 90%|█████████ | 389/432 [01:59<00:01, 29.75it/s]
+ 91%|█████████ | 393/432 [01:59<00:01, 24.90it/s]
+ 92%|█████████▏| 396/432 [01:59<00:01, 23.27it/s]
+ 93%|█████████▎| 402/432 [01:59<00:01, 27.45it/s]
+ 94%|█████████▍| 407/432 [02:00<00:01, 22.86it/s]
+ 95%|█████████▍| 410/432 [02:00<00:00, 22.19it/s]
+ 96%|█████████▌| 413/432 [02:00<00:01, 17.22it/s]
+ 96%|█████████▌| 415/432 [02:00<00:01, 14.99it/s]
+ 97%|█████████▋| 418/432 [02:01<00:00, 16.18it/s]
+ 98%|█████████▊| 422/432 [02:01<00:00, 17.06it/s]
+ 98%|█████████▊| 424/432 [02:01<00:00, 12.10it/s]
+ 99%|█████████▊| 426/432 [02:01<00:00, 12.49it/s]
+ 99%|█████████▉| 428/432 [02:01<00:00, 10.83it/s]
+100%|█████████▉| 430/432 [02:02<00:00,  9.13it/s]
+100%|██████████| 432/432 [02:05<00:00,  2.03it/s]
+100%|██████████| 432/432 [02:05<00:00,  3.45it/s]
+Traceback (most recent call last):
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/urllib3/connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/urllib3/connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/urllib3/connection.py", line 571, in getresponse
+    httplib_response = super().getresponse()
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/http/client.py", line 1415, in getresponse
+    response.begin()
+  File "/usr/local/python3.11.15/lib/python3.11/http/client.py", line 330, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/http/client.py", line 299, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/requests/adapters.py", line 696, in send
+    resp = conn.urlopen(
+           ^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/urllib3/connectionpool.py", line 842, in urlopen
+    retries = retries.increment(
+              ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/urllib3/util/retry.py", line 498, in increment
+    raise reraise(type(error), error, _stacktrace)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/urllib3/util/util.py", line 38, in reraise
+    raise value.with_traceback(tb)
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/urllib3/connectionpool.py", line 788, in urlopen
+    response = self._make_request(
+               ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/urllib3/connectionpool.py", line 534, in _make_request
+    response = conn.getresponse()
+               ^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/urllib3/connection.py", line 571, in getresponse
+    httplib_response = super().getresponse()
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/http/client.py", line 1415, in getresponse
+    response.begin()
+  File "/usr/local/python3.11.15/lib/python3.11/http/client.py", line 330, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/http/client.py", line 299, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+urllib3.exceptions.ProtocolError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/sgl-workspace/sglang/python/sglang/bench_serving.py", line 22, in <module>
+    cli_main()
+  File "/sgl-workspace/sglang/python/sglang/benchmark/serving.py", line 2698, in cli_main
+    run_benchmark(args)
+  File "/sgl-workspace/sglang/python/sglang/benchmark/serving.py", line 2082, in run_benchmark
+    return asyncio.run(
+           ^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/asyncio/runners.py", line 190, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/asyncio/base_events.py", line 654, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/benchmark/serving.py", line 1542, in benchmark
+    server_info = requests.get(
+                  ^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/requests/api.py", line 87, in get
+    return request("get", url, params=params, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/requests/api.py", line 71, in request
+    return session.request(method=method, url=url, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/requests/sessions.py", line 651, in request
+    resp = self.send(prep, **send_kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/requests/sessions.py", line 784, in send
+    r = adapter.send(request, **kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/site-packages/requests/adapters.py", line 711, in send
+    raise ConnectionError(err, request=request)
+requests.exceptions.ConnectionError: ('Connection aborted.', RemoteDisconnected('Remote end closed connection without response'))
+[ERROR] 2026-07-22-06:44:50 (PID:126389, Device:-1, RankID:-1) ERR99999 UNKNOWN applicaiton exception
