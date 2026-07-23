@@ -117,8 +117,7 @@ def parse_filename(filename):
             name = name[: in_match.start()]
 
     # Append extra parameters to distinguish cases
-    if extra_prefix:
-        input_len = (input_len + "_" + extra_prefix) if input_len else extra_prefix
+    prefix = extra_prefix  # e.g., "prefix90"
     if extra_bs:
         output_len = (output_len + "_" + extra_bs) if output_len else extra_bs
 
@@ -146,6 +145,7 @@ def parse_filename(filename):
         "output_len": output_len,
         "request_rate": request_rate,
         "dataset": dataset,
+        "prefix": prefix,
     }
 
 
@@ -173,6 +173,137 @@ def parse_benchmark_file(filepath):
             return None  # File missing required metrics
 
     return metrics
+
+
+def parse_eval_log(filepath):
+    """Parse an eval log file and extract the Score value.
+    Looks for the "Overall report table" section with the Score column.
+    Returns the score as a float, or None if not found.
+    """
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception:
+        return None
+
+    # Find the "Overall report table" section
+    overall_idx = content.rfind("Overall report table")
+    if overall_idx == -1:
+        return None
+
+    # Find the data row after the header (contains │ Score │)
+    tail = content[overall_idx:]
+    # Match the data row: │ model │ dataset │ metric │ subset │ num │ score │ cat │
+    # Pattern: │ ... │ ... │ ... │ ... │ digits │ float │ ... │
+    match = re.search(r"│[^│]*│[^│]*│[^│]*│[^│]*│\s*\d+\s*│\s*([\d.]+)\s*│", tail)
+    if match:
+        return float(match.group(1))
+
+    return None
+
+
+def collect_eval_data():
+    """Scan all date folders' eval/ subdirectories and collect accuracy scores.
+    For the same test case on the same date, keep only the highest score.
+    Returns a dict: {(test_case_name, date): max_score}
+    """
+    eval_data = {}
+
+    if not os.path.isdir(METRICS_DIR):
+        return eval_data
+
+    for date_folder in sorted(os.listdir(METRICS_DIR)):
+        date_path = os.path.join(METRICS_DIR, date_folder)
+        if not os.path.isdir(date_path):
+            continue
+
+        eval_dir = os.path.join(date_path, "eval")
+        if not os.path.isdir(eval_dir):
+            continue
+
+        for filename in os.listdir(eval_dir):
+            if not filename.endswith(".log"):
+                continue
+
+            # Filename format: test_case_name__timestamp.log
+            base = filename[:-4]  # strip .log
+            if "__" not in base:
+                continue
+
+            # Split on first __ (test case name may contain underscores)
+            # The timestamp is always YYYYMMDD_HHMMSS format
+            match = re.match(r"(.+?)__(\d{8}_\d{6})$", base)
+            if not match:
+                continue
+
+            test_case_name = match.group(1)
+            filepath = os.path.join(eval_dir, filename)
+            score = parse_eval_log(filepath)
+
+            if score is not None:
+                key = (test_case_name, date_folder)
+                if key not in eval_data or score > eval_data[key]:
+                    eval_data[key] = score
+
+    return eval_data
+
+
+def collect_accuracy_only_data():
+    """Scan accuracy/ subdirectories in each date folder for standalone accuracy tests.
+    These tests have no performance metrics, only eval scores.
+    Returns a list of dicts with model labels and eval_score.
+    """
+    results = []
+
+    if not os.path.isdir(METRICS_DIR):
+        return results
+
+    for date_folder in sorted(os.listdir(METRICS_DIR)):
+        date_path = os.path.join(METRICS_DIR, date_folder)
+        if not os.path.isdir(date_path):
+            continue
+
+        acc_dir = os.path.join(date_path, "accuracy")
+        if not os.path.isdir(acc_dir):
+            continue
+
+        # Track best score per test case per date
+        best_scores = {}
+
+        for filename in os.listdir(acc_dir):
+            if not filename.endswith(".log"):
+                continue
+
+            base = filename[:-4]
+            if "__" not in base:
+                continue
+
+            match = re.match(r"(.+?)__(\d{8}_\d{6})$", base)
+            if not match:
+                continue
+
+            test_case_name = match.group(1)
+            filepath = os.path.join(acc_dir, filename)
+            score = parse_eval_log(filepath)
+
+            if score is not None:
+                key = (test_case_name, date_folder)
+                if key not in best_scores or score > best_scores[key]:
+                    best_scores[key] = score
+
+        # Build result entries
+        for (test_case_name, date), score in best_scores.items():
+            labels = parse_filename(test_case_name + ".txt")
+            labels["date"] = date
+            labels["eval_score"] = score
+            # No performance metrics
+            labels["mean_ttft"] = None
+            labels["mean_tpot"] = None
+            labels["mean_e2e_latency"] = None
+            labels["output_token_throughput"] = None
+            results.append(labels)
+
+    return results
 
 
 def collect_metrics():
