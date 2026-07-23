@@ -158,3 +158,47 @@
 2026-07-22 08:37:24 - evalscope - INFO: Evaluating[gpqa_diamond]  85%| 169/198 [Elapsed: 50:05 < Remaining: 07:31, 15.57s/it]
 2026-07-22 08:38:24 - evalscope - INFO: Evaluating[gpqa_diamond]  86%| 170/198 [Elapsed: 51:05 < Remaining: 16:36, 35.58s/it]
 2026-07-22 08:39:24 - evalscope - INFO: Evaluating[gpqa_diamond]  88%| 175/198 [Elapsed: 52:05 < Remaining: 05:49, 15.20s/it]
+2026-07-22 08:40:24 - evalscope - INFO: Evaluating[gpqa_diamond]  91%| 180/198 [Elapsed: 53:05 < Remaining: 04:56, 16.44s/it]
+2026-07-22 08:41:24 - evalscope - INFO: Evaluating[gpqa_diamond]  92%| 182/198 [Elapsed: 54:05 < Remaining: 05:50, 21.93s/it]
+2026-07-22 08:42:24 - evalscope - INFO: Evaluating[gpqa_diamond]  94%| 186/198 [Elapsed: 55:05 < Remaining: 01:55,  9.66s/it]
+2026-07-22 08:43:24 - evalscope - INFO: Evaluating[gpqa_diamond]  97%| 192/198 [Elapsed: 56:05 < Remaining: 01:10, 11.80s/it]
+2026-07-22 08:44:05 - evalscope - INFO: Evaluating[gpqa_diamond] 100%| 198/198 [Elapsed: 56:46 < Remaining: 00:00,  8.92s/it]
+2026-07-22 08:44:05 - evalscope - INFO: Unified pool finished for gpqa_diamond.
+2026-07-22 08:44:05 - evalscope - INFO: Aggregating scores for subset: default
+2026-07-22 08:44:05 - evalscope - INFO: Generating report...
+2026-07-22 08:44:05 - evalscope - INFO: 
+gpqa_diamond report table:
+┌──────────────────┬──────────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model            │ Dataset      │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├──────────────────┼──────────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Qwen3.6-27B-w8a8 │ gpqa_diamond │ mean_acc │ default  │   198 │  0.8535 │ default │
+└──────────────────┴──────────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-22 08:44:05 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-07-22 08:44:05 - evalscope - INFO: Dump report to: /root/.cache/tests/output/perf/20260722/test_npu_qwen3_6_27b_w8a8_1p_in3k5_out1k5_50ms_gpqa/20260722_074718/reports/Qwen3.6-27B-w8a8/gpqa_diamond.json 
+
+2026-07-22 08:44:05 - evalscope - INFO: 
+gpqa_diamond perf table:
+Model             Dataset         Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                             (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+----------------  ------------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Qwen3.6-27B-w8a8  gpqa_diamond    198    135.917      848.91       16.07       61.96   274.687    8421.09
+
+2026-07-22 08:44:05 - evalscope - INFO: Benchmark gpqa_diamond evaluation finished.
+2026-07-22 08:44:05 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 56:46 < Remaining: 00:00, 3406.64s/benchmark]
+2026-07-22 08:44:05 - evalscope - INFO: Overall report table: 
+┌──────────────────┬──────────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model            │ Dataset      │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├──────────────────┼──────────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Qwen3.6-27B-w8a8 │ gpqa_diamond │ mean_acc │ default  │   198 │  0.8535 │ default │
+└──────────────────┴──────────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-22 08:44:05 - evalscope - INFO: Overall perf table: 
+Model             Dataset         Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                             (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+----------------  ------------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Qwen3.6-27B-w8a8  gpqa_diamond    198    135.917      848.91       16.07       61.96   274.687    8421.09 
+
+2026-07-22 08:44:06 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/perf/20260722/test_npu_qwen3_6_27b_w8a8_1p_in3k5_out1k5_50ms_gpqa/20260722_074718/reports/report.html
+2026-07-22 08:44:06 - evalscope - INFO: Finished evaluation for Qwen3.6-27B-w8a8 on ['gpqa_diamond']
+2026-07-22 08:44:06 - evalscope - INFO: Output directory: /root/.cache/tests/output/perf/20260722/test_npu_qwen3_6_27b_w8a8_1p_in3k5_out1k5_50ms_gpqa/20260722_074718

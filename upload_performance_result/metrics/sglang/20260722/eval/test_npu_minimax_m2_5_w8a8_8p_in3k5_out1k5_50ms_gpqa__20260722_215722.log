@@ -1,0 +1,206 @@
+2026-07-22 21:57:22 - evalscope - INFO: Running with native backend
+2026-07-22 21:57:22 - evalscope - INFO: Dump task config to /root/.cache/tests/output/perf/20260722/test_npu_minimax_m2_5_w8a8_8p_in3k5_out1k5_50ms_gpqa/20260722_215722/configs/task_config.yaml
+2026-07-22 21:57:23 - evalscope - INFO: {
+    "model": "MiniMax-M2.5-w8a8-QuaRot",
+    "model_id": "MiniMax-M2.5-w8a8-QuaRot",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gpqa_diamond"
+    ],
+    "dataset_args": {
+        "gpqa_diamond": {
+            "name": "gpqa_diamond",
+            "dataset_id": "AI-ModelScope/gpqa_diamond",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "default"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "train",
+            "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "GPQA-Diamond",
+            "description": "\n## Overview\n\nGPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of 198 multiple-choice questions written by domain experts in biology, physics, and chemistry. The questions are designed to be extremely difficult, requiring PhD-level expertise to answer correctly.\n\n## Task Description\n\n- **Task Type**: Expert-Level Multiple-Choice Q&A\n- **Input**: Graduate-level science question with 4 choices\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Domains**: Biology, Physics, Chemistry\n\n## Key Features\n\n- 198 questions written and validated by domain PhD experts\n- Questions are \"Google-proof\" - cannot be easily looked up\n- Designed to test deep domain knowledge and reasoning\n- Diamond subset represents the highest quality questions\n- Average human expert accuracy ~65%, non-expert ~34%\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** or **5-shot** evaluation\n- Supports Chain-of-Thought (CoT) prompting for improved reasoning\n- Answer choices are randomly shuffled during evaluation\n- Only uses train split (validation set is private)\n- Challenging benchmark for measuring expert-level reasoning\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Knowledge",
+                "MCQ"
+            ],
+            "filters": null,
+            "metric_list": [
+                "acc"
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536,
+        "temperature": 1.0
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/perf/20260722/test_npu_minimax_m2_5_w8a8_8p_in3k5_out1k5_50ms_gpqa/20260722_215722",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20666/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-07-22 21:57:23 - evalscope - INFO: Start loading benchmark dataset: gpqa_diamond
+2026-07-22 21:57:23 - evalscope - INFO: Start evaluating 1 subsets of gpqa_diamond: ['default']
+2026-07-22 21:57:23 - evalscope - INFO: Unified pool: 198 items to process, 0 already fully cached (198 total across all subsets).
+2026-07-22 21:57:23 - evalscope - INFO: Loading model for prediction...
+2026-07-22 21:57:23 - evalscope - INFO: Creating model MiniMax-M2.5-w8a8-QuaRot with eval_type=openai_api base_url=http://127.0.0.1:20666/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536, 'temperature': 1.0}, model_args={}
+2026-07-22 21:57:23 - evalscope - INFO: Model loaded successfully.
+2026-07-22 21:58:24 - evalscope - INFO: Evaluating[gpqa_diamond]  14%| 28/198 [Elapsed: 01:00 < Remaining: 05:21,  1.89s/it]
+2026-07-22 21:59:25 - evalscope - INFO: Evaluating[gpqa_diamond]  28%| 55/198 [Elapsed: 02:01 < Remaining: 03:54,  1.64s/it]
+2026-07-22 22:00:26 - evalscope - INFO: Evaluating[gpqa_diamond]  37%| 73/198 [Elapsed: 03:02 < Remaining: 04:19,  2.08s/it]
+2026-07-22 22:01:26 - evalscope - INFO: Evaluating[gpqa_diamond]  43%| 86/198 [Elapsed: 04:03 < Remaining: 12:34,  6.74s/it]
+2026-07-22 22:02:27 - evalscope - INFO: Evaluating[gpqa_diamond]  51%| 100/198 [Elapsed: 05:03 < Remaining: 06:11,  3.79s/it]
+2026-07-22 22:03:27 - evalscope - INFO: Evaluating[gpqa_diamond]  57%| 112/198 [Elapsed: 06:03 < Remaining: 06:21,  4.44s/it]
+2026-07-22 22:04:27 - evalscope - INFO: Evaluating[gpqa_diamond]  64%| 126/198 [Elapsed: 07:04 < Remaining: 04:08,  3.46s/it]
+2026-07-22 22:05:28 - evalscope - INFO: Evaluating[gpqa_diamond]  73%| 144/198 [Elapsed: 08:04 < Remaining: 02:10,  2.42s/it]
+2026-07-22 22:06:28 - evalscope - INFO: Evaluating[gpqa_diamond]  79%| 157/198 [Elapsed: 09:04 < Remaining: 02:55,  4.28s/it]
+2026-07-22 22:07:28 - evalscope - INFO: Evaluating[gpqa_diamond]  84%| 166/198 [Elapsed: 10:05 < Remaining: 03:11,  5.99s/it]
+2026-07-22 22:08:29 - evalscope - INFO: Evaluating[gpqa_diamond]  87%| 173/198 [Elapsed: 11:05 < Remaining: 02:26,  5.88s/it]
+2026-07-22 22:08:51 - evalscope - ERROR: Processing item in subset='default' failed: peer closed connection without sending complete message body (incomplete chunked read)
+Traceback:
+Traceback (most recent call last):
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 127, in __iter__
+    for part in self._httpcore_stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 407, in __iter__
+    raise exc from None
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 403, in __iter__
+    for part in self._stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 342, in __iter__
+    raise exc
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 334, in __iter__
+    for chunk in self._connection._receive_response_body(**kwargs):
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 203, in _receive_response_body
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 213, in _receive_event
+    with map_exceptions({h11.RemoteProtocolError: RemoteProtocolError}):
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 422, in run_in_threads_with_progress
+    result = fut.result()
+             ^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 377, in _worker_with_loop_cleanup
+    return worker(item)
+           ^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 292, in worker
+    return self._process_work_item(item, context.model_prediction_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 336, in _process_work_item
+    self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 454, in _predict_sample
+    task_state = self.benchmark.run_inference(model=self.model, sample=sample, output_dir=model_prediction_dir)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 546, in run_inference
+    result = self._on_inference(model, sample)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 433, in _on_inference
+    model_output = model.generate(input=sample.input, tools=sample.tools)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/model/model.py", line 196, in generate
+    output = self.api.generate(
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/openai_compatible.py", line 155, in generate
+    completion, ttft = collect_stream_response(completion, request_start=t_start)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/utils/openai.py", line 717, in collect_stream_response
+    for chunk in response_stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 49, in __iter__
+    for item in self._iterator:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 62, in __stream__
+    for sse in iterator:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 53, in _iter_events
+    yield from self._decoder.iter_bytes(self.response.iter_bytes())
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 297, in iter_bytes
+    for chunk in self._iter_chunks(iterator):
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 308, in _iter_chunks
+    for chunk in iterator:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 897, in iter_bytes
+    for raw_bytes in self.iter_raw():
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 951, in iter_raw
+    for raw_stream_bytes in self.stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_client.py", line 153, in __iter__
+    for chunk in self._stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 126, in __iter__
+    with map_httpcore_exceptions():
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+
+2026-07-22 22:08:51 - evalscope - INFO: Evaluating[gpqa_diamond]  89%| 176/198 [Elapsed: 11:28 < Remaining: 03:26,  9.41s/it]
+2026-07-22 22:08:51 - evalscope - INFO: Running[eval]   0%| 0/1 [Elapsed: 11:28 < Remaining: ?, ?benchmark/s]
