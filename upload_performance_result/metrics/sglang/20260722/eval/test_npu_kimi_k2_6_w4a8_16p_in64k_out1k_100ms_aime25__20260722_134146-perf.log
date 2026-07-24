@@ -1,0 +1,177 @@
+2026-07-22 13:41:46 - evalscope - INFO: Running with native backend
+2026-07-22 13:41:47 - evalscope - INFO: Dump task config to /root/.cache/tests/output/perf/20260722/test_npu_kimi_k2_6_w4a8_16p_in64k_out1k_100ms_aime25/20260722_134146/configs/task_config.yaml
+2026-07-22 13:41:47 - evalscope - INFO: {
+    "model": "Kimi-K2.6-w4a8",
+    "model_id": "Kimi-K2.6-w4a8",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "aime25"
+    ],
+    "dataset_args": {
+        "aime25": {
+            "name": "aime25",
+            "dataset_id": "evalscope/aime25",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "default"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "test",
+            "prompt_template": "\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "AIME-2025",
+            "description": "\n## Overview\n\nAIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2025 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536,
+        "temperature": 1.0
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/perf/20260722/test_npu_kimi_k2_6_w4a8_16p_in64k_out1k_100ms_aime25/20260722_134146",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://172.22.3.209:6677/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-07-22 13:41:47 - evalscope - INFO: Start loading benchmark dataset: aime25
+2026-07-22 13:41:47 - evalscope - INFO: Start evaluating 1 subsets of aime25: ['default']
+2026-07-22 13:41:47 - evalscope - INFO: Unified pool: 30 items to process, 0 already fully cached (30 total across all subsets).
+2026-07-22 13:41:47 - evalscope - INFO: Loading model for prediction...
+2026-07-22 13:41:47 - evalscope - INFO: Creating model Kimi-K2.6-w4a8 with eval_type=openai_api base_url=http://172.22.3.209:6677/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536, 'temperature': 1.0}, model_args={}
+2026-07-22 13:41:47 - evalscope - INFO: Model loaded successfully.
+2026-07-22 13:42:47 - evalscope - INFO: Evaluating[aime25]   3%| 1/30 [Elapsed: 01:00 < Remaining: 19:21, 40.05s/it]
+2026-07-22 13:43:47 - evalscope - INFO: Evaluating[aime25]  17%| 5/30 [Elapsed: 02:00 < Remaining: 04:30, 10.81s/it]
+2026-07-22 13:44:48 - evalscope - INFO: Evaluating[aime25]  30%| 9/30 [Elapsed: 03:00 < Remaining: 06:00, 17.17s/it]
+2026-07-22 13:45:48 - evalscope - INFO: Evaluating[aime25]  33%| 10/30 [Elapsed: 04:00 < Remaining: 07:02, 21.14s/it]
+2026-07-22 13:46:48 - evalscope - INFO: Evaluating[aime25]  33%| 10/30 [Elapsed: 05:01 < Remaining: 07:02, 21.14s/it]
+2026-07-22 13:47:48 - evalscope - INFO: Evaluating[aime25]  47%| 14/30 [Elapsed: 06:01 < Remaining: 06:15, 23.48s/it]
+2026-07-22 13:48:48 - evalscope - INFO: Evaluating[aime25]  50%| 15/30 [Elapsed: 07:01 < Remaining: 08:14, 32.99s/it]
+2026-07-22 13:49:49 - evalscope - INFO: Evaluating[aime25]  57%| 17/30 [Elapsed: 08:02 < Remaining: 06:50, 31.54s/it]
+2026-07-22 13:50:49 - evalscope - INFO: Evaluating[aime25]  57%| 17/30 [Elapsed: 09:02 < Remaining: 06:50, 31.54s/it]
+2026-07-22 13:51:49 - evalscope - INFO: Evaluating[aime25]  73%| 22/30 [Elapsed: 10:02 < Remaining: 02:13, 16.68s/it]
+2026-07-22 13:52:50 - evalscope - INFO: Evaluating[aime25]  77%| 23/30 [Elapsed: 11:02 < Remaining: 02:39, 22.79s/it]
+2026-07-22 13:53:50 - evalscope - INFO: Evaluating[aime25]  80%| 24/30 [Elapsed: 12:02 < Remaining: 03:21, 33.60s/it]
+2026-07-22 13:54:50 - evalscope - INFO: Evaluating[aime25]  80%| 24/30 [Elapsed: 13:02 < Remaining: 03:21, 33.60s/it]
+2026-07-22 13:55:50 - evalscope - INFO: Evaluating[aime25]  80%| 24/30 [Elapsed: 14:02 < Remaining: 03:21, 33.60s/it]
+2026-07-22 13:56:50 - evalscope - INFO: Evaluating[aime25]  80%| 24/30 [Elapsed: 15:02 < Remaining: 03:21, 33.60s/it]
+2026-07-22 13:57:50 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 16:02 < Remaining: 04:20, 65.06s/it]
+2026-07-22 13:58:50 - evalscope - INFO: Evaluating[aime25]  90%| 27/30 [Elapsed: 17:03 < Remaining: 03:06, 62.15s/it]
+2026-07-22 13:59:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 18:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:00:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 19:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:01:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 20:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:02:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 21:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:03:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 22:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:04:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 23:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:05:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 24:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:06:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 25:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:07:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 26:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:08:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 27:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:09:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 28:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:10:50 - evalscope - INFO: Evaluating[aime25]  93%| 28/30 [Elapsed: 29:03 < Remaining: 02:07, 63.75s/it]
+2026-07-22 14:11:51 - evalscope - INFO: Evaluating[aime25]  97%| 29/30 [Elapsed: 30:03 < Remaining: 04:26, 266.18s/it]
+2026-07-22 14:12:01 - evalscope - INFO: Evaluating[aime25] 100%| 30/30 [Elapsed: 30:13 < Remaining: 00:00, 194.41s/it]
+2026-07-22 14:12:01 - evalscope - INFO: Unified pool finished for aime25.
+2026-07-22 14:12:01 - evalscope - INFO: Aggregating scores for subset: default
+2026-07-22 14:12:01 - evalscope - INFO: Generating report...
+2026-07-22 14:12:01 - evalscope - INFO: 
+aime25 report table:
+┌────────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model          │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├────────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Kimi-K2.6-w4a8 │ aime25    │ mean_acc │ default  │    30 │  0.9333 │ default │
+└────────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-22 14:12:01 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-07-22 14:12:01 - evalscope - INFO: Dump report to: /root/.cache/tests/output/perf/20260722/test_npu_kimi_k2_6_w4a8_16p_in64k_out1k_100ms_aime25/20260722_134146/reports/Kimi-K2.6-w4a8/aime25.json 
+
+2026-07-22 14:12:01 - evalscope - INFO: 
+aime25 perf table:
+Model           Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                        (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+--------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Kimi-K2.6-w4a8  aime25        30     513.43     1564.27       27.02       35.98   203.367    18473.9
+
+2026-07-22 14:12:01 - evalscope - INFO: Benchmark aime25 evaluation finished.
+2026-07-22 14:12:01 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 30:14 < Remaining: 00:00, 1814.12s/benchmark]
+2026-07-22 14:12:01 - evalscope - INFO: Overall report table: 
+┌────────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model          │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├────────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Kimi-K2.6-w4a8 │ aime25    │ mean_acc │ default  │    30 │  0.9333 │ default │
+└────────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-22 14:12:01 - evalscope - INFO: Overall perf table: 
+Model           Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                        (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+--------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Kimi-K2.6-w4a8  aime25        30     513.43     1564.27       27.02       35.98   203.367    18473.9 
+
+2026-07-22 14:12:01 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/perf/20260722/test_npu_kimi_k2_6_w4a8_16p_in64k_out1k_100ms_aime25/20260722_134146/reports/report.html
+2026-07-22 14:12:01 - evalscope - INFO: Finished evaluation for Kimi-K2.6-w4a8 on ['aime25']
+2026-07-22 14:12:01 - evalscope - INFO: Output directory: /root/.cache/tests/output/perf/20260722/test_npu_kimi_k2_6_w4a8_16p_in64k_out1k_100ms_aime25/20260722_134146
