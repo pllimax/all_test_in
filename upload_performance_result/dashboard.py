@@ -9,7 +9,7 @@ import re
 import json
 import http.server
 import socketserver
-from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, METRICS_DIR
+from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, METRICS_DIR, git_pull, GIT_PULL_ENABLED, GIT_REPO_URL, get_metrics_dir
 
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
 
@@ -74,7 +74,7 @@ tr.selected:hover { background: #254070 !important; }
 <body>
 <div class="header">
   <h1>SGLang Benchmark 性能分析平台</h1>
-  <div class="info" id="updateTime"></div>
+  <div class="info"><span id="dataSource"></span> | <span id="updateTime"></span></div>
 </div>
 <div class="filters">
   <div class="filter-group">
@@ -273,6 +273,12 @@ async function loadData() {
   populateFilters();
   onFilterChange();
   document.getElementById('updateTime').textContent = '更新: ' + new Date().toLocaleTimeString();
+  // Fetch data source status
+  try {
+    const sr = await fetch('/api/status');
+    const st = await sr.json();
+    document.getElementById('dataSource').textContent = st.source;
+  } catch(e) {}
 }
 
 function populateMultiSelect(id, values, allLabel) {
@@ -498,14 +504,15 @@ document.addEventListener('DOMContentLoaded', () => {
 def collect_all_data():
     """Collect all benchmark data into a list of dicts."""
     results = []
-    if not os.path.isdir(METRICS_DIR):
+    metrics_dir = get_metrics_dir()
+    if not os.path.isdir(metrics_dir):
         return results
 
     # Collect eval scores: {(test_case_name, date): max_score}
     eval_data = collect_eval_data()
 
-    for date_folder in sorted(os.listdir(METRICS_DIR)):
-        date_path = os.path.join(METRICS_DIR, date_folder)
+    for date_folder in sorted(os.listdir(metrics_dir)):
+        date_path = os.path.join(metrics_dir, date_folder)
         if not os.path.isdir(date_path):
             continue
 
@@ -544,12 +551,19 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
         elif self.path == "/api/data":
+            git_pull()
             data = collect_all_data()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
             self.end_headers()
             self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+        elif self.path == "/api/status":
+            source = f"Git: {GIT_REPO_URL}" if GIT_PULL_ENABLED else "本地文件"
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.end_headers()
+            self.wfile.write(json.dumps({"source": source, "git_enabled": GIT_PULL_ENABLED}).encode("utf-8"))
         else:
             self.send_response(404)
             self.end_headers()

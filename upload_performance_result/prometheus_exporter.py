@@ -1,15 +1,35 @@
 """
 Prometheus exporter for sglang benchmark results.
 Scans date-foldered benchmark files and exposes key metrics via HTTP.
+Supports dynamic Git pull for data updates.
 """
 import os
 import re
 import time
 import glob
+import subprocess
 from prometheus_client import start_http_server, Gauge, Info
 from prometheus_client.core import REGISTRY
 
-METRICS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "metrics", "sglang")
+# Git repo config (same as collect_metrics.sh)
+GIT_REPO_URL = os.environ.get("GIT_REPO_URL", "git@github.com-pllimax:pllimax/all_test_in.git")
+GIT_BRANCH = os.environ.get("GIT_BRANCH", "main")
+GIT_TARGET_PATH = os.environ.get("GIT_TARGET_PATH", "upload_performance_result/metrics/sglang")
+GIT_LOCAL_CLONE = os.environ.get("GIT_LOCAL_CLONE",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".data_repo"))
+
+# If GIT_PULL_ENABLED=true, data is pulled from Git; otherwise read local metrics/
+GIT_PULL_ENABLED = os.environ.get("GIT_PULL_ENABLED", "true").lower() in ("1", "true", "yes")
+LOCAL_METRICS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "metrics", "sglang")
+GIT_METRICS_DIR = os.path.join(GIT_LOCAL_CLONE, GIT_TARGET_PATH)
+
+def get_metrics_dir():
+    """Return the active metrics directory, preferring Git clone if available."""
+    if GIT_PULL_ENABLED and os.path.isdir(GIT_METRICS_DIR):
+        return GIT_METRICS_DIR
+    return LOCAL_METRICS_DIR
+
+METRICS_DIR = get_metrics_dir()
 
 # Define the 4 key metrics as Gauges with labels
 LABELS = ["date", "model", "quantization", "parallelism", "input_len", "output_len", "request_rate", "dataset"]
@@ -208,12 +228,13 @@ def collect_eval_data():
     Returns a dict: {(test_case_name, date): max_score}
     """
     eval_data = {}
+    metrics_dir = get_metrics_dir()
 
-    if not os.path.isdir(METRICS_DIR):
+    if not os.path.isdir(metrics_dir):
         return eval_data
 
-    for date_folder in sorted(os.listdir(METRICS_DIR)):
-        date_path = os.path.join(METRICS_DIR, date_folder)
+    for date_folder in sorted(os.listdir(metrics_dir)):
+        date_path = os.path.join(metrics_dir, date_folder)
         if not os.path.isdir(date_path):
             continue
 
@@ -254,12 +275,13 @@ def collect_accuracy_only_data():
     Returns a list of dicts with model labels and eval_score.
     """
     results = []
+    metrics_dir = get_metrics_dir()
 
-    if not os.path.isdir(METRICS_DIR):
+    if not os.path.isdir(metrics_dir):
         return results
 
-    for date_folder in sorted(os.listdir(METRICS_DIR)):
-        date_path = os.path.join(METRICS_DIR, date_folder)
+    for date_folder in sorted(os.listdir(metrics_dir)):
+        date_path = os.path.join(metrics_dir, date_folder)
         if not os.path.isdir(date_path):
             continue
 
@@ -306,20 +328,75 @@ def collect_accuracy_only_data():
     return results
 
 
+def git_pull():
+    """Clone or pull the latest data from Git repository.
+    Throttled: only actually pulls if at least 60s since last pull.
+    """
+    if not GIT_PULL_ENABLED:
+        return
+
+    # Throttle: don't pull more than once per 60 seconds
+    now = time.time()
+    if now - git_pull._last_pull < 60:
+        return
+    git_pull._last_pull = now
+
+    try:
+        if os.path.isdir(os.path.join(GIT_LOCAL_CLONE, ".git")):
+            # Update existing repo
+            result = subprocess.run(
+                ["git", "fetch", "origin", GIT_BRANCH, "--depth=1"],
+                cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=60
+            )
+            if result.returncode != 0:
+                print(f"[git] fetch failed: {result.stderr.strip()}")
+                return
+            result = subprocess.run(
+                ["git", "reset", "--hard", f"origin/{GIT_BRANCH}"],
+                cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=30
+            )
+            if result.returncode != 0:
+                print(f"[git] reset failed: {result.stderr.strip()}")
+                return
+            print("[git] Data repo updated successfully")
+        else:
+            # Clone fresh
+            print(f"[git] Cloning data repo: {GIT_REPO_URL}")
+            os.makedirs(os.path.dirname(GIT_LOCAL_CLONE), exist_ok=True)
+            result = subprocess.run(
+                ["git", "clone", "--depth=1", "--branch", GIT_BRANCH,
+                 GIT_REPO_URL, GIT_LOCAL_CLONE],
+                capture_output=True, text=True, timeout=120
+            )
+            if result.returncode != 0:
+                print(f"[git] clone failed: {result.stderr.strip()}")
+                return
+            print("[git] Data repo cloned successfully")
+    except subprocess.TimeoutExpired:
+        print("[git] Operation timed out")
+    except FileNotFoundError:
+        print("[git] Git not found in PATH, falling back to local data")
+    except Exception as e:
+        print(f"[git] Error: {e}")
+
+git_pull._last_pull = 0
+
+
 def collect_metrics():
     """Scan all date folders and update Prometheus metrics."""
+    metrics_dir = get_metrics_dir()
     # Clear existing metrics
     mean_ttft.clear()
     mean_tpot.clear()
     mean_e2e_latency.clear()
     output_token_throughput.clear()
 
-    if not os.path.isdir(METRICS_DIR):
-        print(f"Metrics directory not found: {METRICS_DIR}")
+    if not os.path.isdir(metrics_dir):
+        print(f"Metrics directory not found: {metrics_dir}")
         return
 
-    for date_folder in sorted(os.listdir(METRICS_DIR)):
-        date_path = os.path.join(METRICS_DIR, date_folder)
+    for date_folder in sorted(os.listdir(metrics_dir)):
+        date_path = os.path.join(metrics_dir, date_folder)
         if not os.path.isdir(date_path):
             continue
 
@@ -346,8 +423,9 @@ def collect_metrics():
 
 
 def update_loop(interval=300):
-    """Periodically update metrics."""
+    """Periodically pull from Git and update metrics."""
     while True:
+        git_pull()
         collect_metrics()
         time.sleep(interval)
 
@@ -355,7 +433,8 @@ def update_loop(interval=300):
 if __name__ == "__main__":
     import threading
 
-    # Initial collection
+    # Initial Git pull + collection
+    git_pull()
     collect_metrics()
 
     # Start background updater
