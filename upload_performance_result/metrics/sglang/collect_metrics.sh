@@ -165,124 +165,60 @@ echo ""
 echo "完成: 共收集 ${count} 个性能测试文件到 ${TARGET_DIR}"
 
 # ============================================================
-# 收集精度测试结果 (eval_log.log)
-# 目录结构: SRC_BASE/DATE/test_case_name/时间戳/logs/eval_log.log
-# 如果有多个时间戳，全部拷贝并以时间戳区分命名
+# 收集所有来源的精度测试结果 (eval_log.log)
+# 来源1: SRC_BASE/DATE/.../logs/eval_log.log (perf测试伴随的精度测试)
+# 来源2: /data/.../tests/output/DATE/.../logs/eval_log.log (补充精度测试)
+# 来源3: /data/.../tests/output/accuracy/DATE/.../logs/eval_log.log (仅精度测试)
+# 统一存储到: TARGET_DIR/eval/ 下，按"用例名__时间戳.log"命名
+# 同名文件以来源标签后缀区分
 # ============================================================
 EVAL_TARGET_DIR="${TARGET_DIR}/eval"
 mkdir -p "${EVAL_TARGET_DIR}"
 
-eval_count=0
-for subdir in "${SRC_FULL_PATH}"/*/; do
-    [ -d "${subdir}" ] || continue
-
-    subdir_name=$(basename "${subdir}")
-
-    # 遍历用例目录下的所有时间戳子目录
-    for ts_dir in "${subdir}"*/; do
-        [ -d "${ts_dir}" ] || continue
-
-        ts_name=$(basename "${ts_dir}")
-        eval_src="${ts_dir}logs/eval_log.log"
-
-        if [ -f "${eval_src}" ]; then
-            # 目标文件名: 用例名__时间戳.log (双下划线区分用例名和时间戳)
-            eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}.log"
-            cp "${eval_src}" "${eval_dst}"
-            echo "[EVAL] ${subdir_name}__${ts_name}"
-            eval_count=$((eval_count + 1))
-        fi
-    done
-done
-
-echo ""
-echo "完成: 共收集 ${eval_count} 个精度测试文件到 ${EVAL_TARGET_DIR}"
-
-# ============================================================
-# 收集精度测试结果 (补充来源: /data/.../tests/output/日期)
-# 目录结构: /data/.../tests/output/日期/test_case_name/时间戳/logs/eval_log.log
-# 该来源的日期直接在 output/ 下，没有 perf/ 子目录
-# ============================================================
+# 定义所有精度数据来源（路径:标签）
 EVAL2_SRC_BASE="${EVAL2_SRC_BASE:-/data/ascend-ci-share-pkking-sglang/tests/output}"
-EVAL2_SRC_FULL_PATH="${EVAL2_SRC_BASE}/${DATE}"
+ACC_SRC_BASE="${ACC_SRC_BASE:-/data/ascend-ci-share-pkking-sglang/tests/output/accuracy}"
 
-eval2_count=0
-if [ -d "${EVAL2_SRC_FULL_PATH}" ]; then
-    for subdir in "${EVAL2_SRC_FULL_PATH}"/*/; do
+eval_sources_config=(
+    "${SRC_BASE}:perf"
+    "${EVAL2_SRC_BASE}:output"
+    "${ACC_SRC_BASE}:accuracy"
+)
+
+total_eval_count=0
+for src_entry in "${eval_sources_config[@]}"; do
+    src_base="${src_entry%%:*}"
+    src_label="${src_entry##*:}"
+    src_path="${src_base}/${DATE}"
+
+    [ -d "${src_path}" ] || continue
+
+    for subdir in "${src_path}"/*/; do
         [ -d "${subdir}" ] || continue
-
         subdir_name=$(basename "${subdir}")
 
-        # 遍历用例目录下的所有时间戳子目录
         for ts_dir in "${subdir}"*/; do
             [ -d "${ts_dir}" ] || continue
-
             ts_name=$(basename "${ts_dir}")
             eval_src="${ts_dir}logs/eval_log.log"
 
             if [ -f "${eval_src}" ]; then
-                # 目标文件名: 用例名__时间戳.log
                 eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}.log"
-                # 如果已存在同名文件（来自 perf/ 来源），则添加 -output 后缀区分
+                # 如果已存在同名文件（来自其他来源），添加来源标签后缀区分
                 if [ -f "${eval_dst}" ]; then
-                    eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}-output.log"
+                    eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}-${src_label}.log"
                 fi
                 cp "${eval_src}" "${eval_dst}"
-                echo "[EVAL2] ${subdir_name}__${ts_name}"
-                eval2_count=$((eval2_count + 1))
+                echo "[EVAL-${src_label}] ${subdir_name}__${ts_name}"
+                total_eval_count=$((total_eval_count + 1))
             fi
         done
     done
+done
+
+if [ ${total_eval_count} -gt 0 ]; then
     echo ""
-    echo "完成: 共收集 ${eval2_count} 个精度测试文件（补充来源）到 ${EVAL_TARGET_DIR}"
-else
-    echo ""
-    echo "[SKIP] 补充精度测试源目录不存在: ${EVAL2_SRC_FULL_PATH}"
-fi
-
-# ============================================================
-# 收集仅精度测试结果 (accuracy-only)
-# 目录结构: /data/.../tests/output/accuracy/DATE/test_case_name/时间戳/logs/eval_log.log
-# 这些用例没有性能测试数据，仅有精度评估结果
-# 收集结果也放入 eval/ 文件夹
-# ============================================================
-ACC_SRC_BASE="${ACC_SRC_BASE:-/data/ascend-ci-share-pkking-sglang/tests/output/accuracy}"
-ACC_SRC_FULL_PATH="${ACC_SRC_BASE}/${DATE}"
-ACC_TARGET_DIR="${TARGET_DIR}/eval"
-mkdir -p "${ACC_TARGET_DIR}"
-
-acc_count=0
-if [ -d "${ACC_SRC_FULL_PATH}" ]; then
-    for subdir in "${ACC_SRC_FULL_PATH}"/*/; do
-        [ -d "${subdir}" ] || continue
-
-        subdir_name=$(basename "${subdir}")
-
-        # 遍历用例目录下的所有时间戳子目录
-        for ts_dir in "${subdir}"*/; do
-            [ -d "${ts_dir}" ] || continue
-
-            ts_name=$(basename "${ts_dir}")
-            acc_src="${ts_dir}logs/eval_log.log"
-
-            if [ -f "${acc_src}" ]; then
-                # 目标文件名: 用例名__时间戳.log
-                acc_dst="${ACC_TARGET_DIR}/${subdir_name}__${ts_name}.log"
-                # 如果已存在同名文件，添加 -acc 后缀区分
-                if [ -f "${acc_dst}" ]; then
-                    acc_dst="${ACC_TARGET_DIR}/${subdir_name}__${ts_name}-acc.log"
-                fi
-                cp "${acc_src}" "${acc_dst}"
-                echo "[ACC] ${subdir_name}__${ts_name}"
-                acc_count=$((acc_count + 1))
-            fi
-        done
-    done
-    echo ""
-    echo "完成: 共收集 ${acc_count} 个仅精度测试文件到 ${ACC_TARGET_DIR}"
-else
-    echo ""
-    echo "[SKIP] 精度测试源目录不存在: ${ACC_SRC_FULL_PATH}"
+    echo "完成: 共收集 ${total_eval_count} 个精度测试文件到 ${EVAL_TARGET_DIR}"
 fi
 
 # ============================================================
