@@ -1,0 +1,236 @@
+2026-07-21 07:54:03 - evalscope - INFO: Running with native backend
+2026-07-21 07:54:03 - evalscope - INFO: Dump task config to /root/.cache/tests/output//20260721/test_npu_qwen3_vl_8b_thinking_1p_mmmu/20260721_075403/configs/task_config.yaml
+2026-07-21 07:54:03 - evalscope - INFO: {
+    "model": "Qwen3-VL-8B-Thinking",
+    "model_id": "Qwen3-VL-8B-Thinking",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "mmmu"
+    ],
+    "dataset_args": {
+        "mmmu": {
+            "name": "mmmu",
+            "dataset_id": "AI-ModelScope/MMMU",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "Accounting",
+                "Agriculture",
+                "Architecture_and_Engineering",
+                "Art",
+                "Art_Theory",
+                "Basic_Medical_Science",
+                "Biology",
+                "Chemistry",
+                "Clinical_Medicine",
+                "Computer_Science",
+                "Design",
+                "Diagnostics_and_Laboratory_Medicine",
+                "Economics",
+                "Electronics",
+                "Energy_and_Power",
+                "Finance",
+                "Geography",
+                "History",
+                "Literature",
+                "Manage",
+                "Marketing",
+                "Materials",
+                "Math",
+                "Mechanical_Engineering",
+                "Music",
+                "Pharmacy",
+                "Physics",
+                "Psychology",
+                "Public_Health",
+                "Sociology"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "validation",
+            "prompt_template": "\nSolve the following problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\boxed command.\n\n",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "MMMU",
+            "description": "\n## Overview\n\nMMMU (Massive Multi-discipline Multimodal Understanding) is a comprehensive benchmark designed to evaluate multimodal models on expert-level tasks requiring college-level subject knowledge and deliberate reasoning. It covers 30 subjects across 6 core disciplines.\n\n## Task Description\n\n- **Task Type**: Multimodal Question Answering (Multiple-Choice and Open-Ended)\n- **Input**: Questions with diverse images (charts, diagrams, maps, tables, etc.)\n- **Output**: Answer letter (MC) or free-form text (Open)\n- **Disciplines**: Art & Design, Business, Science, Health & Medicine, Humanities, Tech & Engineering\n\n## Key Features\n\n- 11.5K meticulously collected multimodal questions\n- From college exams, quizzes, and textbooks\n- 30 subjects and 183 subfields covered\n- 30 heterogeneous image types (charts, diagrams, music sheets, chemical structures, etc.)\n- Tests both perception and expert-level reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Supports both multiple-choice and open-ended question types\n- Multiple images per question supported (up to 7)\n- For open questions: \"ANSWER: [ANSWER]\" format expected\n- Evaluates on validation split (test set requires submission)\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "MultiModal",
+                "Knowledge",
+                "QA"
+            ],
+            "filters": null,
+            "metric_list": [
+                "acc"
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output//20260721/test_npu_qwen3_vl_8b_thinking_1p_mmmu/20260721_075403",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20066/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-07-21 07:54:03 - evalscope - INFO: Start loading benchmark dataset: mmmu
+2026-07-21 07:54:07 - evalscope - INFO: Start evaluating 30 subsets of mmmu: ['Accounting', 'Agriculture', 'Architecture_and_Engineering', 'Art', 'Art_Theory', 'Basic_Medical_Science', 'Biology', 'Chemistry', 'Clinical_Medicine', 'Computer_Science', 'Design', 'Diagnostics_and_Laboratory_Medicine', 'Economics', 'Electronics', 'Energy_and_Power', 'Finance', 'Geography', 'History', 'Literature', 'Manage', 'Marketing', 'Materials', 'Math', 'Mechanical_Engineering', 'Music', 'Pharmacy', 'Physics', 'Psychology', 'Public_Health', 'Sociology']
+2026-07-21 07:54:07 - evalscope - INFO: Unified pool: 900 items to process, 0 already fully cached (900 total across all subsets).
+2026-07-21 07:54:07 - evalscope - INFO: Loading model for prediction...
+2026-07-21 07:54:07 - evalscope - INFO: Creating model Qwen3-VL-8B-Thinking with eval_type=openai_api base_url=http://127.0.0.1:20066/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536}, model_args={}
+2026-07-21 07:54:07 - evalscope - INFO: Model loaded successfully.
+2026-07-21 07:55:07 - evalscope - INFO: Evaluating[mmmu]   0%| 0/900 [Elapsed: 01:00 < Remaining: ?, ?it/s]
+2026-07-21 07:56:08 - evalscope - INFO: Evaluating[mmmu]   0%| 4/900 [Elapsed: 02:00 < Remaining: 4:11:30, 16.84s/it]
+2026-07-21 07:57:09 - evalscope - INFO: Evaluating[mmmu]   1%| 13/900 [Elapsed: 03:01 < Remaining: 1:41:02,  6.84s/it]
+2026-07-21 07:58:09 - evalscope - INFO: Evaluating[mmmu]   2%| 21/900 [Elapsed: 04:02 < Remaining: 2:00:44,  8.24s/it]
+2026-07-21 07:58:58 - evalscope - ERROR: Processing item in subset='Accounting' failed: peer closed connection without sending complete message body (incomplete chunked read)
+Traceback:
+Traceback (most recent call last):
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 127, in __iter__
+    for part in self._httpcore_stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 407, in __iter__
+    raise exc from None
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 403, in __iter__
+    for part in self._stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 342, in __iter__
+    raise exc
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 334, in __iter__
+    for chunk in self._connection._receive_response_body(**kwargs):
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 203, in _receive_response_body
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 213, in _receive_event
+    with map_exceptions({h11.RemoteProtocolError: RemoteProtocolError}):
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 422, in run_in_threads_with_progress
+    result = fut.result()
+             ^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 377, in _worker_with_loop_cleanup
+    return worker(item)
+           ^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 292, in worker
+    return self._process_work_item(item, context.model_prediction_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 336, in _process_work_item
+    self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 454, in _predict_sample
+    task_state = self.benchmark.run_inference(model=self.model, sample=sample, output_dir=model_prediction_dir)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 546, in run_inference
+    result = self._on_inference(model, sample)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 433, in _on_inference
+    model_output = model.generate(input=sample.input, tools=sample.tools)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/model/model.py", line 196, in generate
+    output = self.api.generate(
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/openai_compatible.py", line 155, in generate
+    completion, ttft = collect_stream_response(completion, request_start=t_start)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/utils/openai.py", line 717, in collect_stream_response
+    for chunk in response_stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 49, in __iter__
+    for item in self._iterator:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 62, in __stream__
+    for sse in iterator:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 53, in _iter_events
+    yield from self._decoder.iter_bytes(self.response.iter_bytes())
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 297, in iter_bytes
+    for chunk in self._iter_chunks(iterator):
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 308, in _iter_chunks
+    for chunk in iterator:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 897, in iter_bytes
+    for raw_bytes in self.iter_raw():
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 951, in iter_raw
+    for raw_stream_bytes in self.stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_client.py", line 153, in __iter__
+    for chunk in self._stream:
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 126, in __iter__
+    with map_httpcore_exceptions():
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/__w/sglang/sglang/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+
+2026-07-21 07:58:58 - evalscope - INFO: Evaluating[mmmu]   2%| 22/900 [Elapsed: 04:50 < Remaining: 4:54:53, 20.15s/it]
+2026-07-21 07:58:58 - evalscope - WARNING: Attempt 1 / 5 failed: Connection error.. Retrying...
+2026-07-21 07:58:58 - evalscope - WARNING: Attempt 1 / 5 failed: Connection error.. Retrying...
+2026-07-21 07:59:10 - evalscope - WARNING: Attempt 2 / 5 failed: Connection error.. Retrying...
+2026-07-21 07:59:10 - evalscope - WARNING: Attempt 2 / 5 failed: Connection error.. Retrying...
+2026-07-21 07:59:21 - evalscope - WARNING: Attempt 3 / 5 failed: Connection error.. Retrying...
+2026-07-21 07:59:21 - evalscope - WARNING: Attempt 3 / 5 failed: Connection error.. Retrying...
+2026-07-21 07:59:32 - evalscope - WARNING: Attempt 4 / 5 failed: Connection error.. Retrying...
+2026-07-21 07:59:33 - evalscope - WARNING: Attempt 4 / 5 failed: Connection error.. Retrying...
+2026-07-21 07:59:44 - evalscope - INFO: Running[eval]   0%| 0/1 [Elapsed: 05:40 < Remaining: ?, ?benchmark/s]
