@@ -6,8 +6,8 @@ Supports dynamic Git pull for data updates.
 import os
 import re
 import time
-import glob
 import subprocess
+import threading
 from prometheus_client import start_http_server, Gauge, Info
 from prometheus_client.core import REGISTRY
 
@@ -58,6 +58,48 @@ output_token_throughput = Gauge(
     LABELS,
 )
 
+p90_ttft = Gauge(
+    "sglang_p90_ttft_ms",
+    "P90 Time to First Token (ms)",
+    LABELS,
+)
+
+p90_tpot = Gauge(
+    "sglang_p90_tpot_ms",
+    "P90 Time per Output Token excluding first token (ms)",
+    LABELS,
+)
+
+total_token_throughput = Gauge(
+    "sglang_total_token_throughput_tok_per_s",
+    "Total token throughput (tok/s)",
+    LABELS,
+)
+
+total_requests = Gauge(
+    "sglang_total_requests",
+    "Total successful requests",
+    LABELS,
+)
+
+max_concurrency = Gauge(
+    "sglang_max_concurrency",
+    "Max request concurrency",
+    LABELS,
+)
+
+system_concurrency = Gauge(
+    "sglang_system_concurrency",
+    "System concurrency",
+    LABELS,
+)
+
+request_throughput = Gauge(
+    "sglang_request_throughput_req_per_s",
+    "Request throughput (req/s)",
+    LABELS,
+)
+
 
 def parse_filename(filename):
     """Extract labels from benchmark filename.
@@ -89,7 +131,7 @@ def parse_filename(filename):
 
     # Extract dataset suffix (e.g., _aime26, _gpqa)
     dataset = ""
-    dataset_match = re.search(r"_(aime\d+|gpqa|random)$", name)
+    dataset_match = re.search(r"_(aime\d+|gpqa|mmmu|random)$", name)
     if dataset_match:
         dataset = dataset_match.group(1)
         name = name[: dataset_match.start()]
@@ -170,7 +212,7 @@ def parse_filename(filename):
 
 
 def parse_benchmark_file(filepath):
-    """Parse a benchmark result file and extract the 4 key metrics."""
+    """Parse a benchmark result file and extract all key metrics."""
     metrics = {}
     try:
         with open(filepath, "r", encoding="utf-8") as f:
@@ -191,6 +233,23 @@ def parse_benchmark_file(filepath):
             metrics[key] = float(match.group(1))
         else:
             return None  # File missing required metrics
+
+    # Optional P90 and total throughput metrics
+    optional_patterns = {
+        "p90_ttft": r"P90 TTFT \(ms\):\s+([\d.]+)",
+        "p90_tpot": r"P90 TPOT \(ms\):\s+([\d.]+)",
+        "total_token_throughput": r"Total token throughput \(tok/s\):\s+([\d.]+)",
+        "total_requests": r"Successful requests:\s+([\d]+)",
+        "max_concurrency": r"Max request concurrency:\s+([\d]+)",
+        "system_concurrency": r"Concurrency:\s+([\d.]+)",
+        "request_throughput": r"Request throughput \(req/s\):\s+([\d.]+)",
+    }
+    for key, pattern in optional_patterns.items():
+        match = re.search(pattern, content)
+        if match:
+            metrics[key] = float(match.group(1))
+        else:
+            metrics[key] = None
 
     return metrics
 
@@ -318,15 +377,29 @@ def collect_accuracy_only_data():
             labels = parse_filename(test_case_name + ".txt")
             labels["date"] = date
             labels["eval_score"] = score
+            # Derive yaml name from test_case_name
+            yaml_name = test_case_name
+            if yaml_name.startswith("test_npu_"):
+                yaml_name = yaml_name[len("test_npu_"):]
+            labels["yaml_name"] = yaml_name
             # No performance metrics
             labels["mean_ttft"] = None
             labels["mean_tpot"] = None
             labels["mean_e2e_latency"] = None
             labels["output_token_throughput"] = None
+            labels["p90_ttft"] = None
+            labels["p90_tpot"] = None
+            labels["total_token_throughput"] = None
+            labels["total_requests"] = None
+            labels["max_concurrency"] = None
+            labels["system_concurrency"] = None
+            labels["request_throughput"] = None
             results.append(labels)
 
     return results
 
+
+_git_pull_lock = threading.Lock()
 
 def git_pull():
     """Clone or pull the latest data from Git repository.
@@ -336,10 +409,11 @@ def git_pull():
         return
 
     # Throttle: don't pull more than once per 60 seconds
-    now = time.time()
-    if now - git_pull._last_pull < 60:
-        return
-    git_pull._last_pull = now
+    with _git_pull_lock:
+        now = time.time()
+        if now - git_pull._last_pull < 60:
+            return
+        git_pull._last_pull = now
 
     try:
         if os.path.isdir(os.path.join(GIT_LOCAL_CLONE, ".git")):
@@ -390,6 +464,13 @@ def collect_metrics():
     mean_tpot.clear()
     mean_e2e_latency.clear()
     output_token_throughput.clear()
+    p90_ttft.clear()
+    p90_tpot.clear()
+    total_token_throughput.clear()
+    total_requests.clear()
+    max_concurrency.clear()
+    system_concurrency.clear()
+    request_throughput.clear()
 
     if not os.path.isdir(metrics_dir):
         print(f"Metrics directory not found: {metrics_dir}")
@@ -418,6 +499,20 @@ def collect_metrics():
             mean_tpot.labels(*label_values).set(parsed["mean_tpot"])
             mean_e2e_latency.labels(*label_values).set(parsed["mean_e2e_latency"])
             output_token_throughput.labels(*label_values).set(parsed["output_token_throughput"])
+            if parsed.get("p90_ttft") is not None:
+                p90_ttft.labels(*label_values).set(parsed["p90_ttft"])
+            if parsed.get("p90_tpot") is not None:
+                p90_tpot.labels(*label_values).set(parsed["p90_tpot"])
+            if parsed.get("total_token_throughput") is not None:
+                total_token_throughput.labels(*label_values).set(parsed["total_token_throughput"])
+            if parsed.get("total_requests") is not None:
+                total_requests.labels(*label_values).set(parsed["total_requests"])
+            if parsed.get("max_concurrency") is not None:
+                max_concurrency.labels(*label_values).set(parsed["max_concurrency"])
+            if parsed.get("system_concurrency") is not None:
+                system_concurrency.labels(*label_values).set(parsed["system_concurrency"])
+            if parsed.get("request_throughput") is not None:
+                request_throughput.labels(*label_values).set(parsed["request_throughput"])
 
     print(f"Metrics updated at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 

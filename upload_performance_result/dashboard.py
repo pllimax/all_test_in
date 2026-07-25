@@ -9,9 +9,159 @@ import re
 import json
 import http.server
 import socketserver
-from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, METRICS_DIR, git_pull, GIT_PULL_ENABLED, GIT_REPO_URL, get_metrics_dir
+from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, METRICS_DIR, GIT_PULL_ENABLED, get_metrics_dir
 
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
+
+# YAML workflow configs for expected test cases
+YAML_CONFIGS = [
+    r"E:\sglang\code\sglang\.github\workflows\full-test-npu.yml",
+    r"E:\sglang\code\sglang\.github\workflows\nightly-test-npu.yml",
+]
+
+# Test cases to exclude from the dashboard
+EXCLUDED_TEST_CASES = {
+    "glm4_6v_flash_1p_mmmu",
+    "test_npu_cp_vs_nocp_ttft",
+}
+
+# Test scripts root directory for baseline parsing
+TEST_SCRIPTS_ROOT = os.environ.get(
+    "TEST_SCRIPTS_ROOT",
+    r"E:\sglang\code\sglang\test\registered\ascend",
+)
+
+# Mapping from test script attribute names to metric names
+ATTR_TO_METRIC = {
+    "ttft": "mean_ttft",
+    "tpot": "mean_tpot",
+    "e2e_latency": "mean_e2e_latency",
+    "output_token_throughput": "output_token_throughput",
+    "accuracy": "eval_score",
+}
+
+# Regex patterns to extract baseline values from Python test scripts
+BASELINE_PATTERNS = {
+    "ttft": re.compile(r'^\s*ttft\s*=\s*([\d.]+)', re.MULTILINE),
+    "tpot": re.compile(r'^\s*tpot\s*=\s*([\d.]+)', re.MULTILINE),
+    "e2e_latency": re.compile(r'^\s*e2e_latency\s*=\s*([\d.]+)', re.MULTILINE),
+    "output_token_throughput": re.compile(r'^\s*output_token_throughput\s*=\s*([\d.]+)', re.MULTILINE),
+    "accuracy": re.compile(r'^\s*accuracy\s*=\s*([\d.]+)', re.MULTILINE),
+}
+
+
+def parse_test_script_baselines(filepath):
+    """Parse a single test script file and extract baseline values."""
+    try:
+        with open(filepath, "r", encoding="utf-8") as f:
+            content = f.read()
+    except Exception:
+        return {}
+    baselines = {}
+    for attr, pattern in BASELINE_PATTERNS.items():
+        match = pattern.search(content)
+        if match:
+            metric = ATTR_TO_METRIC[attr]
+            try:
+                baselines[metric] = float(match.group(1))
+            except ValueError:
+                pass
+    return baselines
+
+
+def collect_baselines():
+    """Scan all test scripts and collect baseline values.
+    Returns a dict: {test_case_name: {metric: value, ...}}
+    """
+    results = {}
+    for category in ["performance", "accuracy"]:
+        cat_dir = os.path.join(TEST_SCRIPTS_ROOT, category)
+        if not os.path.isdir(cat_dir):
+            continue
+        for dirpath, _, filenames in os.walk(cat_dir):
+            for filename in filenames:
+                if not filename.endswith(".py") or filename.startswith("__"):
+                    continue
+                test_case_name = filename[:-3]
+                filepath = os.path.join(dirpath, filename)
+                baselines = parse_test_script_baselines(filepath)
+                if baselines:
+                    if test_case_name not in results:
+                        results[test_case_name] = {}
+                    results[test_case_name].update(baselines)
+    return results
+
+_nnodes_cache = {}
+
+def _get_nnodes_from_script(yaml_name):
+    """Read the test script for a given yaml_name and return the nnodes value.
+    Returns 1 if not found or not configured."""
+    if yaml_name in _nnodes_cache:
+        return _nnodes_cache[yaml_name]
+    test_file = "test_npu_" + yaml_name + ".py"
+    for root, _, files in os.walk(TEST_SCRIPTS_ROOT):
+        if test_file in files:
+            filepath = os.path.join(root, test_file)
+            try:
+                with open(filepath, "r", encoding="utf-8") as f:
+                    content = f.read()
+                # Find all --nnodes occurrences and get the value on the next line
+                # For PD separation, use the first nnodes (prefill) or max of all
+                nnodes_vals = []
+                for m in re.finditer(r"--nnodes\s*\n\s*(\d+)", content):
+                    nnodes_vals.append(int(m.group(1)))
+                if nnodes_vals:
+                    # Use the minimum nnodes value (single node if any node is 1)
+                    val = min(nnodes_vals)
+                else:
+                    val = 1  # Not configured, default to 1
+                _nnodes_cache[yaml_name] = val
+                return val
+            except Exception:
+                pass
+            break
+    _nnodes_cache[yaml_name] = 1
+    return 1
+
+def compute_topology_info(yaml_name):
+    """Compute topology, card count, and sequence length from yaml_name.
+    Returns (topology, card_count, seq_length) tuple."""
+    # 组网: check PD分离 first
+    pd_match = re.search(r'_(\d+p\d+d)', yaml_name)
+    if pd_match:
+        topology = f"PD分离/{pd_match.group(1)}"
+    else:
+        nnodes = _get_nnodes_from_script(yaml_name)
+        topology = "单机混部" if nnodes <= 1 else "多机混部"
+
+    # 卡数: extract xxp from parallelism section (skip xpxd PD patterns)
+    card_count = ""
+    p_match = re.search(r'_(\d+p\d*d?(?:_\d+p)?)(?=_|$)', yaml_name)
+    if p_match:
+        parallelism = p_match.group(1)
+        total = 0
+        for part in parallelism.split('_'):
+            # Skip PD separation patterns like 1p1d, 2p1d
+            if re.search(r'\d+p\d+d', part):
+                continue
+            n = re.search(r'(\d+)p', part)
+            if n:
+                total += int(n.group(1))
+        if total > 0:
+            card_count = f"{total}卡"
+
+    # 序列长度: extract in/out
+    seq_length = ""
+    in_match = re.search(r'_in(\d+k?\d*|1024x1024|1080p)', yaml_name)
+    out_match = re.search(r'_out(\d+k?\d*)', yaml_name)
+    if in_match and out_match:
+        seq_length = f"in{in_match.group(1)}_out{out_match.group(1)}"
+    elif in_match:
+        seq_length = f"in{in_match.group(1)}"
+    elif out_match:
+        seq_length = f"out{out_match.group(1)}"
+
+    return topology, card_count, seq_length
 
 HTML_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -20,6 +170,7 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SGLang Benchmark 性能分析平台</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; }
@@ -36,29 +187,10 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .btn:hover { background: #2ea043; }
 .btn-reset { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
 .btn-reset:hover { background: #30363d; }
-.summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; padding: 20px 24px; }
-.summary-card { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 16px; text-align: center; }
-.summary-card .label { font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-.summary-card .value { font-size: 28px; font-weight: 700; }
-.ttft .value { color: #f78166; }
-.tpot .value { color: #d2a8ff; }
-.e2e .value { color: #ff7b72; }
-.throughput .value { color: #7ee787; }
-.eval-score .value { color: #e3b341; }
-.charts { padding: 0 24px 20px; }
-.chart-section { background: #161b22; border: 1px solid #30363d; border-radius: 8px; margin-bottom: 12px; overflow: hidden; }
-.chart-header { display: flex; align-items: center; gap: 8px; padding: 12px 16px; cursor: pointer; user-select: none; }
-.chart-header:hover { background: #1c2128; }
-.chart-header .arrow { font-size: 12px; color: #8b949e; transition: transform 0.2s; display: inline-block; width: 16px; }
-.chart-header .arrow.open { transform: rotate(90deg); }
-.chart-header h3 { font-size: 14px; color: #8b949e; margin: 0; }
-.chart-body { display: none; padding: 0 16px 16px; }
-.chart-body.open { display: block; }
-.chart-body canvas { max-height: 350px; }
 .table-container { padding: 0 24px 20px; }
 .table-container h3 { font-size: 14px; color: #8b949e; margin-bottom: 12px; }
 table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
-th { background: #21262d; padding: 10px 12px; text-align: left; font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #30363d; cursor: pointer; white-space: nowrap; }
+th { background: #21262d; padding: 10px 12px; text-align: left; font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #30363d; cursor: pointer; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: table-cell; -webkit-line-clamp: 2; line-clamp: 2; }
 th:hover { color: #c9d1d9; }
 td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #21262d; white-space: nowrap; }
 tr:hover { background: #1c2128; }
@@ -66,9 +198,19 @@ tr.selected { background: #1f3a5f !important; }
 tr.selected:hover { background: #254070 !important; }
 .no-data { text-align: center; padding: 40px; color: #8b949e; }
 .testcase-id { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; color: #58a6ff; max-width: 400px; overflow: hidden; text-overflow: ellipsis; }
-.diff-up { color: #ff7b72; }
-.diff-down { color: #7ee787; }
-.diff-same { color: #8b949e; }
+.status-pass { color: #7ee787; font-weight: 700; }
+.status-fail { color: #ff7b72; font-weight: 700; }
+.status-none { color: #ff7b72; font-weight: 700; }
+.baseline-val { font-size: 11px; color: #8b949e; }
+.metric-fail { color: #ff7b72; font-weight: 700; }
+.baseline-col { font-size: 11px; color: #8b949e; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.chart-row td { padding: 0; }
+.tc-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; padding: 12px; background: #0d1117; }
+.tc-chart-box { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 8px; }
+.tc-chart-box h4 { font-size: 12px; color: #8b949e; margin: 0 0 4px 0; }
+.tc-chart-box canvas { max-height: 200px; }
+.expand-icon { display: inline-block; width: 14px; font-size: 10px; transition: transform 0.2s; }
+.col-uniform { width: 90px; }
 </style>
 </head>
 <body>
@@ -78,132 +220,64 @@ tr.selected:hover { background: #254070 !important; }
 </div>
 <div class="filters">
   <div class="filter-group">
+    <label>来源</label>
+    <select id="sourceFilter" multiple onchange="onFilterChange()">
+      <option value="__all__" selected>全部</option>
+      <option value="fulltest">fulltest</option>
+      <option value="nightly">nightly</option>
+    </select>
+  </div>
+  <div class="filter-group">
     <label>模型</label>
     <select id="modelFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>量化</label>
-    <select id="quantFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>并行策略</label>
-    <select id="paraFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>输入长度</label>
-    <select id="inFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>输出长度</label>
-    <select id="outFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>请求速率</label>
-    <select id="rrFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>数据集</label>
-    <select id="dsFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>Prefix</label>
-    <select id="prefixFilter" multiple onchange="onFilterChange()"></select>
   </div>
   <div class="filter-group">
     <label>日期</label>
     <select id="dateFilter" multiple onchange="onFilterChange()"></select>
   </div>
+  <div class="filter-group">
+    <label>状态</label>
+    <select id="statusFilter" multiple onchange="onFilterChange()">
+      <option value="__all__" selected>全部</option>
+      <option value="PASS">PASS</option>
+      <option value="FAILED">FAILED</option>
+    </select>
+  </div>
   <button class="btn btn-reset" onclick="resetFilters()">重置筛选</button>
-</div>
-<div class="summary">
-  <div class="summary-card ttft">
-    <div class="label">Mean TTFT (ms)</div>
-    <div class="value" id="avgTTFT">--</div>
-  </div>
-  <div class="summary-card tpot">
-    <div class="label">Mean TPOT (ms)</div>
-    <div class="value" id="avgTPOT">--</div>
-  </div>
-  <div class="summary-card e2e">
-    <div class="label">Mean E2E Latency (ms)</div>
-    <div class="value" id="avgE2E">--</div>
-  </div>
-  <div class="summary-card throughput">
-    <div class="label">Output Token Throughput (tok/s)</div>
-    <div class="value" id="avgThroughput">--</div>
-  </div>
-  <div class="summary-card eval-score">
-    <div class="label">Accuracy Score</div>
-    <div class="value" id="avgEvalScore">--</div>
-  </div>
-</div>
-<div class="charts">
-  <div class="chart-section">
-    <div class="chart-header" onclick="toggleChart('chartTTFT')">
-      <span class="arrow" id="arrowTTFT">▶</span>
-      <h3>Mean TTFT (ms) - 按日期对比</h3>
-    </div>
-    <div class="chart-body" id="bodyTTFT">
-      <canvas id="chartTTFT"></canvas>
-    </div>
-  </div>
-  <div class="chart-section">
-    <div class="chart-header" onclick="toggleChart('chartTPOT')">
-      <span class="arrow" id="arrowTPOT">▶</span>
-      <h3>Mean TPOT (ms) - 按日期对比</h3>
-    </div>
-    <div class="chart-body" id="bodyTPOT">
-      <canvas id="chartTPOT"></canvas>
-    </div>
-  </div>
-  <div class="chart-section">
-    <div class="chart-header" onclick="toggleChart('chartE2E')">
-      <span class="arrow" id="arrowE2E">▶</span>
-      <h3>Mean E2E Latency (ms) - 按日期对比</h3>
-    </div>
-    <div class="chart-body" id="bodyE2E">
-      <canvas id="chartE2E"></canvas>
-    </div>
-  </div>
-  <div class="chart-section">
-    <div class="chart-header" onclick="toggleChart('chartThroughput')">
-      <span class="arrow" id="arrowThroughput">▶</span>
-      <h3>Output Token Throughput (tok/s) - 按日期对比</h3>
-    </div>
-    <div class="chart-body" id="bodyThroughput">
-      <canvas id="chartThroughput"></canvas>
-    </div>
-  </div>
-  <div class="chart-section">
-    <div class="chart-header" onclick="toggleChart('chartEvalScore')">
-      <span class="arrow" id="arrowEvalScore">▶</span>
-      <h3>Accuracy Score - 按日期对比</h3>
-    </div>
-    <div class="chart-body" id="bodyEvalScore">
-      <canvas id="chartEvalScore"></canvas>
-    </div>
-  </div>
+  <button class="btn" onclick="exportToExcel()">导出Excel</button>
 </div>
 <div class="table-container">
   <h3>详细数据 <span style="font-weight:normal;font-size:12px;color:#8b949e" id="tableCount"></span></h3>
   <table id="dataTable">
     <thead>
       <tr>
-        <th>测试用例ID</th>
-        <th>日期</th>
         <th>模型</th>
-        <th>量化</th>
-        <th>并行</th>
-        <th>输入长度</th>
-        <th>输出长度</th>
-        <th>请求速率</th>
-        <th>数据集</th>
-        <th>Prefix</th>
-        <th>TTFT (ms)</th>
-        <th>TPOT (ms)</th>
-        <th>E2E (ms)</th>
-        <th>Throughput (tok/s)</th>
-        <th>Accuracy Score</th>
+        <th>日期</th>
+        <th>测试用例ID</th>
+        <th>来源</th>
+        <th>状态</th>
+        <th>基线</th>
+        <th class="col-uniform">组网</th>
+        <th class="col-uniform">卡数</th>
+        <th class="col-uniform">序列长度</th>
+        <th class="col-uniform">prefix</th>
+        <th class="col-uniform">数据集</th>
+        <th class="col-uniform">精度</th>
+        <th class="col-uniform">总请求数</th>
+        <th class="col-uniform">最大并发数</th>
+        <th class="col-uniform">系统并发数</th>
+        <th class="col-uniform">请求频率<br>(req/s)</th>
+        <th class="col-uniform">TTFT<br>(ms)</th>
+        <th class="col-uniform">TTFT P90<br>(ms)</th>
+        <th class="col-uniform">TPOT<br>(ms)</th>
+        <th class="col-uniform">TPOT P90<br>(ms)</th>
+        <th class="col-uniform">E2E时间<br>(ms)</th>
+        <th class="col-uniform">输出吞吐<br>(tps)</th>
+        <th class="col-uniform">单卡<br>输出吞吐<br>(tps)</th>
+        <th class="col-uniform">E2E 吞吐<br>(tps)</th>
+        <th class="col-uniform">单卡<br>E2E 吞吐<br>(tps)</th>
+        <th class="col-uniform">QPS</th>
+        <th class="col-uniform">QPM</th>
       </tr>
     </thead>
     <tbody id="tableBody"></tbody>
@@ -213,11 +287,9 @@ tr.selected:hover { background: #254070 !important; }
 <script>
 let allData = [];
 let charts = {};
-const COLORS = ['#f78166','#58a6ff','#d2a8ff','#7ee787','#f0883e','#db6d8c','#56d4dd','#e3b341','#b392f0','#79c0ff','#ffa198','#a5d6ff'];
 
 function buildTestCaseId(d) {
-  return [d.model, d.quantization, d.parallelism, d.input_len, d.output_len, d.request_rate, d.dataset, d.prefix]
-    .filter(v => v).join('|') || d.model;
+  return d.yaml_name || '';
 }
 
 function buildShortLabel(d) {
@@ -233,37 +305,94 @@ function buildShortLabel(d) {
   return parts.join('_');
 }
 
-function toggleChart(chartId) {
-  const body = document.getElementById('body' + chartId.replace('chart', ''));
-  const arrow = document.getElementById('arrow' + chartId.replace('chart', ''));
-  body.classList.toggle('open');
-  arrow.classList.toggle('open');
-  if (body.classList.contains('open')) {
-    arrow.textContent = '▼';
-  } else {
-    arrow.textContent = '▶';
-  }
+function initCharts() {
+  // Charts are created dynamically when a test case row is expanded
 }
 
-function initCharts() {
+function showTestCaseChart(tcId, label) {
+  const items = allData.filter(d => d._id === tcId);
+  items.sort((a, b) => a.date.localeCompare(b.date));
+  const dates = items.map(d => d.date);
+
+  const chartRow = document.getElementById('chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_'));
+  if (!chartRow) return;
+
+  const metricDefs = [
+    { key: 'mean_ttft', label: 'TTFT (ms)', color: '#f78166' },
+    { key: 'mean_tpot', label: 'TPOT (ms)', color: '#d2a8ff' },
+    { key: 'mean_e2e_latency', label: 'E2E时间 (ms)', color: '#ff7b72' },
+    { key: 'output_token_throughput', label: '输出吞吐 (tps)', color: '#7ee787' },
+    { key: 'eval_score', label: 'Accuracy', color: '#e3b341' },
+    { key: 'p90_ttft', label: 'TTFT P90 (ms)', color: '#f0a080' },
+    { key: 'p90_tpot', label: 'TPOT P90 (ms)', color: '#c090e0' },
+    { key: 'total_token_throughput', label: 'E2E 吞吐 (tps)', color: '#56d364' },
+    { key: 'total_requests', label: '总请求数', color: '#79c0ff' },
+    { key: 'max_concurrency', label: '最大并发数', color: '#ffa657' },
+    { key: 'system_concurrency', label: '系统并发数', color: '#a5d6ff' },
+    { key: 'request_throughput', label: '请求频率 (req/s)', color: '#d2a8ff' },
+  ];
+
   const commonOpts = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'bottom', labels: { color: '#8b949e', font: { size: 10 }, boxWidth: 12, padding: 8 } }
+      legend: { display: false }
     },
     scales: {
-      x: { ticks: { color: '#8b949e', font: { size: 11 } }, grid: { color: '#21262d' } },
-      y: { ticks: { color: '#8b949e' }, grid: { color: '#21262d' } }
+      x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } },
+      y: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } }
     },
     interaction: { mode: 'index', intersect: false }
   };
-  const chartIds = { ttft: 'chartTTFT', tpot: 'chartTPOT', e2e: 'chartE2E', throughput: 'chartThroughput', evalscore: 'chartEvalScore' };
-  Object.entries(chartIds).forEach(([k, id]) => {
-    charts[k] = new Chart(document.getElementById(id), {
-      type: 'line', data: { labels: [], datasets: [] }, options: commonOpts
-    });
+
+  let html = '<div class="tc-charts">';
+  metricDefs.forEach((def, i) => {
+    const vals = items.map(d => d[def.key]);
+    if (vals.some(v => v != null)) {
+      const canvasId = 'chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_') + '_' + def.key;
+      html += `<div class="tc-chart-box"><h4>${def.label}</h4><canvas id="${canvasId}"></canvas></div>`;
+    }
   });
+  html += '</div>';
+  chartRow.querySelector('td').innerHTML = html;
+
+  // Create charts after DOM is updated
+  setTimeout(() => {
+    metricDefs.forEach(def => {
+      const vals = items.map(d => d[def.key]);
+      if (vals.some(v => v != null)) {
+        const canvasId = 'chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_') + '_' + def.key;
+        const canvas = document.getElementById(canvasId);
+        if (canvas) {
+          new Chart(canvas, {
+            type: 'line',
+            data: {
+              labels: dates,
+              datasets: [{
+                label: def.label,
+                data: vals,
+                borderColor: def.color,
+                backgroundColor: def.color + '30',
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                tension: 0.1,
+                spanGaps: false,
+              }]
+            },
+            options: commonOpts
+          });
+        }
+      }
+    });
+  }, 10);
+}
+
+function destroyCharts(tcId) {
+  const chartRow = document.getElementById('chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_'));
+  if (chartRow) {
+    chartRow.querySelector('td').innerHTML = '';
+  }
 }
 
 async function loadData() {
@@ -298,16 +427,10 @@ function populateMultiSelect(id, values, allLabel) {
 }
 
 function populateFilters() {
-  const keys = ['model','quantization','parallelism','input_len','output_len','request_rate','dataset','prefix','date'];
-  const ids = ['modelFilter','quantFilter','paraFilter','inFilter','outFilter','rrFilter','dsFilter','prefixFilter','dateFilter'];
+  const keys = ['model','date'];
+  const ids = ['modelFilter','dateFilter'];
   keys.forEach((k, i) => {
-    let vals;
-    if (k === 'prefix') {
-      // Include empty string as "无" option for non-prefix cases
-      vals = [...new Set(allData.map(d => d[k] || '无'))].sort();
-    } else {
-      vals = [...new Set(allData.map(d => d[k]).filter(Boolean))].sort();
-    }
+    const vals = [...new Set(allData.map(d => d[k]).filter(Boolean))].sort();
     populateMultiSelect(ids[i], vals, '全部');
   });
 }
@@ -319,109 +442,81 @@ function getSelectedValues(id) {
   return vals;
 }
 
+function computeStatus(d) {
+  const b = d.baselines || {};
+  const hasPerf = d.mean_ttft != null;
+  const hasEval = d.eval_score != null;
+  const hasBaseline = Object.keys(b).length > 0;
+  if (!hasBaseline) return hasPerf || hasEval ? '' : 'FAILED(无结果)';
+  if (!hasPerf && !hasEval) return 'FAILED(无结果)';
+  const latencyMetrics = [['mean_ttft', b.mean_ttft], ['mean_tpot', b.mean_tpot], ['mean_e2e_latency', b.mean_e2e_latency]];
+  for (const [key, baseline] of latencyMetrics) {
+    if (baseline != null && d[key] != null) {
+      if (d[key] > baseline) return 'FAILED';
+    }
+  }
+  if (b.output_token_throughput != null && d.output_token_throughput != null) {
+    if (d.output_token_throughput < b.output_token_throughput) return 'FAILED';
+  }
+  if (b.eval_score != null && d.eval_score != null) {
+    if (d.eval_score < b.eval_score) return 'FAILED';
+  }
+  return 'PASS';
+}
+
+function getTestCaseStatus(items) {
+  if (items.length === 0) return 'FAILED(无结果)';
+  const latest = items[items.length - 1];
+  return computeStatus(latest);
+}
+
 function onFilterChange() {
   const filters = {
+    source: getSelectedValues('sourceFilter'),
     model: getSelectedValues('modelFilter'),
-    quantization: getSelectedValues('quantFilter'),
-    parallelism: getSelectedValues('paraFilter'),
-    input_len: getSelectedValues('inFilter'),
-    output_len: getSelectedValues('outFilter'),
-    request_rate: getSelectedValues('rrFilter'),
-    dataset: getSelectedValues('dsFilter'),
-    prefix: getSelectedValues('prefixFilter'),
     date: getSelectedValues('dateFilter'),
   };
+  const statusFilter = getSelectedValues('statusFilter');
 
   let filtered = allData;
   Object.entries(filters).forEach(([key, vals]) => {
     if (vals !== null) {
-      if (key === 'prefix') {
-        filtered = filtered.filter(d => vals.includes(d[key] || '无'));
-      } else {
-        filtered = filtered.filter(d => vals.includes(d[key]));
-      }
+      filtered = filtered.filter(d => vals.includes(d[key]));
     }
   });
 
-  updateSummary(filtered);
-  updateCharts(filtered);
+  if (statusFilter !== null) {
+    const groups = {};
+    filtered.forEach(d => {
+      if (!groups[d._id]) groups[d._id] = [];
+      groups[d._id].push(d);
+    });
+    const keepIds = new Set();
+    Object.entries(groups).forEach(([id, items]) => {
+      items.sort((a, b) => a.date.localeCompare(b.date));
+      const status = getTestCaseStatus(items);
+      if (statusFilter.includes('PASS') && status === 'PASS') keepIds.add(id);
+      if (statusFilter.includes('FAILED') && (status === 'FAILED' || status === 'FAILED(无结果)')) keepIds.add(id);
+    });
+    filtered = filtered.filter(d => keepIds.has(d._id));
+  }
+
   updateTable(filtered);
 }
 
 function resetFilters() {
-  ['modelFilter','quantFilter','paraFilter','inFilter','outFilter','rrFilter','dsFilter','prefixFilter','dateFilter'].forEach(id => {
+  ['sourceFilter','modelFilter','dateFilter','statusFilter'].forEach(id => {
     const sel = document.getElementById(id);
     [...sel.options].forEach(o => o.selected = o.value === '__all__');
   });
   onFilterChange();
 }
 
-function updateSummary(data) {
-  const avg = (arr, key) => {
-    const vals = arr.map(d => d[key]).filter(v => v != null);
-    return vals.length ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(4) : '--';
-  };
-  document.getElementById('avgTTFT').textContent = avg(data, 'mean_ttft');
-  document.getElementById('avgTPOT').textContent = avg(data, 'mean_tpot');
-  document.getElementById('avgE2E').textContent = avg(data, 'mean_e2e_latency');
-  document.getElementById('avgThroughput').textContent = avg(data, 'output_token_throughput');
-  document.getElementById('avgEvalScore').textContent = avg(data, 'eval_score');
-}
-
-function updateCharts(data) {
-  // Group by test case ID, then sort each group by date
-  const groups = {};
-  data.forEach(d => {
-    if (!groups[d._id]) groups[d._id] = [];
-    groups[d._id].push(d);
-  });
-
-  // Sort each group by date
-  Object.values(groups).forEach(g => g.sort((a, b) => a.date.localeCompare(b.date)));
-
-  // Collect all unique dates across all groups for x-axis
-  const allDates = [...new Set(data.map(d => d.date))].sort();
-
-  const metrics = [
-    { key: 'mean_ttft', chart: 'ttft' },
-    { key: 'mean_tpot', chart: 'tpot' },
-    { key: 'mean_e2e_latency', chart: 'e2e' },
-    { key: 'output_token_throughput', chart: 'throughput' },
-    { key: 'eval_score', chart: 'evalscore' },
-  ];
-
-  metrics.forEach(({ key, chart }) => {
-    const datasets = [];
-    let colorIdx = 0;
-    Object.entries(groups).forEach(([tcId, items]) => {
-      const label = items[0]._label;
-      const dateMap = {};
-      items.forEach(d => { dateMap[d.date] = d[key]; });
-      const dataPoints = allDates.map(date => dateMap[date] ?? null);
-      datasets.push({
-        label: label,
-        data: dataPoints,
-        borderColor: COLORS[colorIdx % COLORS.length],
-        backgroundColor: COLORS[colorIdx % COLORS.length] + '30',
-        borderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
-        tension: 0.1,
-        spanGaps: false,
-      });
-      colorIdx++;
-    });
-    charts[chart].data.labels = allDates;
-    charts[chart].data.datasets = datasets;
-    charts[chart].update();
-  });
-}
-
 function updateTable(data) {
   const tbody = document.getElementById('tableBody');
-  document.getElementById('tableCount').textContent = '(' + data.length + ' 条)';
   if (data.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="15" class="no-data">无匹配数据</td></tr>';
+    document.getElementById('tableCount').textContent = '(0 条)';
+    tbody.innerHTML = '<tr><td colspan="27" class="no-data">无匹配数据</td></tr>';
     return;
   }
 
@@ -436,60 +531,256 @@ function updateTable(data) {
   // Sort groups by test case ID
   const sortedGroups = Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
 
-  // Calculate diffs for consecutive dates within same test case
-  const diffCache = {};
-  Object.values(groups).forEach(items => {
-    for (let i = 1; i < items.length; i++) {
-      const prev = items[i-1], curr = items[i];
-      const key = curr._id + '|' + curr.date;
-      diffCache[key] = {};
-      ['mean_ttft','mean_tpot','mean_e2e_latency','output_token_throughput'].forEach(k => {
-        if (prev[k] && curr[k]) {
-          diffCache[key][k] = ((curr[k] - prev[k]) / prev[k] * 100).toFixed(1);
-        }
-      });
-    }
-  });
-
-  function diffSpan(curr, prev, key) {
-    if (!prev || curr[key] == null || prev[key] == null) return '';
-    const pct = ((curr[key] - prev[key]) / prev[key] * 100).toFixed(1);
-    const cls = pct > 0 ? (key === 'output_token_throughput' ? 'diff-up' : 'diff-down')
-              : pct < 0 ? (key === 'output_token_throughput' ? 'diff-down' : 'diff-up')
-              : 'diff-same';
-    const arrow = pct > 0 ? '↑' : pct < 0 ? '↓' : '→';
-    return ` <span class="${cls}">${arrow}${Math.abs(pct)}%</span>`;
-  }
-
   function fmtVal(v, digits) {
     return v != null ? v.toFixed(digits) : '--';
   }
 
+  function fmtInt(v) {
+    return v != null ? Math.round(v) : '--';
+  }
+  function getCardCount(d) {
+    const m = (d.card_count || '').match(/(\d+)/);
+    return m ? parseInt(m[1]) : 0;
+  }
+  function fmtSingleCard(val, d) {
+    if (val == null) return '--';
+    const n = getCardCount(d);
+    return n > 0 ? (val / n).toFixed(2) : '--';
+  }
+
+  function fmtBaseline(b) {
+    const parts = [];
+    if (b.mean_ttft != null) parts.push(`TTFT≤${b.mean_ttft}`);
+    if (b.mean_tpot != null) parts.push(`TPOT≤${b.mean_tpot}`);
+    if (b.mean_e2e_latency != null) parts.push(`E2E时间≤${b.mean_e2e_latency}`);
+    if (b.output_token_throughput != null) parts.push(`输出吞吐≥${b.output_token_throughput}`);
+    if (b.eval_score != null) parts.push(`精度≥${b.eval_score}`);
+    return parts.length > 0 ? parts.join(', ') : '--';
+  }
+
+  // Render metric value with red font if it fails baseline:
+  //   cmp='le' → value must be ≤ baseline (latency); cmp='ge' → value must be ≥ baseline (throughput/accuracy)
+  function fmtMetric(val, digits, baseline, cmp) {
+    if (val == null) return '--';
+    const v = val.toFixed(digits);
+    if (baseline != null) {
+      if ((cmp === 'le' && val > baseline) || (cmp === 'ge' && val < baseline)) {
+        return `<span class="metric-fail">${v}</span>`;
+      }
+    }
+    return v;
+  }
+
   let rows = '';
+  let visibleCount = 0;
   sortedGroups.forEach(([tcId, items]) => {
+    const safeId = tcId.replace(/[^a-zA-Z0-9]/g, '_');
     items.forEach((d, i) => {
-      const prev = i > 0 ? items[i-1] : null;
-      rows += `<tr>
-        <td><span class="testcase-id" title="${tcId}">${tcId}</span></td>
-        <td>${d.date}</td><td>${d.model}</td><td>${d.quantization}</td><td>${d.parallelism}</td>
-        <td>${d.input_len || '--'}</td><td>${d.output_len || '--'}</td><td>${d.request_rate || '--'}</td><td>${d.dataset || '--'}</td><td>${d.prefix || '--'}</td>
-        <td>${fmtVal(d.mean_ttft, 2)}${diffSpan(d, prev, 'mean_ttft')}</td>
-        <td>${fmtVal(d.mean_tpot, 2)}${diffSpan(d, prev, 'mean_tpot')}</td>
-        <td>${fmtVal(d.mean_e2e_latency, 2)}${diffSpan(d, prev, 'mean_e2e_latency')}</td>
-        <td>${fmtVal(d.output_token_throughput, 2)}${diffSpan(d, prev, 'output_token_throughput')}</td>
-        <td>${d.eval_score != null ? d.eval_score.toFixed(4) : '--'}</td>
+      const isLatest = i === items.length - 1;
+      const status = computeStatus(d);
+      const statusCls = status === 'PASS' ? 'status-pass' : status === 'FAILED' ? 'status-fail' : 'status-none';
+      const b = d.baselines || {};
+      const bl = (key, sym) => b[key] != null ? `<br><span class="baseline-val">${sym}${b[key]}</span>` : '';
+      const expandIcon = isLatest && items.length > 1
+        ? `<span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;" title="点击展开历史">▶</span>`
+        : '';
+      const rowStyle = isLatest ? '' : 'style="display:none"';
+      if (isLatest) visibleCount++;
+      rows += `<tr class="data-row" data-tc="${safeId}" ${rowStyle}>
+        <td>${d.model}</td>
+        <td>${d.date}</td>
+        <td><span class="testcase-id" title="${tcId}">${expandIcon}${tcId}</span></td>
+        <td>${d.source || '--'}</td>
+        <td><span class="${statusCls}">${status}</span></td>
+        <td><span class="baseline-col" title="${fmtBaseline(b)}">${fmtBaseline(b)}</span></td>
+        <td class="col-uniform">${d.topology || '--'}</td>
+        <td class="col-uniform">${d.card_count || '--'}</td>
+        <td class="col-uniform">${d.seq_length || '--'}</td>
+        <td class="col-uniform">${(d.prefix || '').replace('prefix', '') || '0'}</td>
+        <td>${d.dataset || '--'}</td>
+        <td class="col-uniform">${fmtMetric(d.eval_score, 4, b.eval_score, 'ge')}</td>
+        <td class="col-uniform">${fmtInt(d.total_requests)}</td>
+        <td class="col-uniform">${fmtInt(d.max_concurrency)}</td>
+        <td class="col-uniform">${fmtVal(d.system_concurrency, 2)}</td>
+        <td class="col-uniform">${fmtVal(d.request_throughput, 2)}</td>
+        <td class="col-uniform">${fmtMetric(d.mean_ttft, 2, b.mean_ttft, 'le')}</td>
+        <td class="col-uniform">${fmtVal(d.p90_ttft, 2)}</td>
+        <td class="col-uniform">${fmtMetric(d.mean_tpot, 2, b.mean_tpot, 'le')}</td>
+        <td class="col-uniform">${fmtVal(d.p90_tpot, 2)}</td>
+        <td class="col-uniform">${fmtMetric(d.mean_e2e_latency, 2, b.mean_e2e_latency, 'le')}</td>
+        <td class="col-uniform">${fmtMetric(d.output_token_throughput, 2, b.output_token_throughput, 'ge')}</td>
+        <td class="col-uniform">${fmtSingleCard(d.output_token_throughput, d)}</td>
+        <td class="col-uniform">${fmtVal(d.total_token_throughput, 2)}</td>
+        <td class="col-uniform">${fmtSingleCard(d.total_token_throughput, d)}</td>
+        <td class="col-uniform">${fmtVal(d.request_throughput, 2)}</td>
+        <td class="col-uniform">${d.request_throughput != null ? (d.request_throughput * 60).toFixed(2) : '--'}</td>
       </tr>`;
     });
+    // Add hidden chart row after each test case group
+    rows += `<tr class="chart-row" id="chart_${safeId}" data-tc="${safeId}" style="display:none"><td colspan="27"></td></tr>`;
   });
+  document.getElementById('tableCount').textContent = `(${visibleCount} 条)`;
   tbody.innerHTML = rows;
 }
 
-// Click-to-select rows for comparison
+// Click row to expand/collapse history and charts
 document.getElementById('tableBody').addEventListener('click', function(e) {
   const tr = e.target.closest('tr');
-  if (!tr || tr.querySelector('.no-data')) return;
-  tr.classList.toggle('selected');
+  if (!tr || tr.querySelector('.no-data') || tr.classList.contains('chart-row')) return;
+  const tcId = tr.getAttribute('data-tc');
+  if (!tcId) return;
+
+  const chartRow = document.getElementById('chart_' + tcId);
+  const allRows = this.querySelectorAll(`tr[data-tc="${tcId}"].data-row`);
+  const isExpanded = chartRow && chartRow.style.display !== 'none';
+
+  if (isExpanded) {
+    // Collapse: hide all rows except the latest, hide chart, destroy chart
+    allRows.forEach((r, i) => {
+      if (i < allRows.length - 1) r.style.display = 'none';
+    });
+    allRows.forEach(r => r.classList.remove('selected'));
+    if (chartRow) { chartRow.style.display = 'none'; destroyCharts(tcId); }
+    // Reset expand icon
+    const latestRow = allRows[allRows.length - 1];
+    if (latestRow) {
+      const icon = latestRow.querySelector('.expand-icon');
+      if (icon) icon.textContent = '▶';
+    }
+  } else {
+    // Collapse all other expanded groups first
+    this.querySelectorAll('.chart-row').forEach(r => { r.style.display = 'none'; });
+    this.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
+    this.querySelectorAll('.expand-icon').forEach(icon => { icon.textContent = '▶'; });
+    // Hide all non-latest rows globally
+    this.querySelectorAll('tr.data-row').forEach(r => {
+      const tc = r.getAttribute('data-tc');
+      const siblings = this.querySelectorAll(`tr[data-tc="${tc}"].data-row`);
+      if (siblings.length > 1 && r !== siblings[siblings.length - 1]) {
+        r.style.display = 'none';
+      }
+    });
+
+    // Expand: show all rows for this test case, highlight, show chart
+    allRows.forEach(r => { r.style.display = ''; r.classList.add('selected'); });
+    const latestRow = allRows[allRows.length - 1];
+    if (latestRow) {
+      const icon = latestRow.querySelector('.expand-icon');
+      if (icon) icon.textContent = '▼';
+    }
+    const label = latestRow ? latestRow.querySelector('.testcase-id')?.getAttribute('title') : '';
+    if (chartRow && label) {
+      chartRow.style.display = '';
+      showTestCaseChart(label, label);
+    }
+  }
 });
+
+function exportToExcel() {
+  try {
+    if (typeof XLSX === 'undefined') {
+      alert('Excel导出库加载失败，请检查网络连接后刷新页面重试。');
+      return;
+    }
+    if (!allData || allData.length === 0) {
+      alert('暂无数据可导出。');
+      return;
+    }
+
+    // Recompute filtered data matching current table display
+    const sourceVals = getSelectedValues('sourceFilter');
+    const modelVals = getSelectedValues('modelFilter');
+    const dateVals = getSelectedValues('dateFilter');
+    const statusVals = getSelectedValues('statusFilter');
+
+    let filtered = allData;
+    if (sourceVals !== null) filtered = filtered.filter(d => sourceVals.includes(d.source));
+    if (modelVals !== null) filtered = filtered.filter(d => modelVals.includes(d.model));
+    if (dateVals !== null) filtered = filtered.filter(d => dateVals.includes(d.date));
+
+    // Group by test case ID, keep latest only
+    const groups = {};
+    filtered.forEach(d => {
+      if (!groups[d._id]) groups[d._id] = [];
+      groups[d._id].push(d);
+    });
+
+    let rows = [];
+    Object.entries(groups).forEach(([id, items]) => {
+      items.sort((a, b) => a.date.localeCompare(b.date));
+      if (statusVals !== null) {
+        const status = getTestCaseStatus(items);
+        const keep = (statusVals.includes('PASS') && status === 'PASS') ||
+                     (statusVals.includes('FAILED') && (status === 'FAILED' || status === 'FAILED(无结果)'));
+        if (!keep) return;
+      }
+      rows.push(items[items.length - 1]);
+    });
+
+    if (rows.length === 0) {
+      alert('当前筛选条件下无数据可导出。');
+      return;
+    }
+
+    // Build Excel data
+    const headers = [
+      '模型', '日期', '测试用例ID', '来源', '状态', '基线',
+      '组网', '卡数', '序列长度', 'PREFIX', '数据集',
+      '精度', '总请求数', '最大并发数', '系统并发数', '请求频率',
+      'TTFT(ms)', 'TTFT P90(ms)', 'TPOT(ms)', 'TPOT P90(ms)',
+      'E2E时间(ms)', '输出吞吐(TPS)', '单卡输出吞吐(TPS)',
+      'E2E吞吐(TPS)', '单卡E2E吞吐(TPS)', 'QPS', 'QPM'
+    ];
+
+    const getCardCount = (d) => {
+      const m = (d.card_count || '').match(/(\d+)/);
+      return m ? parseInt(m[1]) : 0;
+    };
+
+    const dataRows = rows.map(d => {
+      const b = d.baselines || {};
+      const n = getCardCount(d);
+      const blParts = [];
+      if (b.mean_ttft != null) blParts.push('TTFT≤' + b.mean_ttft);
+      if (b.mean_tpot != null) blParts.push('TPOT≤' + b.mean_tpot);
+      if (b.mean_e2e_latency != null) blParts.push('E2E≤' + b.mean_e2e_latency);
+      if (b.output_token_throughput != null) blParts.push('吞吐≥' + b.output_token_throughput);
+      if (b.eval_score != null) blParts.push('精度≥' + b.eval_score);
+      return [
+        d.model || '', d.date || '', d._id || '', d.source || '', computeStatus(d),
+        blParts.join(', '),
+        d.topology || '', d.card_count || '', d.seq_length || '',
+        (d.prefix || '').replace('prefix', '') || '0', d.dataset || '',
+        d.eval_score != null ? d.eval_score : '',
+        d.total_requests != null ? d.total_requests : '',
+        d.max_concurrency != null ? d.max_concurrency : '',
+        d.system_concurrency != null ? d.system_concurrency.toFixed(2) : '',
+        d.request_throughput != null ? d.request_throughput.toFixed(2) : '',
+        d.mean_ttft != null ? d.mean_ttft.toFixed(2) : '',
+        d.p90_ttft != null ? d.p90_ttft.toFixed(2) : '',
+        d.mean_tpot != null ? d.mean_tpot.toFixed(2) : '',
+        d.p90_tpot != null ? d.p90_tpot.toFixed(2) : '',
+        d.mean_e2e_latency != null ? d.mean_e2e_latency.toFixed(2) : '',
+        d.output_token_throughput != null ? d.output_token_throughput.toFixed(2) : '',
+        n > 0 && d.output_token_throughput != null ? (d.output_token_throughput / n).toFixed(2) : '',
+        d.total_token_throughput != null ? d.total_token_throughput.toFixed(2) : '',
+        n > 0 && d.total_token_throughput != null ? (d.total_token_throughput / n).toFixed(2) : '',
+        d.request_throughput != null ? d.request_throughput.toFixed(2) : '',
+        d.request_throughput != null ? (d.request_throughput * 60).toFixed(2) : ''
+      ];
+    });
+
+    const wsData = [headers, ...dataRows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = headers.map(() => ({ wch: 18 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '性能数据');
+    XLSX.writeFile(wb, 'sglang_benchmark_' + new Date().toISOString().slice(0, 10) + '.xlsx');
+  } catch (e) {
+    console.error('导出失败:', e);
+    alert('导出失败: ' + e.message);
+  }
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   initCharts();
@@ -501,15 +792,160 @@ document.addEventListener('DOMContentLoaded', () => {
 </html>"""
 
 
+def parse_yaml_test_name(name):
+    """Convert a YAML test config name to dashboard labels using parse_filename.
+    Example: qwen3_6_35b_a3b_2p_in984k_out1k -> {model, parallelism, input_len, output_len, ...}
+    """
+    # Strip test_npu_ prefix if present
+    if name.startswith("test_npu_"):
+        name = name[len("test_npu_"):]
+    # Strip _a2 suffix (A2 chip marker)
+    name = re.sub(r"_a2$", "", name)
+    # Use parse_filename by feeding it as if it were a filename
+    labels = parse_filename("test_npu_" + name + ".txt")
+    return labels
+
+
+def build_test_case_id(labels):
+    """Build a dashboard test case ID from labels dict."""
+    parts = [
+        labels.get("model", ""),
+        labels.get("quantization", ""),
+        labels.get("parallelism", ""),
+        labels.get("input_len", ""),
+        labels.get("output_len", ""),
+        labels.get("request_rate", ""),
+        labels.get("dataset", ""),
+        labels.get("prefix", ""),
+    ]
+    return "|".join(p for p in parts if p)
+
+
+def filename_to_yaml_name(filename):
+    """Convert a benchmark/test filename to YAML test case name.
+    e.g., 'test_npu_qwen3_6_35b_a3b_2p_in984k_out1k.txt' -> 'qwen3_6_35b_a3b_2p_in984k_out1k'
+          'test_npu_qwen3_32b_w8a8_2p_in3k5_out1k5_50ms_a2.txt' -> 'qwen3_32b_w8a8_2p_in3k5_out1k5_50ms_a2'
+    """
+    name = filename
+    if name.endswith(".txt"):
+        name = name[:-4]
+    if name.startswith("test_npu_"):
+        name = name[len("test_npu_"):]
+    return name
+
+
+def collect_expected_test_cases():
+    """Parse YAML workflow configs and collect all expected test case IDs.
+    Only extracts names from matrix.test_config entries (structure-aware parsing).
+    Returns a dict: {test_case_id: {"labels": labels, "source": "nightly"|"fulltest"}}
+    """
+    expected = {}
+    yaml_source_map = {
+        YAML_CONFIGS[0]: "fulltest",  # full-test-npu.yml
+        YAML_CONFIGS[1]: "nightly",   # nightly-test-npu.yml
+    }
+
+    for yaml_path in YAML_CONFIGS:
+        if not os.path.isfile(yaml_path):
+            print(f"[yaml] Config not found: {yaml_path}")
+            continue
+        try:
+            with open(yaml_path, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+        except Exception as e:
+            print(f"[yaml] Error reading {yaml_path}: {e}")
+            continue
+
+        source = yaml_source_map.get(yaml_path, "unknown")
+        in_test_config = False
+        test_config_indent = 0
+
+        for line in lines:
+            stripped = line.strip()
+            current_indent = len(line) - len(line.lstrip())
+
+            # Detect test_config: line (e.g., "        test_config:")
+            if re.match(r'^\s*test_config:\s*$', line):
+                in_test_config = True
+                test_config_indent = current_indent
+                continue
+
+            if in_test_config:
+                # Skip comment lines (avoid false block exit when # starts at column 0)
+                if stripped.startswith('#'):
+                    continue
+
+                # Exit block when we hit a non-empty line at or before test_config indent
+                if stripped and current_indent <= test_config_indent:
+                    in_test_config = False
+                    continue
+
+                # Only match - name: entries that are indented deeper than test_config
+                if current_indent > test_config_indent:
+                    name_match = re.match(r'- name:\s*(\S+)', stripped)
+                    if name_match:
+                        name = name_match.group(1)
+                        labels = parse_yaml_test_name(name)
+                        model = labels.get("model", "")
+                        if " " in model or not model:
+                            continue
+                        # Skip excluded test cases
+                        if name in EXCLUDED_TEST_CASES:
+                            continue
+                        # Use YAML name directly as test case ID
+                        if name not in expected:
+                            expected[name] = {"labels": labels, "source": source, "yaml_name": name}
+
+    return expected
+
+
+def _match_baselines_for_item(item, baselines):
+    """Match and attach baselines to an accuracy-only item.
+    First tries direct key lookup via yaml_name, then falls back to label matching.
+    """
+    item["baselines"] = {}
+    yaml_name = item.get("yaml_name", "")
+    # Try direct key lookup: test_npu_ + yaml_name
+    if yaml_name:
+        if yaml_name.startswith("test_npu_"):
+            direct_key = yaml_name
+        else:
+            direct_key = "test_npu_" + yaml_name
+        if direct_key in baselines:
+            item["baselines"] = baselines[direct_key]
+            return
+    # Fall back to label matching
+    for tc_key, tc_baseline in baselines.items():
+        tc_parsed = parse_filename(tc_key + ".txt")
+        if (tc_parsed.get("model") == item.get("model") and
+            tc_parsed.get("dataset") == item.get("dataset") and
+            tc_parsed.get("quantization") == item.get("quantization") and
+            tc_parsed.get("parallelism") == item.get("parallelism")):
+            item["baselines"] = tc_baseline
+            break
+
+
 def collect_all_data():
-    """Collect all benchmark data into a list of dicts."""
+    """Collect all benchmark data into a list of dicts.
+    Only includes test cases defined in YAML workflow configs.
+    """
     results = []
     metrics_dir = get_metrics_dir()
     if not os.path.isdir(metrics_dir):
         return results
 
+    # Get expected test cases from YAML configs (with source info)
+    expected = collect_expected_test_cases()
+    expected_tc_ids = set(expected.keys())
+
     # Collect eval scores: {(test_case_name, date): max_score}
     eval_data = collect_eval_data()
+
+    # Collect baselines from test scripts
+    baselines = collect_baselines()
+
+    # Track which eval keys were consumed by benchmark results
+    consumed_eval_keys = set()
 
     for date_folder in sorted(os.listdir(metrics_dir)):
         date_path = os.path.join(metrics_dir, date_folder)
@@ -527,20 +963,129 @@ def collect_all_data():
 
             labels = parse_filename(filename)
             labels["date"] = date_folder
+            labels["yaml_name"] = filename_to_yaml_name(filename)
+            # Fallback: if stripped name not in expected, try with test_npu_ prefix
+            if labels["yaml_name"] not in expected_tc_ids:
+                alt = "test_npu_" + labels["yaml_name"]
+                if alt in expected_tc_ids:
+                    labels["yaml_name"] = alt
             labels.update(parsed)
 
             # Attach eval score: key is (test_case_name without .txt, date)
             test_case_name = filename[:-4]  # strip .txt
             eval_key = (test_case_name, date_folder)
             labels["eval_score"] = eval_data.get(eval_key)
+            consumed_eval_keys.add(eval_key)
+
+            # Attach baselines
+            labels["baselines"] = baselines.get(test_case_name, {})
 
             results.append(labels)
 
-    # Append accuracy-only test results (no performance metrics)
+    # Append accuracy-only test results from accuracy/ directory (no performance metrics)
     accuracy_data = collect_accuracy_only_data()
+    for item in accuracy_data:
+        _match_baselines_for_item(item, baselines)
     results.extend(accuracy_data)
 
-    return results
+    # Append accuracy-only entries for eval/ scores not matched to benchmark results
+    # (e.g., accuracy-only tests like qwen3_vl_8b_thinking_1p_mmmu whose results
+    #  are in eval/ but have no matching .txt benchmark file)
+    for (test_case_name, date), score in eval_data.items():
+        if (test_case_name, date) not in consumed_eval_keys:
+            labels = parse_filename(test_case_name + ".txt")
+            labels["date"] = date
+            labels["yaml_name"] = filename_to_yaml_name(test_case_name)
+            if labels["yaml_name"] not in expected_tc_ids:
+                alt = "test_npu_" + labels["yaml_name"]
+                if alt in expected_tc_ids:
+                    labels["yaml_name"] = alt
+            labels["eval_score"] = score
+            labels["mean_ttft"] = None
+            labels["mean_tpot"] = None
+            labels["mean_e2e_latency"] = None
+            labels["output_token_throughput"] = None
+            labels["p90_ttft"] = None
+            labels["p90_tpot"] = None
+            labels["total_token_throughput"] = None
+            labels["total_requests"] = None
+            labels["max_concurrency"] = None
+            labels["system_concurrency"] = None
+            labels["request_throughput"] = None
+            _match_baselines_for_item(labels, baselines)
+            results.append(labels)
+
+    # Apply yaml_name fallback for all items (handle test_npu_ prefix in YAML names)
+    for r in results:
+        yaml_name = r.get("yaml_name", "")
+        if yaml_name not in expected_tc_ids and yaml_name:
+            alt = "test_npu_" + yaml_name
+            if alt in expected_tc_ids:
+                r["yaml_name"] = alt
+
+    # Filter: only keep results whose yaml_name is in expected YAML scope
+    filtered = []
+    for r in results:
+        yaml_name = r.get("yaml_name", "")
+        if yaml_name in expected_tc_ids:
+            r["source"] = expected[yaml_name]["source"]
+            filtered.append(r)
+
+    # Add placeholder entries for expected test cases that have no data
+    existing_yaml_names = set(r.get("yaml_name", "") for r in filtered)
+
+    # Get the latest date from existing results
+    latest_date = ""
+    if filtered:
+        dates = sorted(set(r["date"] for r in filtered))
+        latest_date = dates[-1] if dates else ""
+
+    for yaml_name, info in expected.items():
+        if yaml_name not in existing_yaml_names:
+            labels = info["labels"]
+            # Derive baseline key from yaml_name: prefix with "test_npu_" if not already
+            if yaml_name.startswith("test_npu_"):
+                baseline_key = yaml_name
+            else:
+                baseline_key = "test_npu_" + yaml_name
+            placeholder_baselines = baselines.get(baseline_key, {})
+            placeholder = {
+                "model": labels.get("model", ""),
+                "quantization": labels.get("quantization", ""),
+                "parallelism": labels.get("parallelism", ""),
+                "input_len": labels.get("input_len", ""),
+                "output_len": labels.get("output_len", ""),
+                "request_rate": labels.get("request_rate", ""),
+                "dataset": labels.get("dataset", ""),
+                "prefix": labels.get("prefix", ""),
+                "date": latest_date,
+                "yaml_name": yaml_name,
+                "mean_ttft": None,
+                "mean_tpot": None,
+                "mean_e2e_latency": None,
+                "output_token_throughput": None,
+                "p90_ttft": None,
+                "p90_tpot": None,
+                "total_token_throughput": None,
+                "total_requests": None,
+                "max_concurrency": None,
+                "system_concurrency": None,
+                "request_throughput": None,
+                "eval_score": None,
+                "baselines": placeholder_baselines,
+                "source": info["source"],
+            }
+            filtered.append(placeholder)
+
+    # Attach topology info to all items
+    for item in filtered:
+        yaml_name = item.get("yaml_name", "")
+        topology, card_count, seq_length = compute_topology_info(yaml_name)
+        item["topology"] = topology
+        item["card_count"] = card_count
+        item["seq_length"] = seq_length
+
+    return filtered
 
 
 class DashboardHandler(http.server.BaseHTTPRequestHandler):
@@ -551,7 +1096,6 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
         elif self.path == "/api/data":
-            git_pull()
             data = collect_all_data()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
@@ -559,7 +1103,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
         elif self.path == "/api/status":
-            source = f"Git: {GIT_REPO_URL}" if GIT_PULL_ENABLED else "本地文件"
+            source = "本地文件"
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.end_headers()
