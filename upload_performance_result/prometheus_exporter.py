@@ -116,6 +116,9 @@ def parse_filename(filename):
     # Strip numeric run suffix (e.g., _1, _2, ..., _19)
     name = re.sub(r"_\d+$", "", name)
 
+    # Strip _a2 chip marker suffix (must be before field extraction below)
+    name = re.sub(r"_a2$", "", name)
+
     # Extract extra parameters that distinguish test cases:
     #   _prefix\d+  (prefix cache ratio) -> appended to input_len
     #   _bs\d+      (batch size)         -> appended to output_len

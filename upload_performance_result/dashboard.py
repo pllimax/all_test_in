@@ -474,26 +474,31 @@ function computeStatus(d) {
   if (!hasBaseline) return hasPerf || hasEval ? '' : 'FAILED(无结果)';
   if (!hasPerf && !hasEval) return 'FAILED(无结果)';
   // TPOT: baseline < 50 → +1ms absolute; baseline >= 50 → +2% relative
-  if (b.mean_tpot != null && d.mean_tpot != null) {
+  if (b.mean_tpot != null) {
+    if (d.mean_tpot == null) return 'FAILED';
     const tpotLimit = b.mean_tpot < TPOT_THRESHOLD
       ? b.mean_tpot + TPOT_TOLERANCE_LOW
       : b.mean_tpot * TPOT_TOLERANCE_HIGH;
     if (d.mean_tpot > tpotLimit) return 'FAILED';
   }
   // TTFT: +2% tolerance
-  if (b.mean_ttft != null && d.mean_ttft != null) {
+  if (b.mean_ttft != null) {
+    if (d.mean_ttft == null) return 'FAILED';
     if (d.mean_ttft > b.mean_ttft * TTFT_TOLERANCE) return 'FAILED';
   }
   // E2E Latency: +2% tolerance
-  if (b.mean_e2e_latency != null && d.mean_e2e_latency != null) {
+  if (b.mean_e2e_latency != null) {
+    if (d.mean_e2e_latency == null) return 'FAILED';
     if (d.mean_e2e_latency > b.mean_e2e_latency * E2E_TOLERANCE) return 'FAILED';
   }
   // Output Token Throughput: -2% tolerance
-  if (b.output_token_throughput != null && d.output_token_throughput != null) {
+  if (b.output_token_throughput != null) {
+    if (d.output_token_throughput == null) return 'FAILED';
     if (d.output_token_throughput < b.output_token_throughput * THROUGHPUT_TOLERANCE) return 'FAILED';
   }
   // Accuracy: dataset-specific tolerance
-  if (b.eval_score != null && d.eval_score != null) {
+  if (b.eval_score != null) {
+    if (d.eval_score == null) return 'FAILED';
     const threshold = getAccuracyThreshold(b.eval_score, d.dataset);
     if (d.eval_score < threshold) return 'FAILED';
   }
@@ -973,13 +978,17 @@ def _match_baselines_for_item(item, baselines):
         if direct_key in baselines:
             item["baselines"] = baselines[direct_key]
             return
-    # Fall back to label matching
+    # Fall back to label matching (all key fields must match)
     for tc_key, tc_baseline in baselines.items():
         tc_parsed = parse_filename(tc_key + ".txt")
         if (tc_parsed.get("model") == item.get("model") and
             tc_parsed.get("dataset") == item.get("dataset") and
             tc_parsed.get("quantization") == item.get("quantization") and
-            tc_parsed.get("parallelism") == item.get("parallelism")):
+            tc_parsed.get("parallelism") == item.get("parallelism") and
+            tc_parsed.get("input_len") == item.get("input_len") and
+            tc_parsed.get("output_len") == item.get("output_len") and
+            tc_parsed.get("request_rate") == item.get("request_rate") and
+            tc_parsed.get("prefix") == item.get("prefix")):
             item["baselines"] = tc_baseline
             break
 
