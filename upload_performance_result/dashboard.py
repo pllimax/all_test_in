@@ -220,20 +220,20 @@ tr.selected:hover { background: #254070 !important; }
 </div>
 <div class="filters">
   <div class="filter-group">
-    <label>来源</label>
-    <select id="sourceFilter" multiple onchange="onFilterChange()">
-      <option value="__all__" selected>全部</option>
-      <option value="fulltest">fulltest</option>
-      <option value="nightly">nightly</option>
-    </select>
-  </div>
-  <div class="filter-group">
     <label>模型</label>
     <select id="modelFilter" multiple onchange="onFilterChange()"></select>
   </div>
   <div class="filter-group">
     <label>日期</label>
     <select id="dateFilter" multiple onchange="onFilterChange()"></select>
+  </div>
+  <div class="filter-group">
+    <label>来源</label>
+    <select id="sourceFilter" multiple onchange="onFilterChange()">
+      <option value="__all__" selected>全部</option>
+      <option value="fulltest">fulltest</option>
+      <option value="nightly">nightly</option>
+    </select>
   </div>
   <div class="filter-group">
     <label>状态</label>
@@ -252,8 +252,8 @@ tr.selected:hover { background: #254070 !important; }
     <thead>
       <tr>
         <th>模型</th>
-        <th>日期</th>
         <th>测试用例ID</th>
+        <th>日期</th>
         <th>来源</th>
         <th>状态</th>
         <th>基线</th>
@@ -317,17 +317,24 @@ function showTestCaseChart(tcId, label) {
   const chartRow = document.getElementById('chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_'));
   if (!chartRow) return;
 
-  // Determine if this is a performance test case (has TPOT/throughput data)
-  const isPerf = items.some(d => d.mean_ttft != null);
-
-  const metricDefs = isPerf
-    ? [
-        { key: 'mean_tpot', label: 'TPOT (ms)', color: '#d2a8ff' },
-        { key: 'output_token_throughput', label: '输出吞吐 (tps)', color: '#7ee787' },
-      ]
-    : [
-        { key: 'eval_score', label: 'Accuracy', color: '#e3b341' },
-      ];
+  // Build chart definitions from baseline keys
+  const baselineMetricDefs = {
+    mean_ttft:     { key: 'mean_ttft', label: 'TTFT (ms)', color: '#f78166' },
+    mean_tpot:     { key: 'mean_tpot', label: 'TPOT (ms)', color: '#d2a8ff' },
+    mean_e2e_latency: { key: 'mean_e2e_latency', label: 'E2E时间 (ms)', color: '#ff7b72' },
+    output_token_throughput: { key: 'output_token_throughput', label: '输出吞吐 (tps)', color: '#7ee787' },
+    eval_score:    { key: 'eval_score', label: 'Accuracy', color: '#e3b341' },
+  };
+  // Get baselines from the first item that has them
+  const baseline = items.find(d => d.baselines && Object.keys(d.baselines).length > 0);
+  const metricDefs = [];
+  if (baseline) {
+    for (const [key, def] of Object.entries(baselineMetricDefs)) {
+      if (baseline.baselines[key] != null) {
+        metricDefs.push(def);
+      }
+    }
+  }
 
   const commonOpts = {
     responsive: true,
@@ -640,8 +647,8 @@ function updateTable(data) {
       if (isLatest) visibleCount++;
       rows += `<tr class="data-row" data-tc="${safeId}" ${rowStyle}>
         <td>${d.model}</td>
-        <td>${d.date}</td>
         <td><span class="testcase-id" title="${tcId}">${expandIcon}${tcId}</span></td>
+        <td>${d.date}</td>
         <td>${d.source || '--'}</td>
         <td><span class="${statusCls}">${status}</span></td>
         <td><span class="baseline-col" title="${fmtBaseline(b)}">${fmtBaseline(b)}</span></td>
@@ -776,7 +783,7 @@ function exportToExcel() {
 
     // Build Excel data
     const headers = [
-      '模型', '日期', '测试用例ID', '来源', '状态', '基线',
+      '模型', '测试用例ID', '日期', '来源', '状态', '基线',
       '组网', '卡数', '序列长度', 'PREFIX', '数据集',
       '精度', '总请求数', '最大并发数', '系统并发数', '请求频率',
       'TTFT(ms)', 'TTFT P90(ms)', 'TPOT(ms)', 'TPOT P90(ms)',
@@ -799,7 +806,7 @@ function exportToExcel() {
       if (b.output_token_throughput != null) blParts.push('吞吐≥' + b.output_token_throughput);
       if (b.eval_score != null) blParts.push('精度≥' + b.eval_score);
       return [
-        d.model || '', d.date || '', d._id || '', d.source || '', computeStatus(d),
+        d.model || '', d._id || '', d.date || '', d.source || '', computeStatus(d),
         blParts.join(', '),
         d.topology || '', d.card_count || '', d.seq_length || '',
         (d.prefix || '').replace('prefix', '') || '0', d.dataset || '',
