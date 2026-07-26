@@ -317,20 +317,17 @@ function showTestCaseChart(tcId, label) {
   const chartRow = document.getElementById('chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_'));
   if (!chartRow) return;
 
-  const metricDefs = [
-    { key: 'mean_ttft', label: 'TTFT (ms)', color: '#f78166' },
-    { key: 'mean_tpot', label: 'TPOT (ms)', color: '#d2a8ff' },
-    { key: 'mean_e2e_latency', label: 'E2E时间 (ms)', color: '#ff7b72' },
-    { key: 'output_token_throughput', label: '输出吞吐 (tps)', color: '#7ee787' },
-    { key: 'eval_score', label: 'Accuracy', color: '#e3b341' },
-    { key: 'p90_ttft', label: 'TTFT P90 (ms)', color: '#f0a080' },
-    { key: 'p90_tpot', label: 'TPOT P90 (ms)', color: '#c090e0' },
-    { key: 'total_token_throughput', label: 'E2E 吞吐 (tps)', color: '#56d364' },
-    { key: 'total_requests', label: '总请求数', color: '#79c0ff' },
-    { key: 'max_concurrency', label: '最大并发数', color: '#ffa657' },
-    { key: 'system_concurrency', label: '系统并发数', color: '#a5d6ff' },
-    { key: 'request_throughput', label: '请求频率 (req/s)', color: '#d2a8ff' },
-  ];
+  // Determine if this is a performance test case (has TPOT/throughput data)
+  const isPerf = items.some(d => d.mean_ttft != null);
+
+  const metricDefs = isPerf
+    ? [
+        { key: 'mean_tpot', label: 'TPOT (ms)', color: '#d2a8ff' },
+        { key: 'output_token_throughput', label: '输出吞吐 (tps)', color: '#7ee787' },
+      ]
+    : [
+        { key: 'eval_score', label: 'Accuracy', color: '#e3b341' },
+      ];
 
   const commonOpts = {
     responsive: true,
@@ -442,6 +439,26 @@ function getSelectedValues(id) {
   return vals;
 }
 
+// Tolerance constants (matching test framework in sglang-plli-shequ)
+const TPOT_THRESHOLD = 50;
+const TPOT_TOLERANCE_LOW = 1.0;   // +1ms for small TPOT
+const TPOT_TOLERANCE_HIGH = 1.02; // +2% for large TPOT
+const TTFT_TOLERANCE = 1.02;      // +2%
+const E2E_TOLERANCE = 1.02;       // +2%
+const THROUGHPUT_TOLERANCE = 0.98; // -2%
+const ACCURACY_TOLERANCE = 0.99;  // -1% for general datasets
+
+function getAccuracyThreshold(baseline, dataset) {
+  // Dataset-specific absolute tolerance (question count based)
+  if (dataset === 'aime25' || dataset === 'aime26') {
+    return baseline - 2 / 30; // 2 questions out of 30
+  }
+  if (dataset === 'gpqa') {
+    return baseline - 5 / 198; // 5 questions out of 198
+  }
+  return baseline * ACCURACY_TOLERANCE;
+}
+
 function computeStatus(d) {
   const b = d.baselines || {};
   const hasPerf = d.mean_ttft != null;
@@ -449,17 +466,29 @@ function computeStatus(d) {
   const hasBaseline = Object.keys(b).length > 0;
   if (!hasBaseline) return hasPerf || hasEval ? '' : 'FAILED(无结果)';
   if (!hasPerf && !hasEval) return 'FAILED(无结果)';
-  const latencyMetrics = [['mean_ttft', b.mean_ttft], ['mean_tpot', b.mean_tpot], ['mean_e2e_latency', b.mean_e2e_latency]];
-  for (const [key, baseline] of latencyMetrics) {
-    if (baseline != null && d[key] != null) {
-      if (d[key] > baseline) return 'FAILED';
-    }
+  // TPOT: baseline < 50 → +1ms absolute; baseline >= 50 → +2% relative
+  if (b.mean_tpot != null && d.mean_tpot != null) {
+    const tpotLimit = b.mean_tpot < TPOT_THRESHOLD
+      ? b.mean_tpot + TPOT_TOLERANCE_LOW
+      : b.mean_tpot * TPOT_TOLERANCE_HIGH;
+    if (d.mean_tpot > tpotLimit) return 'FAILED';
   }
+  // TTFT: +2% tolerance
+  if (b.mean_ttft != null && d.mean_ttft != null) {
+    if (d.mean_ttft > b.mean_ttft * TTFT_TOLERANCE) return 'FAILED';
+  }
+  // E2E Latency: +2% tolerance
+  if (b.mean_e2e_latency != null && d.mean_e2e_latency != null) {
+    if (d.mean_e2e_latency > b.mean_e2e_latency * E2E_TOLERANCE) return 'FAILED';
+  }
+  // Output Token Throughput: -2% tolerance
   if (b.output_token_throughput != null && d.output_token_throughput != null) {
-    if (d.output_token_throughput < b.output_token_throughput) return 'FAILED';
+    if (d.output_token_throughput < b.output_token_throughput * THROUGHPUT_TOLERANCE) return 'FAILED';
   }
+  // Accuracy: dataset-specific tolerance
   if (b.eval_score != null && d.eval_score != null) {
-    if (d.eval_score < b.eval_score) return 'FAILED';
+    const threshold = getAccuracyThreshold(b.eval_score, d.dataset);
+    if (d.eval_score < threshold) return 'FAILED';
   }
   return 'PASS';
 }
@@ -558,13 +587,36 @@ function updateTable(data) {
     return parts.length > 0 ? parts.join(', ') : '--';
   }
 
-  // Render metric value with red font if it fails baseline:
-  //   cmp='le' → value must be ≤ baseline (latency); cmp='ge' → value must be ≥ baseline (throughput/accuracy)
-  function fmtMetric(val, digits, baseline, cmp) {
+  // Render metric value with red font if it fails baseline (with tolerance):
+  //   type: 'tpot'|'ttft'|'e2e'|'throughput'|'accuracy'
+  //   Tolerances match test framework: TPOT (+1ms or +2%), TTFT/E2E (+2%), Throughput (-2%), Accuracy (dataset-specific)
+  function fmtMetric(val, digits, baseline, type, dataset) {
     if (val == null) return '--';
     const v = val.toFixed(digits);
     if (baseline != null) {
-      if ((cmp === 'le' && val > baseline) || (cmp === 'ge' && val < baseline)) {
+      let fail = false;
+      switch (type) {
+        case 'tpot':
+          if (baseline < TPOT_THRESHOLD) {
+            fail = val > baseline + TPOT_TOLERANCE_LOW;
+          } else {
+            fail = val > baseline * TPOT_TOLERANCE_HIGH;
+          }
+          break;
+        case 'ttft':
+          fail = val > baseline * TTFT_TOLERANCE;
+          break;
+        case 'e2e':
+          fail = val > baseline * E2E_TOLERANCE;
+          break;
+        case 'throughput':
+          fail = val < baseline * THROUGHPUT_TOLERANCE;
+          break;
+        case 'accuracy':
+          fail = val < getAccuracyThreshold(baseline, dataset);
+          break;
+      }
+      if (fail) {
         return `<span class="metric-fail">${v}</span>`;
       }
     }
@@ -598,17 +650,17 @@ function updateTable(data) {
         <td class="col-uniform">${d.seq_length || '--'}</td>
         <td class="col-uniform">${(d.prefix || '').replace('prefix', '') || '0'}</td>
         <td>${d.dataset || '--'}</td>
-        <td class="col-uniform">${fmtMetric(d.eval_score, 4, b.eval_score, 'ge')}</td>
+        <td class="col-uniform">${fmtMetric(d.eval_score, 4, b.eval_score, 'accuracy', d.dataset)}</td>
         <td class="col-uniform">${fmtInt(d.total_requests)}</td>
         <td class="col-uniform">${fmtInt(d.max_concurrency)}</td>
         <td class="col-uniform">${fmtVal(d.system_concurrency, 2)}</td>
         <td class="col-uniform">${fmtVal(d.request_throughput, 2)}</td>
-        <td class="col-uniform">${fmtMetric(d.mean_ttft, 2, b.mean_ttft, 'le')}</td>
+        <td class="col-uniform">${fmtMetric(d.mean_ttft, 2, b.mean_ttft, 'ttft')}</td>
         <td class="col-uniform">${fmtVal(d.p90_ttft, 2)}</td>
-        <td class="col-uniform">${fmtMetric(d.mean_tpot, 2, b.mean_tpot, 'le')}</td>
+        <td class="col-uniform">${fmtMetric(d.mean_tpot, 2, b.mean_tpot, 'tpot')}</td>
         <td class="col-uniform">${fmtVal(d.p90_tpot, 2)}</td>
-        <td class="col-uniform">${fmtMetric(d.mean_e2e_latency, 2, b.mean_e2e_latency, 'le')}</td>
-        <td class="col-uniform">${fmtMetric(d.output_token_throughput, 2, b.output_token_throughput, 'ge')}</td>
+        <td class="col-uniform">${fmtMetric(d.mean_e2e_latency, 2, b.mean_e2e_latency, 'e2e')}</td>
+        <td class="col-uniform">${fmtMetric(d.output_token_throughput, 2, b.output_token_throughput, 'throughput')}</td>
         <td class="col-uniform">${fmtSingleCard(d.output_token_throughput, d)}</td>
         <td class="col-uniform">${fmtVal(d.total_token_throughput, 2)}</td>
         <td class="col-uniform">${fmtSingleCard(d.total_token_throughput, d)}</td>
