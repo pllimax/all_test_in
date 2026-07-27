@@ -697,8 +697,16 @@ function updateTable(data) {
 
   let rows = '';
   let visibleCount = 0;
-  let prevModel = null;
+  // 预计算每个分组在 collapsed 视图中是否应显示模型名
+  // 规则：分组间按 latest 行比较，模型变了才显示
+  const groupShowModel = [];
+  let prevLatestModel = null;
   sortedGroups.forEach(([tcId, items]) => {
+    const latestModel = items[items.length - 1].model;
+    groupShowModel.push(latestModel !== prevLatestModel);
+    prevLatestModel = latestModel;
+  });
+  sortedGroups.forEach(([tcId, items], gIdx) => {
     const safeId = tcId.replace(/[^a-zA-Z0-9]/g, '_');
     items.forEach((d, i) => {
       const isLatest = i === items.length - 1;
@@ -711,8 +719,7 @@ function updateTable(data) {
         : '';
       const rowStyle = isLatest ? '' : 'style="display:none"';
       if (isLatest) visibleCount++;
-      const modelDisplay = d.model !== prevModel ? d.model : '';
-      prevModel = d.model;
+      const modelDisplay = isLatest && groupShowModel[gIdx] ? d.model : '';
       rows += `<tr class="data-row" data-tc="${safeId}" ${rowStyle}>
         <td>${modelDisplay}</td>
         <td><span class="testcase-id" title="${tcId}">${expandIcon}${tcId}</span></td>
