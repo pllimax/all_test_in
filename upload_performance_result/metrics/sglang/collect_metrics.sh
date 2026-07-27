@@ -184,7 +184,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         PERF_TARGET_DIR="${SCRIPT_DIR}/${actual_date}"
         mkdir -p "${PERF_TARGET_DIR}"
 
-        dst_file="${PERF_TARGET_DIR}/${subdir_name}.txt"
+        dst_file="${PERF_TARGET_DIR}/${subdir_name}__${CURRENT_DATE}.txt"
         cp "${src_file}" "${dst_file}"
 
         # 在文件末尾追加原始修改时间描述
@@ -192,6 +192,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         {
             echo ""
             echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
+            echo "# [collect_metrics] 源目录日期: ${CURRENT_DATE}"
         } >> "${dst_file}"
 
         echo "[OK] ${subdir_name} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
@@ -251,10 +252,10 @@ for CURRENT_DATE in "${DATES[@]}"; do
             EVAL_TARGET_DIR="${SCRIPT_DIR}/${actual_date}/eval"
             mkdir -p "${EVAL_TARGET_DIR}"
 
-            eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}.log"
+            eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}__${CURRENT_DATE}.log"
             # 如果已存在同名文件（来自其他来源），添加来源标签后缀区分
             if [ -f "${eval_dst}" ]; then
-                eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}-${src_label}.log"
+                eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}__${CURRENT_DATE}-${src_label}.log"
             fi
             cp "${eval_src}" "${eval_dst}"
 

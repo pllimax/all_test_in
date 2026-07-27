@@ -110,8 +110,11 @@ def parse_filename(filename):
       test_npu_qwen3_6_35b_a3b_1p_in1080p_30_out256_50ms.txt
       test_npu_mimo_v2_flash_1p1d_12p_in32k_out1_ttft_5s.txt
       test_npu_qwen3_6_27b_w8a8_2p_in16k_out1k_50ms_1.txt
+      test_npu_qwen3_32b_w8a8_2p_in3k5_out1k_50ms__20260726.txt  (含源日期后缀)
     """
     name = os.path.splitext(filename)[0]
+    # Strip __YYYYmmdd source date suffix (added by collect_metrics.sh)
+    name = re.sub(r"__\d{8}$", "", name)
     name = name.replace("test_npu_", "", 1)
 
     # Strip numeric run suffix (e.g., _1, _2, ..., _19)
@@ -311,13 +314,15 @@ def collect_eval_data():
                 continue
 
             # Filename format: test_case_name__timestamp.log
+            # or test_case_name__timestamp__YYYYmmdd.log (with source date suffix)
             base = filename[:-4]  # strip .log
             if "__" not in base:
                 continue
 
             # Split on first __ (test case name may contain underscores)
             # The timestamp is always YYYYMMDD_HHMMSS format
-            match = re.match(r"(.+?)__(\d{8}_\d{6})$", base)
+            # Optionally followed by __YYYYmmdd source date suffix
+            match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
             if not match:
                 continue
 
@@ -364,7 +369,7 @@ def collect_accuracy_only_data():
             if "__" not in base:
                 continue
 
-            match = re.match(r"(.+?)__(\d{8}_\d{6})$", base)
+            match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
             if not match:
                 continue
 

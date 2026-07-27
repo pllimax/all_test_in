@@ -949,8 +949,11 @@ def filename_to_yaml_name(filename):
     """Convert a benchmark/test filename to YAML test case name.
     e.g., 'test_npu_qwen3_6_35b_a3b_2p_in984k_out1k.txt' -> 'qwen3_6_35b_a3b_2p_in984k_out1k'
           'test_npu_qwen3_32b_w8a8_2p_in3k5_out1k5_50ms_a2.txt' -> 'qwen3_32b_w8a8_2p_in3k5_out1k5_50ms_a2'
+          'test_npu_qwen3_32b_w8a8_2p_in3k5_out1k5_50ms__20260726.txt' -> 'qwen3_32b_w8a8_2p_in3k5_out1k5_50ms'
     """
     name = filename
+    # Strip __YYYYmmdd source date suffix (added by collect_metrics.sh)
+    name = re.sub(r"__\d{8}", "", name)
     if name.endswith(".txt"):
         name = name[:-4]
     if name.startswith("test_npu_"):
@@ -1103,8 +1106,12 @@ def collect_all_data():
                     labels["yaml_name"] = alt
             labels.update(parsed)
 
-            # Attach eval score: key is (test_case_name without .txt, date)
-            test_case_name = filename[:-4]  # strip .txt
+            # Strip __YYYYmmdd source date suffix for eval/baseline lookups
+            base_name = filename[:-4]  # strip .txt
+            base_name = re.sub(r"__\d{8}$", "", base_name)
+            test_case_name = base_name
+
+            # Attach eval score: key is (test_case_name, date)
             eval_key = (test_case_name, date_folder)
             labels["eval_score"] = eval_data.get(eval_key)
             consumed_eval_keys.add(eval_key)
