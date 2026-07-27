@@ -6,6 +6,7 @@ Supports dynamic Git pull for data updates.
 import os
 import re
 import time
+import shutil
 import subprocess
 import threading
 from prometheus_client import start_http_server, Gauge, Info
@@ -403,6 +404,49 @@ def collect_accuracy_only_data():
     return results
 
 
+def _clone_repo():
+    """Clone the Git repository with shallow + sparse checkout (metrics directory only).
+    Returns True on success, False on failure.
+    """
+    print(f"[git] Cloning metrics data from: {GIT_REPO_URL}")
+    os.makedirs(os.path.dirname(GIT_LOCAL_CLONE), exist_ok=True)
+    # Step 1: shallow clone without checkout
+    result = subprocess.run(
+        ["git", "clone", "--depth=1", "--no-checkout",
+         "--branch", GIT_BRANCH, GIT_REPO_URL, GIT_LOCAL_CLONE],
+        capture_output=True, text=True, timeout=120
+    )
+    if result.returncode != 0:
+        print(f"[git] clone failed: {result.stderr.strip()}")
+        return False
+    # Step 2: enable sparse checkout (cone mode)
+    result = subprocess.run(
+        ["git", "sparse-checkout", "init", "--cone"],
+        cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=30
+    )
+    if result.returncode != 0:
+        print(f"[git] sparse-checkout init failed: {result.stderr.strip()}")
+        return False
+    # Step 3: set sparse path to metrics directory only
+    result = subprocess.run(
+        ["git", "sparse-checkout", "set", GIT_SPARSE_PATH],
+        cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=30
+    )
+    if result.returncode != 0:
+        print(f"[git] sparse-checkout set failed: {result.stderr.strip()}")
+        return False
+    # Step 4: checkout only the sparse paths
+    result = subprocess.run(
+        ["git", "checkout", GIT_BRANCH],
+        cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=60
+    )
+    if result.returncode != 0:
+        print(f"[git] checkout failed: {result.stderr.strip()}")
+        return False
+    print("[git] Metrics data cloned successfully")
+    return True
+
+
 _git_pull_lock = threading.Lock()
 
 def git_pull():
@@ -410,6 +454,7 @@ def git_pull():
     - Clone: shallow clone with sparse checkout, only pull metrics/ directory
     - Update: fetch and checkout only metrics/ files, never reset code
     Throttled: only actually pulls if at least 60s since last pull.
+    Falls back to re-cloning if fetch fails (e.g. remote force-push).
     """
     if not GIT_PULL_ENABLED:
         return
@@ -429,7 +474,11 @@ def git_pull():
                 cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=60
             )
             if result.returncode != 0:
-                print(f"[git] fetch failed: {result.stderr.strip()}")
+                # Fetch failed (e.g. remote force-push causing unrelated histories),
+                # fall back to re-cloning
+                print(f"[git] fetch failed ({result.stderr.strip()}), re-cloning...")
+                shutil.rmtree(GIT_LOCAL_CLONE, ignore_errors=True)
+                _clone_repo()
                 return
             # Only checkout metrics files, never reset code
             result = subprocess.run(
@@ -441,43 +490,7 @@ def git_pull():
                 return
             print("[git] Metrics data updated successfully")
         else:
-            # Clone: shallow + sparse checkout, only metrics directory
-            print(f"[git] Cloning metrics data from: {GIT_REPO_URL}")
-            os.makedirs(os.path.dirname(GIT_LOCAL_CLONE), exist_ok=True)
-            # Step 1: shallow clone without checkout
-            result = subprocess.run(
-                ["git", "clone", "--depth=1", "--no-checkout",
-                 "--branch", GIT_BRANCH, GIT_REPO_URL, GIT_LOCAL_CLONE],
-                capture_output=True, text=True, timeout=120
-            )
-            if result.returncode != 0:
-                print(f"[git] clone failed: {result.stderr.strip()}")
-                return
-            # Step 2: enable sparse checkout (cone mode)
-            result = subprocess.run(
-                ["git", "sparse-checkout", "init", "--cone"],
-                cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=30
-            )
-            if result.returncode != 0:
-                print(f"[git] sparse-checkout init failed: {result.stderr.strip()}")
-                return
-            # Step 3: set sparse path to metrics directory only
-            result = subprocess.run(
-                ["git", "sparse-checkout", "set", GIT_SPARSE_PATH],
-                cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=30
-            )
-            if result.returncode != 0:
-                print(f"[git] sparse-checkout set failed: {result.stderr.strip()}")
-                return
-            # Step 4: checkout only the sparse paths
-            result = subprocess.run(
-                ["git", "checkout", GIT_BRANCH],
-                cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=60
-            )
-            if result.returncode != 0:
-                print(f"[git] checkout failed: {result.stderr.strip()}")
-                return
-            print("[git] Metrics data cloned successfully")
+            _clone_repo()
     except subprocess.TimeoutExpired:
         print("[git] Operation timed out")
     except FileNotFoundError:

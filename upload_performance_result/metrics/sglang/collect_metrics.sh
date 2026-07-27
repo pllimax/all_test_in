@@ -272,8 +272,18 @@ echo "========== 开始上传到 Git =========="
 if [ -d "${GIT_LOCAL_DIR}/.git" ]; then
     echo "更新已有仓库..."
     cd "${GIT_LOCAL_DIR}"
-    git fetch origin --depth=1
-    git reset --hard origin/main 2>/dev/null || git reset --hard origin/master 2>/dev/null
+    # 先尝试增量更新（fetch + reset）
+    if git fetch origin --depth=1 2>/dev/null && \
+       git reset --hard origin/main 2>/dev/null; then
+        echo "仓库更新成功"
+    else
+        # 增量更新失败（如远程被 force push 导致历史不相关），重新克隆
+        echo "增量更新失败，正在重新克隆仓库..."
+        cd /
+        rm -rf "${GIT_LOCAL_DIR}"
+        git clone --depth=1 "${GIT_REPO}" "${GIT_LOCAL_DIR}"
+        echo "重新克隆完成"
+    fi
 else
     echo "克隆仓库..."
     rm -rf "${GIT_LOCAL_DIR}"
