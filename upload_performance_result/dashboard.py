@@ -697,6 +697,7 @@ function updateTable(data) {
 
   let rows = '';
   let visibleCount = 0;
+  let prevModel = null;
   sortedGroups.forEach(([tcId, items]) => {
     const safeId = tcId.replace(/[^a-zA-Z0-9]/g, '_');
     items.forEach((d, i) => {
@@ -710,8 +711,10 @@ function updateTable(data) {
         : '';
       const rowStyle = isLatest ? '' : 'style="display:none"';
       if (isLatest) visibleCount++;
+      const modelDisplay = d.model !== prevModel ? d.model : '';
+      prevModel = d.model;
       rows += `<tr class="data-row" data-tc="${safeId}" ${rowStyle}>
-        <td>${d.model}</td>
+        <td>${modelDisplay}</td>
         <td><span class="testcase-id" title="${tcId}">${expandIcon}${tcId}</span></td>
         <td>${d.date}</td>
         <td>${d.source || '--'}</td>
