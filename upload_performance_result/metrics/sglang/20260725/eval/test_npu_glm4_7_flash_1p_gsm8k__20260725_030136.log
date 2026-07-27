@@ -1,0 +1,190 @@
+2026-07-25 03:01:36 - evalscope - INFO: Running with native backend
+2026-07-25 03:01:36 - evalscope - INFO: Dump task config to /root/.cache/tests/output/accuracy/20260725/test_npu_glm4_7_flash_1p_gsm8k/20260725_030136/configs/task_config.yaml
+2026-07-25 03:01:36 - evalscope - INFO: {
+    "model": "GLM-4.7-Flash",
+    "model_id": "GLM-4.7-Flash",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gsm8k"
+    ],
+    "dataset_args": {
+        "gsm8k": {
+            "name": "gsm8k",
+            "dataset_id": "AI-ModelScope/gsm8k",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "main"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 4,
+            "few_shot_random": false,
+            "train_split": "train",
+            "eval_split": "test",
+            "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+            "few_shot_prompt_template": "Here are some examples of how to solve similar problems:\n\n{fewshot}\n\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "GSM8K",
+            "description": "\n## Overview\n\nGSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically diverse grade school math word problems created by human problem writers. The dataset is specifically designed to evaluate and improve the multi-step mathematical reasoning capabilities of language models.\n\n## Task Description\n\n- **Task Type**: Mathematical Word Problem Solving\n- **Input**: Natural language math word problem\n- **Output**: Numerical answer derived through step-by-step reasoning\n- **Difficulty**: Grade school level (2-8 reasoning steps required)\n\n## Key Features\n\n- Problems require basic arithmetic operations (addition, subtraction, multiplication, division)\n- Solutions involve 2 to 8 sequential reasoning steps\n- High linguistic diversity in problem formulations\n- Human-written problems ensuring natural language quality\n- Clear numerical answers for objective evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **4-shot** examples with Chain-of-Thought (CoT) prompting\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- The metric extracts numerical values for accuracy comparison\n- Supports both zero-shot and few-shot evaluation modes\n",
+            "paper_url": "https://arxiv.org/abs/2110.14168",
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536,
+        "temperature": 1.0
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/accuracy/20260725/test_npu_glm4_7_flash_1p_gsm8k/20260725_030136",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20666/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-07-25 03:01:36 - evalscope - INFO: Start loading benchmark dataset: gsm8k
+2026-07-25 03:01:36 - evalscope - INFO: Start evaluating 1 subsets of gsm8k: ['main']
+2026-07-25 03:01:36 - evalscope - INFO: Unified pool: 1319 items to process, 0 already fully cached (1319 total across all subsets).
+2026-07-25 03:01:36 - evalscope - INFO: Loading model for prediction...
+2026-07-25 03:01:36 - evalscope - INFO: Creating model GLM-4.7-Flash with eval_type=openai_api base_url=http://127.0.0.1:20666/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536, 'temperature': 1.0}, model_args={}
+2026-07-25 03:01:36 - evalscope - INFO: Model loaded successfully.
+2026-07-25 03:02:37 - evalscope - INFO: Evaluating[gsm8k]   1%| 19/1319 [Elapsed: 01:00 < Remaining: 38:12,  1.76s/it]
+2026-07-25 03:03:37 - evalscope - INFO: Evaluating[gsm8k]   4%| 56/1319 [Elapsed: 02:01 < Remaining: 25:25,  1.21s/it]
+2026-07-25 03:04:38 - evalscope - INFO: Evaluating[gsm8k]   7%| 91/1319 [Elapsed: 03:02 < Remaining: 26:09,  1.28s/it]
+2026-07-25 03:05:39 - evalscope - INFO: Evaluating[gsm8k]   9%| 124/1319 [Elapsed: 04:02 < Remaining: 28:06,  1.41s/it]
+2026-07-25 03:06:40 - evalscope - INFO: Evaluating[gsm8k]  11%| 150/1319 [Elapsed: 05:03 < Remaining: 40:31,  2.08s/it]
+2026-07-25 03:07:40 - evalscope - INFO: Evaluating[gsm8k]  14%| 185/1319 [Elapsed: 06:03 < Remaining: 36:58,  1.96s/it]
+2026-07-25 03:08:40 - evalscope - INFO: Evaluating[gsm8k]  17%| 223/1319 [Elapsed: 07:04 < Remaining: 20:09,  1.10s/it]
+2026-07-25 03:09:41 - evalscope - INFO: Evaluating[gsm8k]  20%| 260/1319 [Elapsed: 08:04 < Remaining: 28:44,  1.63s/it]
+2026-07-25 03:10:42 - evalscope - INFO: Evaluating[gsm8k]  22%| 291/1319 [Elapsed: 09:05 < Remaining: 36:56,  2.16s/it]
+2026-07-25 03:11:42 - evalscope - INFO: Evaluating[gsm8k]  24%| 318/1319 [Elapsed: 10:05 < Remaining: 26:24,  1.58s/it]
+2026-07-25 03:12:43 - evalscope - INFO: Evaluating[gsm8k]  27%| 356/1319 [Elapsed: 11:06 < Remaining: 25:35,  1.59s/it]
+2026-07-25 03:13:43 - evalscope - INFO: Evaluating[gsm8k]  30%| 398/1319 [Elapsed: 12:07 < Remaining: 17:24,  1.13s/it]
+2026-07-25 03:14:44 - evalscope - INFO: Evaluating[gsm8k]  32%| 424/1319 [Elapsed: 13:07 < Remaining: 41:59,  2.82s/it]
+2026-07-25 03:15:44 - evalscope - INFO: Evaluating[gsm8k]  35%| 462/1319 [Elapsed: 14:08 < Remaining: 25:47,  1.81s/it]
+2026-07-25 03:16:45 - evalscope - INFO: Evaluating[gsm8k]  38%| 496/1319 [Elapsed: 15:08 < Remaining: 29:48,  2.17s/it]
+2026-07-25 03:17:45 - evalscope - INFO: Evaluating[gsm8k]  39%| 515/1319 [Elapsed: 16:08 < Remaining: 27:16,  2.04s/it]
+2026-07-25 03:18:45 - evalscope - INFO: Evaluating[gsm8k]  41%| 545/1319 [Elapsed: 17:09 < Remaining: 23:53,  1.85s/it]
+2026-07-25 03:19:47 - evalscope - INFO: Evaluating[gsm8k]  43%| 568/1319 [Elapsed: 18:10 < Remaining: 46:36,  3.72s/it]
+2026-07-25 03:20:47 - evalscope - INFO: Evaluating[gsm8k]  45%| 598/1319 [Elapsed: 19:10 < Remaining: 15:15,  1.27s/it]
+2026-07-25 03:21:48 - evalscope - INFO: Evaluating[gsm8k]  48%| 632/1319 [Elapsed: 20:11 < Remaining: 21:42,  1.90s/it]
+2026-07-25 03:22:49 - evalscope - INFO: Evaluating[gsm8k]  50%| 661/1319 [Elapsed: 21:12 < Remaining: 20:42,  1.89s/it]
+2026-07-25 03:23:49 - evalscope - INFO: Evaluating[gsm8k]  53%| 694/1319 [Elapsed: 22:13 < Remaining: 14:21,  1.38s/it]
+2026-07-25 03:24:50 - evalscope - INFO: Evaluating[gsm8k]  55%| 729/1319 [Elapsed: 23:13 < Remaining: 10:17,  1.05s/it]
+2026-07-25 03:25:50 - evalscope - INFO: Evaluating[gsm8k]  58%| 764/1319 [Elapsed: 24:14 < Remaining: 20:29,  2.22s/it]
+2026-07-25 03:26:50 - evalscope - INFO: Evaluating[gsm8k]  61%| 799/1319 [Elapsed: 25:14 < Remaining: 12:13,  1.41s/it]
+2026-07-25 03:27:51 - evalscope - INFO: Evaluating[gsm8k]  63%| 826/1319 [Elapsed: 26:14 < Remaining: 14:24,  1.75s/it]
+2026-07-25 03:28:51 - evalscope - INFO: Evaluating[gsm8k]  66%| 868/1319 [Elapsed: 27:14 < Remaining: 09:22,  1.25s/it]
+2026-07-25 03:29:51 - evalscope - INFO: Evaluating[gsm8k]  69%| 907/1319 [Elapsed: 28:15 < Remaining: 15:59,  2.33s/it]
+2026-07-25 03:30:52 - evalscope - INFO: Evaluating[gsm8k]  72%| 944/1319 [Elapsed: 29:15 < Remaining: 09:51,  1.58s/it]
+2026-07-25 03:31:53 - evalscope - INFO: Evaluating[gsm8k]  74%| 977/1319 [Elapsed: 30:16 < Remaining: 11:00,  1.93s/it]
+2026-07-25 03:32:54 - evalscope - INFO: Evaluating[gsm8k]  76%| 1007/1319 [Elapsed: 31:17 < Remaining: 08:40,  1.67s/it]
+2026-07-25 03:33:54 - evalscope - INFO: Evaluating[gsm8k]  78%| 1034/1319 [Elapsed: 32:17 < Remaining: 08:55,  1.88s/it]
+2026-07-25 03:34:54 - evalscope - INFO: Evaluating[gsm8k]  81%| 1064/1319 [Elapsed: 33:18 < Remaining: 04:36,  1.08s/it]
+2026-07-25 03:35:55 - evalscope - INFO: Evaluating[gsm8k]  84%| 1102/1319 [Elapsed: 34:18 < Remaining: 04:52,  1.35s/it]
+2026-07-25 03:36:56 - evalscope - INFO: Evaluating[gsm8k]  86%| 1138/1319 [Elapsed: 35:19 < Remaining: 07:03,  2.34s/it]
+2026-07-25 03:37:56 - evalscope - INFO: Evaluating[gsm8k]  89%| 1174/1319 [Elapsed: 36:19 < Remaining: 03:17,  1.36s/it]
+2026-07-25 03:38:56 - evalscope - INFO: Evaluating[gsm8k]  91%| 1206/1319 [Elapsed: 37:19 < Remaining: 03:12,  1.71s/it]
+2026-07-25 03:39:57 - evalscope - INFO: Evaluating[gsm8k]  94%| 1239/1319 [Elapsed: 38:20 < Remaining: 02:15,  1.70s/it]
+2026-07-25 03:40:58 - evalscope - INFO: Evaluating[gsm8k]  97%| 1275/1319 [Elapsed: 39:21 < Remaining: 01:27,  1.98s/it]
+2026-07-25 03:41:58 - evalscope - INFO: Evaluating[gsm8k] 100%| 1313/1319 [Elapsed: 40:21 < Remaining: 00:12,  2.06s/it]
+2026-07-25 03:42:58 - evalscope - INFO: Evaluating[gsm8k] 100%| 1317/1319 [Elapsed: 41:21 < Remaining: 00:14,  7.20s/it]
+2026-07-25 03:43:36 - evalscope - INFO: Evaluating[gsm8k] 100%| 1319/1319 [Elapsed: 42:00 < Remaining: 00:00, 16.61s/it]
+2026-07-25 03:43:36 - evalscope - INFO: Unified pool finished for gsm8k.
+2026-07-25 03:43:36 - evalscope - INFO: Aggregating scores for subset: main
+2026-07-25 03:43:36 - evalscope - INFO: Generating report...
+2026-07-25 03:43:36 - evalscope - INFO: 
+gsm8k report table:
+┌───────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model         │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├───────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ GLM-4.7-Flash │ gsm8k     │ mean_acc │ main     │  1319 │   0.956 │ default │
+└───────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-25 03:43:36 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-07-25 03:43:36 - evalscope - INFO: Dump report to: /root/.cache/tests/output/accuracy/20260725/test_npu_glm4_7_flash_1p_gsm8k/20260725_030136/reports/GLM-4.7-Flash/gsm8k.json 
+
+2026-07-25 03:43:36 - evalscope - INFO: 
+gsm8k perf table:
+Model          Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                       (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+-------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+GLM-4.7-Flash  gsm8k       1319    114.982     56928.4       43.57       11.63   582.983    1337.41
+
+2026-07-25 03:43:36 - evalscope - INFO: Benchmark gsm8k evaluation finished.
+2026-07-25 03:43:36 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 42:00 < Remaining: 00:00, 2520.66s/benchmark]
+2026-07-25 03:43:36 - evalscope - INFO: Overall report table: 
+┌───────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model         │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├───────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ GLM-4.7-Flash │ gsm8k     │ mean_acc │ main     │  1319 │   0.956 │ default │
+└───────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-25 03:43:36 - evalscope - INFO: Overall perf table: 
+Model          Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                       (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+-------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+GLM-4.7-Flash  gsm8k       1319    114.982     56928.4       43.57       11.63   582.983    1337.41 
+
+2026-07-25 03:43:37 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/accuracy/20260725/test_npu_glm4_7_flash_1p_gsm8k/20260725_030136/reports/report.html
+2026-07-25 03:43:37 - evalscope - INFO: Finished evaluation for GLM-4.7-Flash on ['gsm8k']
+2026-07-25 03:43:37 - evalscope - INFO: Output directory: /root/.cache/tests/output/accuracy/20260725/test_npu_glm4_7_flash_1p_gsm8k/20260725_030136
+
+# [collect_metrics] 文件原始修改时间: 2026-07-25 11:43:37
