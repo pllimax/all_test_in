@@ -152,9 +152,6 @@ for CURRENT_DATE in "${DATES[@]}"; do
     echo "========== 处理日期: ${CURRENT_DATE} =========="
 
     SRC_FULL_PATH="${SRC_BASE}/${CURRENT_DATE}"
-    # TARGET_DIR 保留给精度测试(eval)使用，按源目录日期存放
-    TARGET_DIR="${SCRIPT_DIR}/${CURRENT_DATE}"
-    mkdir -p "${TARGET_DIR}"
 
     if [ ! -d "${SRC_FULL_PATH}" ]; then
         if [ "$AUTO_MODE" = true ]; then
@@ -177,7 +174,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     fi
 
     echo "源目录: ${SRC_FULL_PATH}"
-    echo "精度测试目标目录: ${TARGET_DIR}"
+    echo "目标: 按文件实际修改时间归类到 SCRIPT_DIR/YYYYmmdd/"
     echo ""
 
     count=0
@@ -227,11 +224,10 @@ for CURRENT_DATE in "${DATES[@]}"; do
     # 来源1: SRC_BASE/DATE/.../logs/eval_log.log (perf测试伴随的精度测试)
     # 来源2: /data/.../tests/output/DATE/.../logs/eval_log.log (补充精度测试)
     # 来源3: /data/.../tests/output/accuracy/DATE/.../logs/eval_log.log (仅精度测试)
-    # 统一存储到: TARGET_DIR/eval/ 下，按"用例名__时间戳.log"命名
+    # 统一存储到: SCRIPT_DIR/实际日期/eval/ 下，按"用例名__时间戳.log"命名
     # 同名文件以来源标签后缀区分
+    # 根据文件实际修改时间归类存放
     # ============================================================
-    EVAL_TARGET_DIR="${TARGET_DIR}/eval"
-    mkdir -p "${EVAL_TARGET_DIR}"
 
     eval_sources_config=(
         "${SRC_BASE}:perf"
@@ -247,32 +243,53 @@ for CURRENT_DATE in "${DATES[@]}"; do
 
         [ -d "${src_path}" ] || continue
 
-        for subdir in "${src_path}"/*/; do
-            [ -d "${subdir}" ] || continue
+        while IFS= read -r eval_src; do
+            [ -f "${eval_src}" ] || continue
+
+            logs_dir=$(dirname "${eval_src}")
+            ts_dir=$(dirname "${logs_dir}")
+            ts_name=$(basename "${ts_dir}")
+            subdir=$(dirname "${ts_dir}")
             subdir_name=$(basename "${subdir}")
 
-            for ts_dir in "${subdir}"*/; do
-                [ -d "${ts_dir}" ] || continue
-                ts_name=$(basename "${ts_dir}")
-                eval_src="${ts_dir}logs/eval_log.log"
+            # 获取文件实际修改时间（秒级时间戳），兼容 Linux/macOS
+            mtime_epoch=$(stat -c '%Y' "${eval_src}" 2>/dev/null || stat -f '%m' "${eval_src}" 2>/dev/null)
+            if [ -z "${mtime_epoch}" ]; then
+                echo "[WARN-EVAL] ${subdir_name}__${ts_name}: 无法获取文件修改时间，跳过"
+                continue
+            fi
 
-                if [ -f "${eval_src}" ]; then
-                    eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}.log"
-                    # 如果已存在同名文件（来自其他来源），添加来源标签后缀区分
-                    if [ -f "${eval_dst}" ]; then
-                        eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}-${src_label}.log"
-                    fi
-                    cp "${eval_src}" "${eval_dst}"
-                    echo "[EVAL-${src_label}] ${subdir_name}__${ts_name}"
-                    eval_count=$((eval_count + 1))
-                fi
-            done
-        done
+            actual_date=$(date -d "@${mtime_epoch}" +%Y%m%d 2>/dev/null || date -r "${mtime_epoch}" +%Y%m%d 2>/dev/null)
+            if [ -z "${actual_date}" ]; then
+                echo "[WARN-EVAL] ${subdir_name}__${ts_name}: 无法转换修改时间，跳过"
+                continue
+            fi
+
+            EVAL_TARGET_DIR="${SCRIPT_DIR}/${actual_date}/eval"
+            mkdir -p "${EVAL_TARGET_DIR}"
+
+            eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}.log"
+            # 如果已存在同名文件（来自其他来源），添加来源标签后缀区分
+            if [ -f "${eval_dst}" ]; then
+                eval_dst="${EVAL_TARGET_DIR}/${subdir_name}__${ts_name}-${src_label}.log"
+            fi
+            cp "${eval_src}" "${eval_dst}"
+
+            # 在文件末尾追加原始修改时间描述
+            mtime_human=$(date -d "@${mtime_epoch}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r "${mtime_epoch}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null)
+            {
+                echo ""
+                echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
+            } >> "${eval_dst}"
+
+            echo "[EVAL-${src_label}] ${subdir_name}__${ts_name} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
+            eval_count=$((eval_count + 1))
+        done < <(find "${src_path}" -type f -name 'eval_log.log')
     done
 
     if [ ${eval_count} -gt 0 ]; then
         echo ""
-        echo "完成: 共收集 ${eval_count} 个精度测试文件到 ${EVAL_TARGET_DIR}"
+        echo "完成: 共收集 ${eval_count} 个精度测试文件（按实际修改时间归类）"
     fi
     TOTAL_EVAL_COUNT=$((TOTAL_EVAL_COUNT + eval_count))
 done
