@@ -152,6 +152,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     echo "========== 处理日期: ${CURRENT_DATE} =========="
 
     SRC_FULL_PATH="${SRC_BASE}/${CURRENT_DATE}"
+    # TARGET_DIR 保留给精度测试(eval)使用，按源目录日期存放
     TARGET_DIR="${SCRIPT_DIR}/${CURRENT_DATE}"
     mkdir -p "${TARGET_DIR}"
 
@@ -176,27 +177,49 @@ for CURRENT_DATE in "${DATES[@]}"; do
     fi
 
     echo "源目录: ${SRC_FULL_PATH}"
-    echo "目标目录: ${TARGET_DIR}"
+    echo "精度测试目标目录: ${TARGET_DIR}"
     echo ""
 
     count=0
-    for subdir in "${SRC_FULL_PATH}"/*/; do
-        [ -d "${subdir}" ] || continue
+    # 使用 find 递归查找，根据文件实际修改时间归类到对应日期目录
+    while IFS= read -r src_file; do
+        [ -f "${src_file}" ] || continue
 
+        subdir=$(dirname "${src_file}")
         subdir_name=$(basename "${subdir}")
-        src_file="${subdir}bench_serving_metrics.txt"
 
-        if [ -f "${src_file}" ]; then
-            cp "${src_file}" "${TARGET_DIR}/${subdir_name}.txt"
-            echo "[OK] ${subdir_name}"
-            count=$((count + 1))
-        else
-            echo "[SKIP] ${subdir_name} (无 bench_serving_metrics.txt)"
+        # 获取文件实际修改时间（秒级时间戳），兼容 Linux/macOS
+        mtime_epoch=$(stat -c '%Y' "${src_file}" 2>/dev/null || stat -f '%m' "${src_file}" 2>/dev/null)
+        if [ -z "${mtime_epoch}" ]; then
+            echo "[WARN] ${subdir_name}: 无法获取文件修改时间，跳过"
+            continue
         fi
-    done
+
+        actual_date=$(date -d "@${mtime_epoch}" +%Y%m%d 2>/dev/null || date -r "${mtime_epoch}" +%Y%m%d 2>/dev/null)
+        if [ -z "${actual_date}" ]; then
+            echo "[WARN] ${subdir_name}: 无法转换修改时间，跳过"
+            continue
+        fi
+
+        PERF_TARGET_DIR="${SCRIPT_DIR}/${actual_date}"
+        mkdir -p "${PERF_TARGET_DIR}"
+
+        dst_file="${PERF_TARGET_DIR}/${subdir_name}.txt"
+        cp "${src_file}" "${dst_file}"
+
+        # 在文件末尾追加原始修改时间描述
+        mtime_human=$(date -d "@${mtime_epoch}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r "${mtime_epoch}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null)
+        {
+            echo ""
+            echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
+        } >> "${dst_file}"
+
+        echo "[OK] ${subdir_name} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
+        count=$((count + 1))
+    done < <(find "${SRC_FULL_PATH}" -type f -name 'bench_serving_metrics.txt')
 
     echo ""
-    echo "完成: 共收集 ${count} 个性能测试文件到 ${TARGET_DIR}"
+    echo "完成: 共收集 ${count} 个性能测试文件（按实际修改时间归类）"
     TOTAL_PERF_COUNT=$((TOTAL_PERF_COUNT + count))
 
     # ============================================================
