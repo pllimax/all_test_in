@@ -13,23 +13,83 @@ from prometheus_exporter import parse_filename, parse_benchmark_file, collect_ev
 
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
 
-# YAML workflow configs for expected test cases
-YAML_CONFIGS = [
-    r"E:\sglang\code\sglang\.github\workflows\full-test-npu.yml",
-    r"E:\sglang\code\sglang\.github\workflows\nightly-test-npu.yml",
-]
+
+def get_config_paths():
+    """
+    Get configuration paths with priority: environment variable > config file > relative path default.
+    Supports cross-platform usage without modifying source code.
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Try loading from config file (dashboard_config.json)
+    config_file = os.path.join(current_dir, "dashboard_config.json")
+    config_data = {}
+    if os.path.isfile(config_file):
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                config_data = json.load(f)
+            print(f"[config] Loaded config from: {config_file}")
+        except Exception as e:
+            print(f"[config] Warning: Failed to load config file {config_file}: {e}")
+
+    # YAML config paths: env var > config file > relative path default
+    yaml_configs = []
+    yaml_env = os.environ.get("YAML_CONFIG_PATHS")
+    if yaml_env:
+        yaml_configs = [p.strip() for p in yaml_env.split(";") if p.strip()]
+        print(f"[config] YAML_CONFIGS from env var YAML_CONFIG_PATHS")
+    elif "yaml_configs" in config_data:
+        yaml_configs = config_data["yaml_configs"]
+        print(f"[config] YAML_CONFIGS from config file")
+    else:
+        # Default: assume sglang repo is at ../sglang relative to this file
+        default_sglang_root = os.path.join(os.path.dirname(current_dir), "sglang")
+        yaml_configs = [
+            os.path.join(default_sglang_root, ".github", "workflows", "full-test-npu.yml"),
+            os.path.join(default_sglang_root, ".github", "workflows", "nightly-test-npu.yml"),
+        ]
+        print(f"[config] YAML_CONFIGS using relative path default (sglang repo sibling)")
+
+    # Test scripts root: env var > config file > relative path default
+    test_scripts_root = os.environ.get("TEST_SCRIPTS_ROOT", "")
+    if test_scripts_root:
+        print(f"[config] TEST_SCRIPTS_ROOT from env var")
+    elif "test_scripts_root" in config_data:
+        test_scripts_root = config_data["test_scripts_root"]
+        print(f"[config] TEST_SCRIPTS_ROOT from config file")
+    else:
+        default_sglang_root = os.path.join(os.path.dirname(current_dir), "sglang")
+        test_scripts_root = os.path.join(default_sglang_root, "test", "registered", "ascend")
+        print(f"[config] TEST_SCRIPTS_ROOT using relative path default (sglang repo sibling)")
+
+    # Validate paths and show friendly hints
+    if not test_scripts_root or not os.path.isdir(test_scripts_root):
+        print(f"[config] Warning: TEST_SCRIPTS_ROOT not found: {test_scripts_root}")
+        print(f"[config]   Set TEST_SCRIPTS_ROOT env var or add 'test_scripts_root' to dashboard_config.json")
+
+    valid_yaml_configs = []
+    for yaml_path in yaml_configs:
+        if os.path.isfile(yaml_path):
+            valid_yaml_configs.append(yaml_path)
+        else:
+            print(f"[config] Warning: YAML config not found: {yaml_path}")
+            print(f"[config]   Set YAML_CONFIG_PATHS env var or add 'yaml_configs' to dashboard_config.json")
+
+    return {
+        "yaml_configs": valid_yaml_configs,
+        "test_scripts_root": test_scripts_root,
+    }
+
+
+_config = get_config_paths()
+YAML_CONFIGS = _config["yaml_configs"]
+TEST_SCRIPTS_ROOT = _config["test_scripts_root"]
 
 # Test cases to exclude from the dashboard
 EXCLUDED_TEST_CASES = {
     "glm4_6v_flash_1p_mmmu",
     "test_npu_cp_vs_nocp_ttft",
 }
-
-# Test scripts root directory for baseline parsing
-TEST_SCRIPTS_ROOT = os.environ.get(
-    "TEST_SCRIPTS_ROOT",
-    r"E:\sglang\code\sglang\test\registered\ascend",
-)
 
 # Mapping from test script attribute names to metric names
 ATTR_TO_METRIC = {
@@ -903,11 +963,15 @@ def collect_expected_test_cases():
     Only extracts names from matrix.test_config entries (structure-aware parsing).
     Returns a dict: {test_case_id: {"labels": labels, "source": "nightly"|"fulltest"}}
     """
+    if not YAML_CONFIGS:
+        print("[yaml] No YAML configs available (skip collecting expected test cases)")
+        return {}
+
     expected = {}
-    yaml_source_map = {
-        YAML_CONFIGS[0]: "fulltest",  # full-test-npu.yml
-        YAML_CONFIGS[1]: "nightly",   # nightly-test-npu.yml
-    }
+    yaml_source_map = {}
+    for i, yaml_path in enumerate(YAML_CONFIGS):
+        source = "fulltest" if i == 0 else "nightly"
+        yaml_source_map[yaml_path] = source
 
     for yaml_path in YAML_CONFIGS:
         if not os.path.isfile(yaml_path):

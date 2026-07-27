@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # 用法:
-#   自动收集: ./collect_metrics.sh                    (收集今天及前3天数据)
+#   自动收集: ./collect_metrics.sh                              (收集今天及前3天数据)
 #   指定日期: ./collect_metrics.sh 20260716
+#   多个日期: ./collect_metrics.sh 20260716 20260717 20260718   (按先后顺序轮流执行)
 #   自定义配置: SRC_BASE=/custom/path GIT_REPO=git@github.com:user/repo.git ./collect_metrics.sh 20260716
 #   使用配置文件: ./collect_metrics.sh 20260716 --config /path/to/config.conf
 #   命令行覆盖: ./collect_metrics.sh --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716
@@ -21,7 +22,7 @@ GIT_LOCAL_DIR="${GIT_LOCAL_DIR:-}"
 # ============================================================
 # 参数解析
 # ============================================================
-DATE=""
+SPECIFIED_DATES=()
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -42,10 +43,11 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --help|-h)
-            echo "用法: $0 [选项] [日期]"
+            echo "用法: $0 [选项] [日期...]"
             echo ""
             echo "参数:"
-            echo "  日期                  收集数据的日期，格式如 20260716"
+            echo "  日期...               收集数据的日期，格式如 20260716"
+            echo "                        可指定多个日期，按先后顺序轮流执行"
             echo "                        不指定时自动收集今天及前3天数据"
             echo ""
             echo "选项:"
@@ -63,7 +65,8 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "示例:"
             echo "  $0                        # 自动收集今天及前3天"
-            echo "  $0 20260716"
+            echo "  $0 20260716               # 单个日期"
+            echo "  $0 20260716 20260717 20260718   # 多个日期轮流执行"
             echo "  SRC_BASE=/custom/path $0 20260716"
             echo "  $0 --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716"
             echo "  $0 --config my_config.conf 20260716"
@@ -75,12 +78,7 @@ while [[ $# -gt 0 ]]; do
             exit 1
             ;;
         *)
-            if [ -z "$DATE" ]; then
-                DATE="$1"
-            else
-                echo "错误: 未知参数 $1"
-                exit 1
-            fi
+            SPECIFIED_DATES+=("$1")
             shift
             ;;
     esac
@@ -99,7 +97,7 @@ fi
 
 # 自动模式：未指定日期时，收集今天及前3天数据
 AUTO_MODE=false
-if [ -z "$DATE" ]; then
+if [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
     AUTO_MODE=true
     TODAY=$(date +%Y%m%d)
     DATES=()
@@ -113,7 +111,7 @@ if [ -z "$DATE" ]; then
     IFS=$'\n' DATES=($(sort <<<"${DATES[*]}")); unset IFS
     echo "自动模式: 收集 ${DATES[0]} ~ ${DATES[-1]} 共 ${#DATES[@]} 天数据"
 else
-    DATES=("$DATE")
+    DATES=("${SPECIFIED_DATES[@]}")
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -137,7 +135,7 @@ echo "Git目标路径:    ${GIT_TARGET_PATH}"
 if [ "$AUTO_MODE" = true ]; then
     echo "日期范围:       ${DATES[0]} ~ ${DATES[-1]} (共 ${#DATES[@]} 天)"
 else
-    echo "日期:           ${DATE}"
+    echo "日期列表:       ${DATES[*]} (共 ${#DATES[@]} 个)"
 fi
 echo "=============================="
 echo ""
@@ -154,23 +152,8 @@ for CURRENT_DATE in "${DATES[@]}"; do
     SRC_FULL_PATH="${SRC_BASE}/${CURRENT_DATE}"
 
     if [ ! -d "${SRC_FULL_PATH}" ]; then
-        if [ "$AUTO_MODE" = true ]; then
-            echo "跳过: 源目录不存在 - ${SRC_FULL_PATH}"
-            continue
-        else
-            echo "错误: 源目录不存在: ${SRC_FULL_PATH}"
-            echo ""
-            echo "可能的原因:"
-            echo "  1. 日期参数错误"
-            echo "  2. SRC_BASE 配置不正确（当前值: ${SRC_BASE}）"
-            echo "  3. 数据尚未生成"
-            echo ""
-            echo "解决方法:"
-            echo "  - 检查日期参数是否正确"
-            echo "  - 通过环境变量设置正确的路径: SRC_BASE=/correct/path $0 ${CURRENT_DATE}"
-            echo "  - 或通过命令行参数: $0 --src-base /correct/path ${CURRENT_DATE}"
-            exit 1
-        fi
+        echo "跳过: 源目录不存在 - ${SRC_FULL_PATH}"
+        continue
     fi
 
     echo "源目录: ${SRC_FULL_PATH}"
@@ -348,11 +331,7 @@ git add "${GIT_TARGET_PATH}/"
 if git diff --cached --quiet; then
     echo "无变更，跳过提交。"
 else
-    if [ "$AUTO_MODE" = true ]; then
-        git commit -m "update metrics data - ${DATES[0]}~${DATES[-1]}"
-    else
-        git commit -m "update metrics data - ${DATE}"
-    fi
+    git commit -m "update metrics data - ${DATES[0]}~${DATES[-1]}"
     git push origin HEAD
     echo "上传成功!"
 fi
