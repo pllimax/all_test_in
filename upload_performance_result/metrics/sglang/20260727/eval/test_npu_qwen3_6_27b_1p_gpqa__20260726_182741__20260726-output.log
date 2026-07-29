@@ -1,0 +1,202 @@
+2026-07-26 18:27:41 - evalscope - INFO: Running with native backend
+2026-07-26 18:27:41 - evalscope - INFO: Dump task config to /root/.cache/tests/output//20260726/test_npu_qwen3_6_27b_1p_gpqa/20260726_182741/configs/task_config.yaml
+2026-07-26 18:27:41 - evalscope - INFO: {
+    "model": "Qwen3.6-27B",
+    "model_id": "Qwen3.6-27B",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gpqa_diamond"
+    ],
+    "dataset_args": {
+        "gpqa_diamond": {
+            "name": "gpqa_diamond",
+            "dataset_id": "AI-ModelScope/gpqa_diamond",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "default"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "train",
+            "prompt_template": "Answer the following multiple choice question. The last line of your response should be of the following format: 'ANSWER: [LETTER]' (without quotes) where [LETTER] is one of {letters}. Think step by step before answering.\n\n{question}\n\n{choices}",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "GPQA-Diamond",
+            "description": "\n## Overview\n\nGPQA (Graduate-Level Google-Proof Q&A) Diamond is a challenging benchmark of 198 multiple-choice questions written by domain experts in biology, physics, and chemistry. The questions are designed to be extremely difficult, requiring PhD-level expertise to answer correctly.\n\n## Task Description\n\n- **Task Type**: Expert-Level Multiple-Choice Q&A\n- **Input**: Graduate-level science question with 4 choices\n- **Output**: Single correct answer letter (A, B, C, or D)\n- **Domains**: Biology, Physics, Chemistry\n\n## Key Features\n\n- 198 questions written and validated by domain PhD experts\n- Questions are \"Google-proof\" - cannot be easily looked up\n- Designed to test deep domain knowledge and reasoning\n- Diamond subset represents the highest quality questions\n- Average human expert accuracy ~65%, non-expert ~34%\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** or **5-shot** evaluation\n- Supports Chain-of-Thought (CoT) prompting for improved reasoning\n- Answer choices are randomly shuffled during evaluation\n- Only uses train split (validation set is private)\n- Challenging benchmark for measuring expert-level reasoning\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Knowledge",
+                "MCQ"
+            ],
+            "filters": null,
+            "metric_list": [
+                "acc"
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 81920,
+        "temperature": 1.0,
+        "extra_body": {
+            "chat_template_kwargs": {
+                "enable_thinking": true
+            }
+        }
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output//20260726/test_npu_qwen3_6_27b_1p_gpqa/20260726_182741",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20066/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-07-26 18:27:41 - evalscope - INFO: Start loading benchmark dataset: gpqa_diamond
+2026-07-26 18:27:42 - evalscope - INFO: Start evaluating 1 subsets of gpqa_diamond: ['default']
+2026-07-26 18:27:42 - evalscope - INFO: Unified pool: 198 items to process, 0 already fully cached (198 total across all subsets).
+2026-07-26 18:27:42 - evalscope - INFO: Loading model for prediction...
+2026-07-26 18:27:42 - evalscope - INFO: Creating model Qwen3.6-27B with eval_type=openai_api base_url=http://127.0.0.1:20066/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 81920, 'temperature': 1.0, 'extra_body': {'chat_template_kwargs': {'enable_thinking': True}}}, model_args={}
+2026-07-26 18:27:42 - evalscope - INFO: Model loaded successfully.
+2026-07-26 18:28:42 - evalscope - INFO: Evaluating[gpqa_diamond]   1%| 2/198 [Elapsed: 01:00 < Remaining: 1:17:15, 23.65s/it]
+2026-07-26 18:29:42 - evalscope - INFO: Evaluating[gpqa_diamond]   9%| 17/198 [Elapsed: 02:00 < Remaining: 11:12,  3.72s/it]
+2026-07-26 18:30:43 - evalscope - INFO: Evaluating[gpqa_diamond]  10%| 19/198 [Elapsed: 03:00 < Remaining: 29:41,  9.95s/it]
+2026-07-26 18:31:43 - evalscope - INFO: Evaluating[gpqa_diamond]  11%| 22/198 [Elapsed: 04:00 < Remaining: 48:20, 16.48s/it]
+2026-07-26 18:32:43 - evalscope - INFO: Evaluating[gpqa_diamond]  16%| 32/198 [Elapsed: 05:01 < Remaining: 19:11,  6.94s/it]
+2026-07-26 18:33:43 - evalscope - INFO: Evaluating[gpqa_diamond]  18%| 35/198 [Elapsed: 06:01 < Remaining: 39:39, 14.60s/it]
+2026-07-26 18:34:43 - evalscope - INFO: Evaluating[gpqa_diamond]  18%| 35/198 [Elapsed: 07:01 < Remaining: 39:39, 14.60s/it]
+2026-07-26 18:35:43 - evalscope - INFO: Evaluating[gpqa_diamond]  18%| 36/198 [Elapsed: 08:01 < Remaining: 1:45:21, 39.02s/it]
+2026-07-26 18:36:43 - evalscope - INFO: Evaluating[gpqa_diamond]  19%| 37/198 [Elapsed: 09:01 < Remaining: 2:00:00, 44.73s/it]
+2026-07-26 18:37:43 - evalscope - INFO: Evaluating[gpqa_diamond]  19%| 38/198 [Elapsed: 10:01 < Remaining: 2:16:19, 51.12s/it]
+2026-07-26 18:38:44 - evalscope - INFO: Evaluating[gpqa_diamond]  22%| 44/198 [Elapsed: 11:01 < Remaining: 39:44, 15.48s/it]
+2026-07-26 18:39:44 - evalscope - INFO: Evaluating[gpqa_diamond]  25%| 50/198 [Elapsed: 12:01 < Remaining: 18:43,  7.59s/it]
+2026-07-26 18:40:44 - evalscope - INFO: Evaluating[gpqa_diamond]  27%| 54/198 [Elapsed: 13:02 < Remaining: 21:08,  8.81s/it]
+2026-07-26 18:41:45 - evalscope - INFO: Evaluating[gpqa_diamond]  29%| 58/198 [Elapsed: 14:02 < Remaining: 43:47, 18.77s/it]
+2026-07-26 18:42:45 - evalscope - INFO: Evaluating[gpqa_diamond]  33%| 66/198 [Elapsed: 15:03 < Remaining: 17:35,  8.00s/it]
+2026-07-26 18:43:45 - evalscope - INFO: Evaluating[gpqa_diamond]  36%| 72/198 [Elapsed: 16:03 < Remaining: 22:16, 10.61s/it]
+2026-07-26 18:44:45 - evalscope - INFO: Evaluating[gpqa_diamond]  38%| 76/198 [Elapsed: 17:03 < Remaining: 21:21, 10.51s/it]
+2026-07-26 18:45:45 - evalscope - INFO: Evaluating[gpqa_diamond]  41%| 81/198 [Elapsed: 18:03 < Remaining: 20:59, 10.77s/it]
+2026-07-26 18:46:46 - evalscope - INFO: Evaluating[gpqa_diamond]  44%| 88/198 [Elapsed: 19:03 < Remaining: 17:26,  9.51s/it]
+2026-07-26 18:47:46 - evalscope - INFO: Evaluating[gpqa_diamond]  45%| 90/198 [Elapsed: 20:03 < Remaining: 29:21, 16.31s/it]
+2026-07-26 18:48:46 - evalscope - INFO: Evaluating[gpqa_diamond]  46%| 92/198 [Elapsed: 21:03 < Remaining: 43:27, 24.60s/it]
+2026-07-26 18:49:46 - evalscope - INFO: Evaluating[gpqa_diamond]  46%| 92/198 [Elapsed: 22:03 < Remaining: 43:27, 24.60s/it]
+2026-07-26 18:50:46 - evalscope - INFO: Evaluating[gpqa_diamond]  46%| 92/198 [Elapsed: 23:03 < Remaining: 43:27, 24.60s/it]
+2026-07-26 18:51:46 - evalscope - INFO: Evaluating[gpqa_diamond]  47%| 93/198 [Elapsed: 24:03 < Remaining: 1:54:11, 65.25s/it]
+2026-07-26 18:52:46 - evalscope - INFO: Evaluating[gpqa_diamond]  47%| 94/198 [Elapsed: 25:03 < Remaining: 1:38:57, 57.09s/it]
+2026-07-26 18:53:46 - evalscope - INFO: Evaluating[gpqa_diamond]  48%| 95/198 [Elapsed: 26:04 < Remaining: 1:53:26, 66.09s/it]
+2026-07-26 18:54:46 - evalscope - INFO: Evaluating[gpqa_diamond]  51%| 101/198 [Elapsed: 27:04 < Remaining: 22:45, 14.07s/it]
+2026-07-26 18:55:47 - evalscope - INFO: Evaluating[gpqa_diamond]  55%| 108/198 [Elapsed: 28:04 < Remaining: 13:50,  9.23s/it]
+2026-07-26 18:56:47 - evalscope - INFO: Evaluating[gpqa_diamond]  56%| 110/198 [Elapsed: 29:04 < Remaining: 24:55, 17.00s/it]
+2026-07-26 18:57:47 - evalscope - INFO: Evaluating[gpqa_diamond]  57%| 112/198 [Elapsed: 30:04 < Remaining: 27:07, 18.93s/it]
+2026-07-26 18:58:47 - evalscope - INFO: Evaluating[gpqa_diamond]  57%| 113/198 [Elapsed: 31:04 < Remaining: 34:39, 24.47s/it]
+2026-07-26 18:59:47 - evalscope - INFO: Evaluating[gpqa_diamond]  57%| 113/198 [Elapsed: 32:05 < Remaining: 34:39, 24.47s/it]
+2026-07-26 19:00:47 - evalscope - INFO: Evaluating[gpqa_diamond]  58%| 114/198 [Elapsed: 33:05 < Remaining: 1:28:12, 63.00s/it]
+2026-07-26 19:01:47 - evalscope - INFO: Evaluating[gpqa_diamond]  58%| 115/198 [Elapsed: 34:05 < Remaining: 1:31:42, 66.29s/it]
+2026-07-26 19:02:48 - evalscope - INFO: Evaluating[gpqa_diamond]  61%| 121/198 [Elapsed: 35:05 < Remaining: 18:23, 14.33s/it]
+2026-07-26 19:03:48 - evalscope - INFO: Evaluating[gpqa_diamond]  64%| 126/198 [Elapsed: 36:05 < Remaining: 18:26, 15.36s/it]
+2026-07-26 19:04:48 - evalscope - INFO: Evaluating[gpqa_diamond]  66%| 131/198 [Elapsed: 37:06 < Remaining: 17:12, 15.40s/it]
+2026-07-26 19:05:48 - evalscope - INFO: Evaluating[gpqa_diamond]  67%| 132/198 [Elapsed: 38:06 < Remaining: 31:19, 28.48s/it]
+2026-07-26 19:06:48 - evalscope - INFO: Evaluating[gpqa_diamond]  67%| 133/198 [Elapsed: 39:06 < Remaining: 40:26, 37.34s/it]
+2026-07-26 19:07:48 - evalscope - INFO: Evaluating[gpqa_diamond]  70%| 138/198 [Elapsed: 40:06 < Remaining: 13:13, 13.22s/it]
+2026-07-26 19:08:48 - evalscope - INFO: Evaluating[gpqa_diamond]  74%| 146/198 [Elapsed: 41:06 < Remaining: 05:50,  6.73s/it]
+2026-07-26 19:09:48 - evalscope - INFO: Evaluating[gpqa_diamond]  75%| 149/198 [Elapsed: 42:06 < Remaining: 07:35,  9.31s/it]
+2026-07-26 19:10:48 - evalscope - INFO: Evaluating[gpqa_diamond]  76%| 151/198 [Elapsed: 43:06 < Remaining: 13:27, 17.17s/it]
+2026-07-26 19:11:49 - evalscope - INFO: Evaluating[gpqa_diamond]  77%| 152/198 [Elapsed: 44:06 < Remaining: 25:19, 33.03s/it]
+2026-07-26 19:12:49 - evalscope - INFO: Evaluating[gpqa_diamond]  78%| 155/198 [Elapsed: 45:06 < Remaining: 18:42, 26.11s/it]
+2026-07-26 19:13:49 - evalscope - INFO: Evaluating[gpqa_diamond]  85%| 168/198 [Elapsed: 46:07 < Remaining: 02:18,  4.62s/it]
+2026-07-26 19:14:49 - evalscope - INFO: Evaluating[gpqa_diamond]  86%| 171/198 [Elapsed: 47:07 < Remaining: 04:03,  9.02s/it]
+2026-07-26 19:15:49 - evalscope - INFO: Evaluating[gpqa_diamond]  90%| 178/198 [Elapsed: 48:07 < Remaining: 02:12,  6.63s/it]
+2026-07-26 19:16:49 - evalscope - INFO: Evaluating[gpqa_diamond]  94%| 186/198 [Elapsed: 49:07 < Remaining: 01:23,  6.96s/it]
+2026-07-26 19:17:49 - evalscope - INFO: Evaluating[gpqa_diamond]  95%| 189/198 [Elapsed: 50:07 < Remaining: 01:49, 12.12s/it]
+2026-07-26 19:18:49 - evalscope - INFO: Evaluating[gpqa_diamond]  95%| 189/198 [Elapsed: 51:07 < Remaining: 01:49, 12.12s/it]
+2026-07-26 19:19:49 - evalscope - INFO: Evaluating[gpqa_diamond]  96%| 191/198 [Elapsed: 52:07 < Remaining: 03:54, 33.55s/it]
+2026-07-26 19:20:34 - evalscope - INFO: Evaluating[gpqa_diamond] 100%| 198/198 [Elapsed: 52:51 < Remaining: 00:00, 11.82s/it]
+2026-07-26 19:20:34 - evalscope - INFO: Unified pool finished for gpqa_diamond.
+2026-07-26 19:20:34 - evalscope - INFO: Aggregating scores for subset: default
+2026-07-26 19:20:34 - evalscope - INFO: Generating report...
+2026-07-26 19:20:34 - evalscope - INFO: 
+gpqa_diamond report table:
+┌─────────────┬──────────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model       │ Dataset      │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├─────────────┼──────────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Qwen3.6-27B │ gpqa_diamond │ mean_acc │ default  │   198 │  0.8384 │ default │
+└─────────────┴──────────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-26 19:20:34 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-07-26 19:20:34 - evalscope - INFO: Dump report to: /root/.cache/tests/output//20260726/test_npu_qwen3_6_27b_1p_gpqa/20260726_182741/reports/Qwen3.6-27B/gpqa_diamond.json 
+
+2026-07-26 19:20:34 - evalscope - INFO: 
+gpqa_diamond perf table:
+Model        Dataset         Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                        (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+-----------  ------------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Qwen3.6-27B  gpqa_diamond    198    893.156      750105       20.53        8.11   274.687    7242.94
+
+2026-07-26 19:20:34 - evalscope - INFO: Benchmark gpqa_diamond evaluation finished.
+2026-07-26 19:20:34 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 52:52 < Remaining: 00:00, 3172.38s/benchmark]
+2026-07-26 19:20:34 - evalscope - INFO: Overall report table: 
+┌─────────────┬──────────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model       │ Dataset      │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├─────────────┼──────────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Qwen3.6-27B │ gpqa_diamond │ mean_acc │ default  │   198 │  0.8384 │ default │
+└─────────────┴──────────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-26 19:20:34 - evalscope - INFO: Overall perf table: 
+Model        Dataset         Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                        (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+-----------  ------------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Qwen3.6-27B  gpqa_diamond    198    893.156      750105       20.53        8.11   274.687    7242.94 
+
+2026-07-26 19:20:34 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/20260726/test_npu_qwen3_6_27b_1p_gpqa/20260726_182741/reports/report.html
+2026-07-26 19:20:34 - evalscope - INFO: Finished evaluation for Qwen3.6-27B on ['gpqa_diamond']
+2026-07-26 19:20:34 - evalscope - INFO: Output directory: /root/.cache/tests/output//20260726/test_npu_qwen3_6_27b_1p_gpqa/20260726_182741
+
+# [collect_metrics] 文件原始修改时间: 2026-07-27 03:20:34
