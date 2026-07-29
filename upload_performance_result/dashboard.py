@@ -9,6 +9,8 @@ import re
 import json
 import http.server
 import socketserver
+import subprocess
+import sys
 from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, METRICS_DIR, GIT_PULL_ENABLED, get_metrics_dir
 
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
@@ -18,11 +20,22 @@ def get_config_paths():
     """
     Get configuration paths with priority: environment variable > config file > relative path default.
     Supports cross-platform usage without modifying source code.
+
+    Config structure (dashboard_config.json):
+    {
+        "sources": {
+            "fulltest": {
+                "repo_url": "https://...",
+                "repo_root": "/path/to/repo",
+                "yaml_config": "relative/path/to/workflow.yml"
+            },
+            "nightly": { ... }
+        }
+    }
     """
     current_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Try loading from config file (dashboard_config.json)
     config_file = os.path.join(current_dir, "dashboard_config.json")
+
     config_data = {}
     if os.path.isfile(config_file):
         try:
@@ -32,78 +45,101 @@ def get_config_paths():
         except Exception as e:
             print(f"[config] Warning: Failed to load config file {config_file}: {e}")
 
-    # YAML config paths: env var > config file > relative path default
+    # Parse new "sources" structure
+    sources = {}
+    if "sources" in config_data:
+        for source_name, source_cfg in config_data["sources"].items():
+            repo_root = source_cfg.get("repo_root", "")
+            yaml_rel = source_cfg.get("yaml_config", "")
+            repo_url = source_cfg.get("repo_url", "")
+            env_prefix = source_name.upper()
+
+            # env var overrides
+            repo_root = os.environ.get(f"{env_prefix}_REPO_ROOT", repo_root)
+            yaml_rel = os.environ.get(f"{env_prefix}_YAML_CONFIG", yaml_rel)
+            repo_url = os.environ.get(f"{env_prefix}_REPO_URL", repo_url)
+
+            if repo_root and yaml_rel:
+                yaml_abs = os.path.join(repo_root, yaml_rel)
+                sources[source_name] = {
+                    "repo_root": repo_root,
+                    "yaml_config": yaml_abs,
+                    "repo_url": repo_url,
+                }
+                print(f"[config] {source_name}: repo={repo_root}, yaml={yaml_abs}")
+            else:
+                print(f"[config] Warning: source '{source_name}' missing repo_root or yaml_config")
+
+    # Legacy fallback: flat structure with yaml_configs + test_scripts_roots
+    if not sources:
+        print("[config] Using legacy flat config structure")
+        yaml_configs = []
+        yaml_env = os.environ.get("YAML_CONFIG_PATHS")
+        if yaml_env:
+            yaml_configs = [p.strip() for p in yaml_env.split(";") if p.strip()]
+        elif "yaml_configs" in config_data:
+            yaml_configs = config_data["yaml_configs"]
+        else:
+            default_sglang_root = os.path.join(os.path.dirname(current_dir), "sglang")
+            yaml_configs = [
+                os.path.join(default_sglang_root, ".github", "workflows", "full-test-npu.yml"),
+                os.path.join(default_sglang_root, ".github", "workflows", "nightly-test-npu.yml"),
+            ]
+
+        test_scripts_roots = []
+        fulltest_root = os.environ.get("FULLTEST_TEST_SCRIPTS_ROOT", "")
+        nightly_root = os.environ.get("NIGHTLY_TEST_SCRIPTS_ROOT", "")
+        if not fulltest_root and "fulltest_test_scripts_root" in config_data:
+            fulltest_root = config_data["fulltest_test_scripts_root"]
+        if not nightly_root and "nightly_test_scripts_root" in config_data:
+            nightly_root = config_data["nightly_test_scripts_root"]
+        if fulltest_root:
+            test_scripts_roots.append(fulltest_root)
+        if nightly_root:
+            test_scripts_roots.append(nightly_root)
+
+        # Map legacy: index 0=fulltest, index 1=nightly
+        for i, yp in enumerate(yaml_configs):
+            src_name = "fulltest" if i == 0 else "nightly"
+            root = test_scripts_roots[i] if i < len(test_scripts_roots) else ""
+            sources[src_name] = {
+                "repo_root": root,
+                "yaml_config": yp,
+                "repo_url": "",
+            }
+
+    # Validate and build derived structures
+    valid_sources = {}
+    for src_name, src_cfg in sources.items():
+        repo_root = src_cfg["repo_root"]
+        yaml_config = src_cfg["yaml_config"]
+        if os.path.isfile(yaml_config):
+            valid_sources[src_name] = src_cfg.copy()
+        else:
+            print(f"[config] Warning: yaml not found for '{src_name}': {yaml_config}")
+            # still keep it for repo sync, but mark yaml as missing
+            valid_sources[src_name] = src_cfg.copy()
+            valid_sources[src_name]["yaml_valid"] = False
+            if src_name == "nightly":
+                valid_sources[src_name]["yaml_valid"] = True  # still try
+
+    test_scripts_roots = []
     yaml_configs = []
-    yaml_env = os.environ.get("YAML_CONFIG_PATHS")
-    if yaml_env:
-        yaml_configs = [p.strip() for p in yaml_env.split(";") if p.strip()]
-        print(f"[config] YAML_CONFIGS from env var YAML_CONFIG_PATHS")
-    elif "yaml_configs" in config_data:
-        yaml_configs = config_data["yaml_configs"]
-        print(f"[config] YAML_CONFIGS from config file")
-    else:
-        # Default: assume sglang repo is at ../sglang relative to this file
-        default_sglang_root = os.path.join(os.path.dirname(current_dir), "sglang")
-        yaml_configs = [
-            os.path.join(default_sglang_root, ".github", "workflows", "full-test-npu.yml"),
-            os.path.join(default_sglang_root, ".github", "workflows", "nightly-test-npu.yml"),
-        ]
-        print(f"[config] YAML_CONFIGS using relative path default (sglang repo sibling)")
-
-    # Test scripts roots: split fulltest/nightly from separate repos
-    # env var > config file > relative path default
-    fulltest_root = os.environ.get("FULLTEST_TEST_SCRIPTS_ROOT", "")
-    nightly_root = os.environ.get("NIGHTLY_TEST_SCRIPTS_ROOT", "")
-    test_scripts_root = os.environ.get("TEST_SCRIPTS_ROOT", "")
-
-    if not fulltest_root and "fulltest_test_scripts_root" in config_data:
-        fulltest_root = config_data["fulltest_test_scripts_root"]
-    if not nightly_root and "nightly_test_scripts_root" in config_data:
-        nightly_root = config_data["nightly_test_scripts_root"]
-
-    # Fallback: if split roots not configured, use legacy single test_scripts_root
-    if not test_scripts_root and not fulltest_root and "test_scripts_root" in config_data:
-        test_scripts_root = config_data["test_scripts_root"]
-
-    if fulltest_root and nightly_root:
-        test_scripts_roots = [fulltest_root, nightly_root]
-        print(f"[config] TEST_SCRIPTS_ROOTS (split): fulltest={fulltest_root}, nightly={nightly_root}")
-        print(f"[config]   fulltest from env var" if os.environ.get("FULLTEST_TEST_SCRIPTS_ROOT") else f"[config]   fulltest from config file")
-        print(f"[config]   nightly from env var" if os.environ.get("NIGHTLY_TEST_SCRIPTS_ROOT") else f"[config]   nightly from config file")
-    elif test_scripts_root:
-        test_scripts_roots = [test_scripts_root]
-        print(f"[config] TEST_SCRIPTS_ROOT (legacy) from env var")
-        print(f"[config] TEST_SCRIPTS_ROOT (legacy) from config file" if not os.environ.get("TEST_SCRIPTS_ROOT") else "")
-    else:
-        default_sglang_root = os.path.join(os.path.dirname(current_dir), "sglang")
-        test_scripts_root = os.path.join(default_sglang_root, "test", "registered", "ascend")
-        test_scripts_roots = [test_scripts_root]
-        print(f"[config] TEST_SCRIPTS_ROOT using relative path default (sglang repo sibling)")
-
-    # Validate paths and show friendly hints
-    valid_roots = []
-    for r in test_scripts_roots:
-        if r and os.path.isdir(r):
-            valid_roots.append(r)
-        else:
-            print(f"[config] Warning: test scripts root not found: {r}")
-            print(f"[config]   Set FULLTEST_TEST_SCRIPTS_ROOT / NIGHTLY_TEST_SCRIPTS_ROOT env var or add to dashboard_config.json")
-
-    valid_yaml_configs = []
-    for yaml_path in yaml_configs:
-        if os.path.isfile(yaml_path):
-            valid_yaml_configs.append(yaml_path)
-        else:
-            print(f"[config] Warning: YAML config not found: {yaml_path}")
-            print(f"[config]   Set YAML_CONFIG_PATHS env var or add 'yaml_configs' to dashboard_config.json")
+    for src_name, src_cfg in valid_sources.items():
+        if src_cfg["repo_root"] and os.path.isdir(src_cfg["repo_root"]):
+            if src_cfg["repo_root"] not in test_scripts_roots:
+                test_scripts_roots.append(src_cfg["repo_root"])
+        yaml_configs.append(src_cfg["yaml_config"])
 
     return {
-        "yaml_configs": valid_yaml_configs,
-        "test_scripts_roots": valid_roots,
+        "sources": valid_sources,
+        "yaml_configs": yaml_configs,
+        "test_scripts_roots": test_scripts_roots,
     }
 
 
 _config = get_config_paths()
+SOURCES = _config["sources"]
 YAML_CONFIGS = _config["yaml_configs"]
 TEST_SCRIPTS_ROOTS = _config["test_scripts_roots"]
 
@@ -998,7 +1034,7 @@ def filename_to_yaml_name(filename):
 def collect_expected_test_cases():
     """Parse YAML workflow configs and collect all expected test case IDs.
     Only extracts names from matrix.test_config entries (structure-aware parsing).
-    Returns a dict: {test_case_id: {"labels": labels, "source": "nightly"|"fulltest"}}
+    Returns a dict: {test_case_id: {"labels": labels, "source": "fulltest"|"nightly"|...}}
     """
     if not YAML_CONFIGS:
         print("[yaml] No YAML configs available (skip collecting expected test cases)")
@@ -1006,9 +1042,8 @@ def collect_expected_test_cases():
 
     expected = {}
     yaml_source_map = {}
-    for i, yaml_path in enumerate(YAML_CONFIGS):
-        source = "fulltest" if i == 0 else "nightly"
-        yaml_source_map[yaml_path] = source
+    for src_name, src_cfg in SOURCES.items():
+        yaml_source_map[src_cfg["yaml_config"]] = src_name
 
     for yaml_path in YAML_CONFIGS:
         if not os.path.isfile(yaml_path):
@@ -1289,7 +1324,65 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
+def sync_repos():
+    """Force-sync (git pull) all configured source repos on startup."""
+    for src_name, src_cfg in SOURCES.items():
+        repo_root = src_cfg.get("repo_root", "")
+        repo_url = src_cfg.get("repo_url", "")
+        if not repo_root:
+            print(f"[sync] {src_name}: no repo_root configured, skipping")
+            continue
+
+        if not os.path.isdir(repo_root):
+            # Repo doesn't exist locally - try to clone
+            if repo_url:
+                parent_dir = os.path.dirname(repo_root)
+                os.makedirs(parent_dir, exist_ok=True)
+                print(f"[sync] {src_name}: cloning {repo_url} -> {repo_root}")
+                try:
+                    subprocess.run(
+                        ["git", "clone", repo_url, repo_root],
+                        capture_output=True, text=True, timeout=120,
+                        cwd=parent_dir,
+                    )
+                    print(f"[sync] {src_name}: clone OK")
+                except Exception as e:
+                    print(f"[sync] {src_name}: clone failed: {e}")
+            else:
+                print(f"[sync] {src_name}: repo not found at {repo_root} and no repo_url to clone")
+            continue
+
+        # Repo exists - force pull latest
+        print(f"[sync] {src_name}: pulling latest from {repo_root}")
+        try:
+            # Reset any local changes and pull
+            subprocess.run(
+                ["git", "reset", "--hard", "HEAD"],
+                capture_output=True, text=True, timeout=30,
+                cwd=repo_root,
+            )
+            result = subprocess.run(
+                ["git", "pull", "--ff-only"],
+                capture_output=True, text=True, timeout=60,
+                cwd=repo_root,
+            )
+            if result.returncode == 0:
+                print(f"[sync] {src_name}: pull OK")
+                if "Already up to date" not in (result.stdout + result.stderr):
+                    print(f"[sync] {src_name}: updated to latest")
+            else:
+                print(f"[sync] {src_name}: pull failed: {result.stderr.strip()}")
+        except subprocess.TimeoutExpired:
+            print(f"[sync] {src_name}: pull timed out")
+        except Exception as e:
+            print(f"[sync] {src_name}: pull error: {e}")
+
+
 def start_dashboard():
+    print("=" * 60)
+    print("[startup] Syncing test case repos...")
+    sync_repos()
+    print("=" * 60)
     server = socketserver.ThreadingTCPServer(("0.0.0.0", DASHBOARD_PORT), DashboardHandler)
     print(f"Dashboard running at http://localhost:{DASHBOARD_PORT}")
     server.serve_forever()
