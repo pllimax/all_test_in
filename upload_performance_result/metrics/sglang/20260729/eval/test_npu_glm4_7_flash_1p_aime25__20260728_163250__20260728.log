@@ -1,0 +1,195 @@
+2026-07-28 16:32:50 - evalscope - INFO: Running with native backend
+2026-07-28 16:32:50 - evalscope - INFO: Dump task config to /root/.cache/tests/output//20260728/test_npu_glm4_7_flash_1p_aime25/20260728_163250/configs/task_config.yaml
+2026-07-28 16:32:50 - evalscope - INFO: {
+    "model": "GLM-4.7-Flash",
+    "model_id": "GLM-4.7-Flash",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "aime25"
+    ],
+    "dataset_args": {
+        "aime25": {
+            "name": "aime25",
+            "dataset_id": "evalscope/aime25",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "default"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "test",
+            "prompt_template": "\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "AIME-2025",
+            "description": "\n## Overview\n\nAIME 2025 (American Invitational Mathematics Examination 2025) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2025 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536,
+        "temperature": 1.0
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output//20260728/test_npu_glm4_7_flash_1p_aime25/20260728_163250",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20466/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-07-28 16:32:50 - evalscope - INFO: Start loading benchmark dataset: aime25
+2026-07-28 16:32:50 - evalscope - INFO: Start evaluating 1 subsets of aime25: ['default']
+2026-07-28 16:32:51 - evalscope - INFO: Unified pool: 30 items to process, 0 already fully cached (30 total across all subsets).
+2026-07-28 16:32:51 - evalscope - INFO: Loading model for prediction...
+2026-07-28 16:32:51 - evalscope - INFO: Creating model GLM-4.7-Flash with eval_type=openai_api base_url=http://127.0.0.1:20466/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536, 'temperature': 1.0}, model_args={}
+2026-07-28 16:32:51 - evalscope - INFO: Model loaded successfully.
+2026-07-28 16:33:51 - evalscope - INFO: Evaluating[aime25]   3%| 1/30 [Elapsed: 01:00 < Remaining: 28:32, 59.06s/it]
+2026-07-28 16:34:51 - evalscope - INFO: Evaluating[aime25]  10%| 3/30 [Elapsed: 02:00 < Remaining: 15:05, 33.52s/it]
+2026-07-28 16:35:51 - evalscope - INFO: Evaluating[aime25]  17%| 5/30 [Elapsed: 03:00 < Remaining: 12:38, 30.33s/it]
+2026-07-28 16:36:51 - evalscope - INFO: Evaluating[aime25]  27%| 8/30 [Elapsed: 04:00 < Remaining: 08:46, 23.91s/it]
+2026-07-28 16:37:52 - evalscope - INFO: Evaluating[aime25]  30%| 9/30 [Elapsed: 05:01 < Remaining: 08:29, 24.26s/it]
+2026-07-28 16:38:52 - evalscope - INFO: Evaluating[aime25]  33%| 10/30 [Elapsed: 06:01 < Remaining: 10:42, 32.13s/it]
+2026-07-28 16:39:53 - evalscope - INFO: Evaluating[aime25]  33%| 10/30 [Elapsed: 07:02 < Remaining: 10:42, 32.13s/it]
+2026-07-28 16:40:53 - evalscope - INFO: Evaluating[aime25]  33%| 10/30 [Elapsed: 08:02 < Remaining: 10:42, 32.13s/it]
+2026-07-28 16:41:53 - evalscope - INFO: Evaluating[aime25]  33%| 10/30 [Elapsed: 09:02 < Remaining: 10:42, 32.13s/it]
+2026-07-28 16:42:53 - evalscope - INFO: Evaluating[aime25]  37%| 11/30 [Elapsed: 10:02 < Remaining: 34:00, 107.40s/it]
+2026-07-28 16:43:54 - evalscope - INFO: Evaluating[aime25]  37%| 11/30 [Elapsed: 11:03 < Remaining: 34:00, 107.40s/it]
+2026-07-28 16:44:54 - evalscope - INFO: Evaluating[aime25]  37%| 11/30 [Elapsed: 12:03 < Remaining: 34:00, 107.40s/it]
+2026-07-28 16:45:54 - evalscope - INFO: Evaluating[aime25]  37%| 11/30 [Elapsed: 13:03 < Remaining: 34:00, 107.40s/it]
+2026-07-28 16:46:54 - evalscope - INFO: Evaluating[aime25]  40%| 12/30 [Elapsed: 14:03 < Remaining: 42:33, 141.85s/it]
+2026-07-28 16:47:54 - evalscope - INFO: Evaluating[aime25]  40%| 12/30 [Elapsed: 15:03 < Remaining: 42:33, 141.85s/it]
+2026-07-28 16:48:54 - evalscope - INFO: Evaluating[aime25]  43%| 13/30 [Elapsed: 16:03 < Remaining: 38:26, 135.70s/it]
+2026-07-28 16:49:54 - evalscope - INFO: Evaluating[aime25]  50%| 15/30 [Elapsed: 17:03 < Remaining: 21:01, 84.08s/it]
+2026-07-28 16:50:54 - evalscope - INFO: Evaluating[aime25]  57%| 17/30 [Elapsed: 18:03 < Remaining: 12:20, 56.96s/it]
+2026-07-28 16:51:54 - evalscope - INFO: Evaluating[aime25]  57%| 17/30 [Elapsed: 19:03 < Remaining: 12:20, 56.96s/it]
+2026-07-28 16:52:55 - evalscope - INFO: Evaluating[aime25]  60%| 18/30 [Elapsed: 20:04 < Remaining: 14:33, 72.80s/it]
+2026-07-28 16:53:55 - evalscope - INFO: Evaluating[aime25]  63%| 19/30 [Elapsed: 21:04 < Remaining: 10:46, 58.75s/it]
+2026-07-28 16:54:55 - evalscope - INFO: Evaluating[aime25]  63%| 19/30 [Elapsed: 22:04 < Remaining: 10:46, 58.75s/it]
+2026-07-28 16:55:55 - evalscope - INFO: Evaluating[aime25]  63%| 19/30 [Elapsed: 23:04 < Remaining: 10:46, 58.75s/it]
+2026-07-28 16:56:55 - evalscope - INFO: Evaluating[aime25]  67%| 20/30 [Elapsed: 24:04 < Remaining: 16:33, 99.38s/it]
+2026-07-28 16:57:55 - evalscope - INFO: Evaluating[aime25]  70%| 21/30 [Elapsed: 25:04 < Remaining: 11:57, 79.76s/it]
+2026-07-28 16:58:55 - evalscope - INFO: Evaluating[aime25]  73%| 22/30 [Elapsed: 26:04 < Remaining: 11:07, 83.45s/it]
+2026-07-28 16:59:56 - evalscope - INFO: Evaluating[aime25]  77%| 23/30 [Elapsed: 27:04 < Remaining: 08:13, 70.48s/it]
+2026-07-28 17:00:56 - evalscope - INFO: Evaluating[aime25]  77%| 23/30 [Elapsed: 28:05 < Remaining: 08:13, 70.48s/it]
+2026-07-28 17:01:56 - evalscope - INFO: Evaluating[aime25]  77%| 23/30 [Elapsed: 29:05 < Remaining: 08:13, 70.48s/it]
+2026-07-28 17:02:56 - evalscope - INFO: Evaluating[aime25]  77%| 23/30 [Elapsed: 30:05 < Remaining: 08:13, 70.48s/it]
+2026-07-28 17:03:56 - evalscope - INFO: Evaluating[aime25]  80%| 24/30 [Elapsed: 31:05 < Remaining: 13:14, 132.48s/it]
+2026-07-28 17:04:56 - evalscope - INFO: Evaluating[aime25]  80%| 24/30 [Elapsed: 32:05 < Remaining: 13:14, 132.48s/it]
+2026-07-28 17:05:56 - evalscope - INFO: Evaluating[aime25]  80%| 24/30 [Elapsed: 33:05 < Remaining: 13:14, 132.48s/it]
+2026-07-28 17:06:56 - evalscope - INFO: Evaluating[aime25]  83%| 25/30 [Elapsed: 34:05 < Remaining: 11:19, 135.95s/it]
+2026-07-28 17:07:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 35:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:08:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 36:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:09:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 37:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:10:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 38:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:11:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 39:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:12:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 40:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:13:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 41:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:14:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 42:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:15:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 43:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:16:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 44:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:17:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 45:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:18:56 - evalscope - INFO: Evaluating[aime25]  87%| 26/30 [Elapsed: 46:05 < Remaining: 07:37, 114.44s/it]
+2026-07-28 17:19:32 - evalscope - INFO: Evaluating[aime25] 100%| 30/30 [Elapsed: 46:41 < Remaining: 00:00, 301.60s/it]
+2026-07-28 17:19:32 - evalscope - INFO: Unified pool finished for aime25.
+2026-07-28 17:19:32 - evalscope - INFO: Aggregating scores for subset: default
+2026-07-28 17:19:32 - evalscope - INFO: Generating report...
+2026-07-28 17:19:32 - evalscope - INFO: 
+aime25 report table:
+┌───────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model         │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├───────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ GLM-4.7-Flash │ aime25    │ mean_acc │ default  │    30 │  0.8667 │ default │
+└───────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-28 17:19:32 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-07-28 17:19:32 - evalscope - INFO: Dump report to: /root/.cache/tests/output//20260728/test_npu_glm4_7_flash_1p_aime25/20260728_163250/reports/GLM-4.7-Flash/aime25.json 
+
+2026-07-28 17:19:32 - evalscope - INFO: 
+aime25 perf table:
+Model          Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                       (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+-------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+GLM-4.7-Flash  aime25        30    1124.56     4005.43       45.53       21.55   202.833    24234.2
+
+2026-07-28 17:19:32 - evalscope - INFO: Benchmark aime25 evaluation finished.
+2026-07-28 17:19:32 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 46:42 < Remaining: 00:00, 2802.19s/benchmark]
+2026-07-28 17:19:32 - evalscope - INFO: Overall report table: 
+┌───────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model         │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├───────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ GLM-4.7-Flash │ aime25    │ mean_acc │ default  │    30 │  0.8667 │ default │
+└───────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-07-28 17:19:32 - evalscope - INFO: Overall perf table: 
+Model          Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                       (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+-------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+GLM-4.7-Flash  aime25        30    1124.56     4005.43       45.53       21.55   202.833    24234.2 
+
+2026-07-28 17:19:33 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/20260728/test_npu_glm4_7_flash_1p_aime25/20260728_163250/reports/report.html
+2026-07-28 17:19:33 - evalscope - INFO: Finished evaluation for GLM-4.7-Flash on ['aime25']
+2026-07-28 17:19:33 - evalscope - INFO: Output directory: /root/.cache/tests/output//20260728/test_npu_glm4_7_flash_1p_aime25/20260728_163250
+
+# [collect_metrics] 文件原始修改时间: 2026-07-29 01:19:33
