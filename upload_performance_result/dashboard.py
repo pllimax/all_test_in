@@ -50,22 +50,44 @@ def get_config_paths():
         ]
         print(f"[config] YAML_CONFIGS using relative path default (sglang repo sibling)")
 
-    # Test scripts root: env var > config file > relative path default
+    # Test scripts roots: split fulltest/nightly from separate repos
+    # env var > config file > relative path default
+    fulltest_root = os.environ.get("FULLTEST_TEST_SCRIPTS_ROOT", "")
+    nightly_root = os.environ.get("NIGHTLY_TEST_SCRIPTS_ROOT", "")
     test_scripts_root = os.environ.get("TEST_SCRIPTS_ROOT", "")
-    if test_scripts_root:
-        print(f"[config] TEST_SCRIPTS_ROOT from env var")
-    elif "test_scripts_root" in config_data:
+
+    if not fulltest_root and "fulltest_test_scripts_root" in config_data:
+        fulltest_root = config_data["fulltest_test_scripts_root"]
+    if not nightly_root and "nightly_test_scripts_root" in config_data:
+        nightly_root = config_data["nightly_test_scripts_root"]
+
+    # Fallback: if split roots not configured, use legacy single test_scripts_root
+    if not test_scripts_root and not fulltest_root and "test_scripts_root" in config_data:
         test_scripts_root = config_data["test_scripts_root"]
-        print(f"[config] TEST_SCRIPTS_ROOT from config file")
+
+    if fulltest_root and nightly_root:
+        test_scripts_roots = [fulltest_root, nightly_root]
+        print(f"[config] TEST_SCRIPTS_ROOTS (split): fulltest={fulltest_root}, nightly={nightly_root}")
+        print(f"[config]   fulltest from env var" if os.environ.get("FULLTEST_TEST_SCRIPTS_ROOT") else f"[config]   fulltest from config file")
+        print(f"[config]   nightly from env var" if os.environ.get("NIGHTLY_TEST_SCRIPTS_ROOT") else f"[config]   nightly from config file")
+    elif test_scripts_root:
+        test_scripts_roots = [test_scripts_root]
+        print(f"[config] TEST_SCRIPTS_ROOT (legacy) from env var")
+        print(f"[config] TEST_SCRIPTS_ROOT (legacy) from config file" if not os.environ.get("TEST_SCRIPTS_ROOT") else "")
     else:
         default_sglang_root = os.path.join(os.path.dirname(current_dir), "sglang")
         test_scripts_root = os.path.join(default_sglang_root, "test", "registered", "ascend")
+        test_scripts_roots = [test_scripts_root]
         print(f"[config] TEST_SCRIPTS_ROOT using relative path default (sglang repo sibling)")
 
     # Validate paths and show friendly hints
-    if not test_scripts_root or not os.path.isdir(test_scripts_root):
-        print(f"[config] Warning: TEST_SCRIPTS_ROOT not found: {test_scripts_root}")
-        print(f"[config]   Set TEST_SCRIPTS_ROOT env var or add 'test_scripts_root' to dashboard_config.json")
+    valid_roots = []
+    for r in test_scripts_roots:
+        if r and os.path.isdir(r):
+            valid_roots.append(r)
+        else:
+            print(f"[config] Warning: test scripts root not found: {r}")
+            print(f"[config]   Set FULLTEST_TEST_SCRIPTS_ROOT / NIGHTLY_TEST_SCRIPTS_ROOT env var or add to dashboard_config.json")
 
     valid_yaml_configs = []
     for yaml_path in yaml_configs:
@@ -77,13 +99,13 @@ def get_config_paths():
 
     return {
         "yaml_configs": valid_yaml_configs,
-        "test_scripts_root": test_scripts_root,
+        "test_scripts_roots": valid_roots,
     }
 
 
 _config = get_config_paths()
 YAML_CONFIGS = _config["yaml_configs"]
-TEST_SCRIPTS_ROOT = _config["test_scripts_root"]
+TEST_SCRIPTS_ROOTS = _config["test_scripts_roots"]
 
 # Test cases to exclude from the dashboard
 EXCLUDED_TEST_CASES = {
@@ -135,20 +157,21 @@ def collect_baselines():
     """
     results = {}
     for category in ["performance", "accuracy"]:
-        cat_dir = os.path.join(TEST_SCRIPTS_ROOT, category)
-        if not os.path.isdir(cat_dir):
-            continue
-        for dirpath, _, filenames in os.walk(cat_dir):
-            for filename in filenames:
-                if not filename.endswith(".py") or filename.startswith("__"):
-                    continue
-                test_case_name = filename[:-3]
-                filepath = os.path.join(dirpath, filename)
-                baselines = parse_test_script_baselines(filepath)
-                if baselines:
-                    if test_case_name not in results:
-                        results[test_case_name] = {}
-                    results[test_case_name].update(baselines)
+        for test_scripts_root in TEST_SCRIPTS_ROOTS:
+            cat_dir = os.path.join(test_scripts_root, category)
+            if not os.path.isdir(cat_dir):
+                continue
+            for dirpath, _, filenames in os.walk(cat_dir):
+                for filename in filenames:
+                    if not filename.endswith(".py") or filename.startswith("__"):
+                        continue
+                    test_case_name = filename[:-3]
+                    filepath = os.path.join(dirpath, filename)
+                    baselines = parse_test_script_baselines(filepath)
+                    if baselines:
+                        if test_case_name not in results:
+                            results[test_case_name] = {}
+                        results[test_case_name].update(baselines)
     return results
 
 _nnodes_cache = {}
@@ -159,27 +182,28 @@ def _get_nnodes_from_script(yaml_name):
     if yaml_name in _nnodes_cache:
         return _nnodes_cache[yaml_name]
     test_file = "test_npu_" + yaml_name + ".py"
-    for root, _, files in os.walk(TEST_SCRIPTS_ROOT):
-        if test_file in files:
-            filepath = os.path.join(root, test_file)
-            try:
-                with open(filepath, "r", encoding="utf-8") as f:
-                    content = f.read()
-                # Find all --nnodes occurrences and get the value on the next line
-                # For PD separation, use the first nnodes (prefill) or max of all
-                nnodes_vals = []
-                for m in re.finditer(r"--nnodes\s*\n\s*(\d+)", content):
-                    nnodes_vals.append(int(m.group(1)))
-                if nnodes_vals:
-                    # Use the minimum nnodes value (single node if any node is 1)
-                    val = min(nnodes_vals)
-                else:
-                    val = 1  # Not configured, default to 1
-                _nnodes_cache[yaml_name] = val
-                return val
-            except Exception:
-                pass
-            break
+    for test_scripts_root in TEST_SCRIPTS_ROOTS:
+        for root, _, files in os.walk(test_scripts_root):
+            if test_file in files:
+                filepath = os.path.join(root, test_file)
+                try:
+                    with open(filepath, "r", encoding="utf-8") as f:
+                        content = f.read()
+                    # Find all --nnodes occurrences and get the value on the next line
+                    # For PD separation, use the first nnodes (prefill) or max of all
+                    nnodes_vals = []
+                    for m in re.finditer(r"--nnodes\s*\n\s*(\d+)", content):
+                        nnodes_vals.append(int(m.group(1)))
+                    if nnodes_vals:
+                        # Use the minimum nnodes value (single node if any node is 1)
+                        val = min(nnodes_vals)
+                    else:
+                        val = 1  # Not configured, default to 1
+                    _nnodes_cache[yaml_name] = val
+                    return val
+                except Exception:
+                    pass
+                break
     _nnodes_cache[yaml_name] = 1
     return 1
 
