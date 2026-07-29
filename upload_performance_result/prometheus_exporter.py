@@ -263,8 +263,8 @@ def parse_benchmark_file(filepath):
 
 
 def parse_eval_log(filepath):
-    """Parse an eval log file and extract the Score value.
-    Looks for the "Overall report table" section with the Score column.
+    """Parse an eval log file and extract the accuracy score.
+    Handles both MMMU (multi-subset with OVERALL row) and non-MMMU (single row) formats.
     Returns the score as a float, or None if not found.
     """
     try:
@@ -273,16 +273,37 @@ def parse_eval_log(filepath):
     except Exception:
         return None
 
-    # Find the "Overall report table" section
+    # Pattern for a data row with OVERALL in the Subset column:
+    # │ ... │ ... │ ... │ ...OVERALL... │ digits │ float │ ... │
+    overall_data_pattern = r"│[^│]*OVERALL[^│]*│\s*\d+\s*│\s*([\d.]+)\s*│"
+    # Generic data row pattern: │ ... │ ... │ ... │ ... │ digits │ float │ ... │
+    generic_data_pattern = r"│[^│]*│[^│]*│[^│]*│[^│]*│\s*\d+\s*│\s*([\d.]+)\s*│"
+
+    # Strategy 1: look for "Overall report table" section
     overall_idx = content.rfind("Overall report table")
-    if overall_idx == -1:
+    if overall_idx != -1:
+        tail = content[overall_idx:]
+
+        # Try to find an OVERALL row first (MMMU-style multi-subset)
+        match = re.search(overall_data_pattern, tail)
+        if match:
+            return float(match.group(1))
+
+        # Fallback: first data row (single-subset, e.g., gsm8k/aime25)
+        match = re.search(generic_data_pattern, tail)
+        if match:
+            return float(match.group(1))
+
         return None
 
-    # Find the data row after the header (contains │ Score │)
-    tail = content[overall_idx:]
-    # Match the data row: │ model │ dataset │ metric │ subset │ num │ score │ cat │
-    # Pattern: │ ... │ ... │ ... │ ... │ digits │ float │ ... │
-    match = re.search(r"│[^│]*│[^│]*│[^│]*│[^│]*│\s*\d+\s*│\s*([\d.]+)\s*│", tail)
+    # Strategy 2: no "Overall report table" → search entire content for OVERALL row
+    # (older evalscope versions with MMMU breakdown table)
+    match = re.search(overall_data_pattern, content)
+    if match:
+        return float(match.group(1))
+
+    # Strategy 3: last resort — single score row anywhere in content
+    match = re.search(generic_data_pattern, content)
     if match:
         return float(match.group(1))
 
