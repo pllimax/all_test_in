@@ -126,9 +126,12 @@ def get_config_paths():
     test_scripts_roots = []
     yaml_configs = []
     for src_name, src_cfg in valid_sources.items():
-        if src_cfg["repo_root"] and os.path.isdir(src_cfg["repo_root"]):
-            if src_cfg["repo_root"] not in test_scripts_roots:
-                test_scripts_roots.append(src_cfg["repo_root"])
+        repo_root = src_cfg["repo_root"]
+        # Test scripts are under {repo_root}/test/registered/ascend
+        scripts_path = os.path.join(repo_root, "test", "registered", "ascend")
+        if repo_root and os.path.isdir(repo_root):
+            if scripts_path not in test_scripts_roots:
+                test_scripts_roots.append(scripts_path)
         yaml_configs.append(src_cfg["yaml_config"])
 
     return {
