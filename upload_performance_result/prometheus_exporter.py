@@ -115,6 +115,8 @@ def parse_filename(filename):
     name = os.path.splitext(filename)[0]
     # Strip __YYYYmmdd source date suffix (added by collect_metrics.sh)
     name = re.sub(r"__\d{8}$", "", name)
+    # Strip -HHMMSS CI timestamp suffix (from CI directory naming)
+    name = re.sub(r"-\d{6}(?=_.*|$)", "", name)
     name = name.replace("test_npu_", "", 1)
 
     # Strip numeric run suffix (e.g., _1, _2, ..., _19)
@@ -334,20 +336,28 @@ def collect_eval_data():
             if not filename.endswith(".log"):
                 continue
 
-            # Filename format: test_case_name__timestamp.log
-            # or test_case_name__timestamp__YYYYmmdd.log (with source date suffix)
+            # Filename format (new): test_type__test_case_name__YYYYmmdd.log
+            # Filename format (old): test_case_name__YYYYMMDD_HHMMSS.log
+            #                                or test_case_name__YYYYMMDD_HHMMSS__YYYYmmdd.log
             base = filename[:-4]  # strip .log
             if "__" not in base:
                 continue
 
-            # Split on first __ (test case name may contain underscores)
-            # The timestamp is always YYYYMMDD_HHMMSS format
-            # Optionally followed by __YYYYmmdd source date suffix
-            match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
-            if not match:
-                continue
+            test_case_name = None
+            # Try new format first: {prefix}__{tc_name}__{date}.log
+            # prefix = perf/accuracy, tc_name = test case name without __
+            m = re.match(r"^[a-z]+__([^_]+(?:[^_]|_[^_])*?)__\d{8}(?:-\d+)?$", base)
+            if m and "__" not in m.group(1):
+                test_case_name = m.group(1)
 
-            test_case_name = match.group(1)
+            if not test_case_name:
+                # Old format: test_case_name__YYYYMMDD_HHMMSS (optional __source_date)
+                match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
+                if match:
+                    test_case_name = match.group(1)
+
+            if not test_case_name:
+                continue
             filepath = os.path.join(eval_dir, filename)
             score = parse_eval_log(filepath)
 
@@ -390,11 +400,20 @@ def collect_accuracy_only_data():
             if "__" not in base:
                 continue
 
-            match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
-            if not match:
-                continue
+            test_case_name = None
+            # Try new format first: {prefix}__{tc_name}__{date}.log
+            m = re.match(r"^[a-z]+__([^_]+(?:[^_]|_[^_])*?)__\d{8}(?:-\d+)?$", base)
+            if m and "__" not in m.group(1):
+                test_case_name = m.group(1)
 
-            test_case_name = match.group(1)
+            if not test_case_name:
+                # Old format: test_case_name__YYYYMMDD_HHMMSS (optional __source_date)
+                match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
+                if match:
+                    test_case_name = match.group(1)
+
+            if not test_case_name:
+                continue
             filepath = os.path.join(acc_dir, filename)
             score = parse_eval_log(filepath)
 

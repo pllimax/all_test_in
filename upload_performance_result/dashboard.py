@@ -1027,6 +1027,8 @@ def filename_to_yaml_name(filename):
     name = filename
     # Strip __YYYYmmdd source date suffix (added by collect_metrics.sh)
     name = re.sub(r"__\d{8}", "", name)
+    # Strip -HHMMSS CI timestamp suffix (from CI directory naming)
+    name = re.sub(r"-\d{6}(?=_.*|\.)", "", name)
     if name.endswith(".txt"):
         name = name[:-4]
     if name.startswith("test_npu_"):
