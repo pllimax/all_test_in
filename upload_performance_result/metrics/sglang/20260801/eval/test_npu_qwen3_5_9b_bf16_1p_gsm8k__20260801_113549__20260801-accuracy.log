@@ -1,0 +1,172 @@
+2026-08-01 11:35:49 - evalscope - INFO: Running with native backend
+2026-08-01 11:35:50 - evalscope - INFO: Dump task config to /root/.cache/tests/output/accuracy/20260801/test_npu_qwen3_5_9b_bf16_1p_gsm8k/20260801_113549/configs/task_config.yaml
+2026-08-01 11:35:50 - evalscope - INFO: {
+    "model": "Qwen3.5-9B",
+    "model_id": "Qwen3.5-9B",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gsm8k"
+    ],
+    "dataset_args": {
+        "gsm8k": {
+            "name": "gsm8k",
+            "dataset_id": "AI-ModelScope/gsm8k",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "main"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 4,
+            "few_shot_random": false,
+            "train_split": "train",
+            "eval_split": "test",
+            "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+            "few_shot_prompt_template": "Here are some examples of how to solve similar problems:\n\n{fewshot}\n\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "GSM8K",
+            "description": "\n## Overview\n\nGSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically diverse grade school math word problems created by human problem writers. The dataset is specifically designed to evaluate and improve the multi-step mathematical reasoning capabilities of language models.\n\n## Task Description\n\n- **Task Type**: Mathematical Word Problem Solving\n- **Input**: Natural language math word problem\n- **Output**: Numerical answer derived through step-by-step reasoning\n- **Difficulty**: Grade school level (2-8 reasoning steps required)\n\n## Key Features\n\n- Problems require basic arithmetic operations (addition, subtraction, multiplication, division)\n- Solutions involve 2 to 8 sequential reasoning steps\n- High linguistic diversity in problem formulations\n- Human-written problems ensuring natural language quality\n- Clear numerical answers for objective evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **4-shot** examples with Chain-of-Thought (CoT) prompting\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- The metric extracts numerical values for accuracy comparison\n- Supports both zero-shot and few-shot evaluation modes\n",
+            "paper_url": "https://arxiv.org/abs/2110.14168",
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 8192,
+        "temperature": 0.6
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/accuracy/20260801/test_npu_qwen3_5_9b_bf16_1p_gsm8k/20260801_113549",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20266/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-08-01 11:35:50 - evalscope - INFO: Start loading benchmark dataset: gsm8k
+2026-08-01 11:35:50 - evalscope - INFO: Start evaluating 1 subsets of gsm8k: ['main']
+2026-08-01 11:35:50 - evalscope - INFO: Unified pool: 100 items to process, 0 already fully cached (100 total across all subsets).
+2026-08-01 11:35:50 - evalscope - INFO: Loading model for prediction...
+2026-08-01 11:35:50 - evalscope - INFO: Creating model Qwen3.5-9B with eval_type=openai_api base_url=http://127.0.0.1:20266/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 8192, 'temperature': 0.6}, model_args={}
+2026-08-01 11:35:50 - evalscope - INFO: Model loaded successfully.
+2026-08-01 11:36:50 - evalscope - INFO: Evaluating[gsm8k]   0%| 0/100 [Elapsed: 01:00 < Remaining: ?, ?it/s]
+2026-08-01 11:37:50 - evalscope - INFO: Evaluating[gsm8k]   3%| 3/100 [Elapsed: 02:00 < Remaining: 40:28, 25.04s/it]
+2026-08-01 11:38:50 - evalscope - INFO: Evaluating[gsm8k]   7%| 7/100 [Elapsed: 03:00 < Remaining: 28:45, 18.55s/it]
+2026-08-01 11:39:51 - evalscope - INFO: Evaluating[gsm8k]  12%| 12/100 [Elapsed: 04:00 < Remaining: 17:23, 11.86s/it]
+2026-08-01 11:40:51 - evalscope - INFO: Evaluating[gsm8k]  16%| 16/100 [Elapsed: 05:01 < Remaining: 11:42,  8.36s/it]
+2026-08-01 11:41:52 - evalscope - INFO: Evaluating[gsm8k]  17%| 17/100 [Elapsed: 06:01 < Remaining: 33:32, 24.25s/it]
+2026-08-01 11:42:52 - evalscope - INFO: Evaluating[gsm8k]  19%| 19/100 [Elapsed: 07:01 < Remaining: 39:33, 29.30s/it]
+2026-08-01 11:43:52 - evalscope - INFO: Evaluating[gsm8k]  25%| 25/100 [Elapsed: 08:02 < Remaining: 17:45, 14.20s/it]
+2026-08-01 11:44:52 - evalscope - INFO: Evaluating[gsm8k]  28%| 28/100 [Elapsed: 09:02 < Remaining: 19:23, 16.15s/it]
+2026-08-01 11:45:53 - evalscope - INFO: Evaluating[gsm8k]  31%| 31/100 [Elapsed: 10:02 < Remaining: 17:57, 15.62s/it]
+2026-08-01 11:46:53 - evalscope - INFO: Evaluating[gsm8k]  33%| 33/100 [Elapsed: 11:03 < Remaining: 20:13, 18.12s/it]
+2026-08-01 11:47:54 - evalscope - INFO: Evaluating[gsm8k]  34%| 34/100 [Elapsed: 12:03 < Remaining: 36:17, 32.99s/it]
+2026-08-01 11:48:55 - evalscope - INFO: Evaluating[gsm8k]  36%| 36/100 [Elapsed: 13:04 < Remaining: 40:53, 38.33s/it]
+2026-08-01 11:49:55 - evalscope - INFO: Evaluating[gsm8k]  43%| 43/100 [Elapsed: 14:05 < Remaining: 12:47, 13.46s/it]
+2026-08-01 11:50:55 - evalscope - INFO: Evaluating[gsm8k]  49%| 49/100 [Elapsed: 15:05 < Remaining: 07:09,  8.42s/it]
+2026-08-01 11:51:55 - evalscope - INFO: Evaluating[gsm8k]  54%| 54/100 [Elapsed: 16:05 < Remaining: 08:28, 11.06s/it]
+2026-08-01 11:52:56 - evalscope - INFO: Evaluating[gsm8k]  57%| 57/100 [Elapsed: 17:05 < Remaining: 11:41, 16.32s/it]
+2026-08-01 11:53:56 - evalscope - INFO: Evaluating[gsm8k]  61%| 61/100 [Elapsed: 18:05 < Remaining: 11:28, 17.65s/it]
+2026-08-01 11:54:56 - evalscope - INFO: Evaluating[gsm8k]  63%| 63/100 [Elapsed: 19:05 < Remaining: 12:06, 19.64s/it]
+2026-08-01 11:55:56 - evalscope - INFO: Evaluating[gsm8k]  65%| 65/100 [Elapsed: 20:05 < Remaining: 13:57, 23.92s/it]
+2026-08-01 11:56:56 - evalscope - INFO: Evaluating[gsm8k]  72%| 72/100 [Elapsed: 21:05 < Remaining: 04:32,  9.75s/it]
+2026-08-01 11:57:56 - evalscope - INFO: Evaluating[gsm8k]  85%| 85/100 [Elapsed: 22:06 < Remaining: 01:11,  4.78s/it]
+2026-08-01 11:58:57 - evalscope - INFO: Evaluating[gsm8k]  93%| 93/100 [Elapsed: 23:06 < Remaining: 00:42,  6.14s/it]
+2026-08-01 11:59:37 - evalscope - INFO: Evaluating[gsm8k] 100%| 100/100 [Elapsed: 23:47 < Remaining: 00:00,  6.49s/it]
+2026-08-01 11:59:37 - evalscope - INFO: Unified pool finished for gsm8k.
+2026-08-01 11:59:37 - evalscope - INFO: Aggregating scores for subset: main
+2026-08-01 11:59:37 - evalscope - INFO: Generating report...
+2026-08-01 11:59:37 - evalscope - INFO: 
+gsm8k report table:
+┌────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model      │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Qwen3.5-9B │ gsm8k     │ mean_acc │ main     │   100 │    0.85 │ default │
+└────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-08-01 11:59:37 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-08-01 11:59:37 - evalscope - INFO: Dump report to: /root/.cache/tests/output/accuracy/20260801/test_npu_qwen3_5_9b_bf16_1p_gsm8k/20260801_113549/reports/Qwen3.5-9B/gsm8k.json 
+
+2026-08-01 11:59:37 - evalscope - INFO: 
+gsm8k perf table:
+Model       Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                    (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+----------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Qwen3.5-9B  gsm8k        100     735.15     23364.9      144.19        6.94    685.08    5101.13
+
+2026-08-01 11:59:37 - evalscope - INFO: Benchmark gsm8k evaluation finished.
+2026-08-01 11:59:37 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 23:47 < Remaining: 00:00, 1427.85s/benchmark]
+2026-08-01 11:59:37 - evalscope - INFO: Overall report table: 
+┌────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model      │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Qwen3.5-9B │ gsm8k     │ mean_acc │ main     │   100 │    0.85 │ default │
+└────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-08-01 11:59:37 - evalscope - INFO: Overall perf table: 
+Model       Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                    (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+----------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Qwen3.5-9B  gsm8k        100     735.15     23364.9      144.19        6.94    685.08    5101.13 
+
+2026-08-01 11:59:38 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/accuracy/20260801/test_npu_qwen3_5_9b_bf16_1p_gsm8k/20260801_113549/reports/report.html
+2026-08-01 11:59:38 - evalscope - INFO: Finished evaluation for Qwen3.5-9B on ['gsm8k']
+2026-08-01 11:59:38 - evalscope - INFO: Output directory: /root/.cache/tests/output/accuracy/20260801/test_npu_qwen3_5_9b_bf16_1p_gsm8k/20260801_113549
+
+# [collect_metrics] 文件原始修改时间: 2026-08-01 19:59:38
