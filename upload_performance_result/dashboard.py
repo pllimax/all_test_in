@@ -1136,9 +1136,6 @@ def collect_all_data():
     """Collect all benchmark data into a list of dicts.
     Only includes test cases defined in YAML workflow configs.
     """
-    # Clear caches so script changes are reflected on each request
-    _nnodes_cache.clear()
-
     results = []
     metrics_dir = get_metrics_dir()
     if not os.path.isdir(metrics_dir):
