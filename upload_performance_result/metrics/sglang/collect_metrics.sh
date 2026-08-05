@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --branch NAME         按前缀筛选收集任务结果"
             echo "                        如 --branch pllimax 匹配所有以 pllimax 开头的目录"
             echo "                        (即 pllimax 仓下所有分支的 CI 任务)"
-            echo "                        分支模式下结果按 CI 目录名({分支}-{run_id})/workflow_type 存放，不使用日期"
+            echo "                        分支模式下结果按 CI 目录名({分支}-{create_date}-{run_id})/workflow目录 存放，不使用日期"
             echo "  --help, -h            显示此帮助信息"
             echo ""
             echo "环境变量:"
@@ -178,7 +178,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     echo ""
     echo "========== 处理日期: ${CURRENT_DATE} =========="
 
-    # 新 CI 目录结构: SRC_BASE/{branch}-{run_id}/{workflow_type}/{test_type}/{tc_name}-{timestamp}/bench_serving_metrics.txt
+    # 新 CI 目录结构: SRC_BASE/{branch_label}-{create_date}-{run_id}/{workflow_name}/{test_type}/{tc_name}-{timestamp}/bench_serving_metrics.txt
     # 不再有空目录检查 —— 用 find 递归搜索 SRC_BASE 全树，由 mtime 日期过滤
 
     echo "源目录: ${SEARCH_ROOTS[*]} (递归搜索，按 mtime 日期过滤: ${CURRENT_DATE})"
@@ -204,7 +204,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
 
         # 目标存放目录：
-        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{run_id}）保存，并在其中按 workflow_type 区分
+        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{create_date}-{run_id}）保存，并在其中按 workflow 目录（如 Full_Test_NPU）区分
         # 否则 → 按文件实际修改日期保存
         if [ -n "${BRANCH:-}" ]; then
             rel="${src_file#${SRC_BASE}/}"
@@ -244,7 +244,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
 
     echo ""
     if [ -n "${BRANCH:-}" ]; then
-        echo "完成: 共收集 ${count} 个性能测试文件（按 ${SCRIPT_DIR}/{目录名}/{workflow_type}/ 归类）"
+        echo "完成: 共收集 ${count} 个性能测试文件（按 ${SCRIPT_DIR}/{目录名}/{workflow目录}/ 归类）"
     else
         echo "完成: 共收集 ${count} 个性能测试文件（按实际修改时间归类）"
     fi
@@ -252,9 +252,9 @@ for CURRENT_DATE in "${DATES[@]}"; do
 
     # ============================================================
     # 收集精度测试结果 (eval_log.log)
-    # 新 CI 结构: SRC_BASE/{branch}-{run_id}/{workflow_type}/{test_type}/{tc_name}-{timestamp}/logs/eval_log.log
+    # 新 CI 结构: SRC_BASE/{branch_label}-{create_date}-{run_id}/{workflow_name}/{test_type}/{tc_name}-{timestamp}/logs/eval_log.log
     # 所有 perf 和 accuracy 类型的 eval 日志都在 SRC_BASE 下统一搜索
-    # 存储: 默认 SCRIPT_DIR/实际日期/eval/，分支模式 SCRIPT_DIR/{目录名}/{workflow_type}/eval/
+    # 存储: 默认 SCRIPT_DIR/实际日期/eval/，分支模式 SCRIPT_DIR/{目录名}/{workflow目录}/eval/
     # 命名: 按"用例名__时间戳__源日期.log"
     # ============================================================
 
@@ -262,7 +262,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     while IFS= read -r eval_src; do
         [ -f "${eval_src}" ] || continue
 
-        # 新结构路径: .../output/{branch}-{run_id}/{workflow_type}/{test_type}/{tc_name}-{timestamp}/logs/eval_log.log
+        # 新结构路径: .../output/{branch_label}-{create_date}-{run_id}/{workflow_name}/{test_type}/{tc_name}-{timestamp}/logs/eval_log.log
         logs_dir=$(dirname "${eval_src}")
         ts_dir=$(dirname "${logs_dir}")           # .../{tc_name}-{timestamp}
         ts_name=$(basename "${ts_dir}")           # {tc_name}-{timestamp}
@@ -279,7 +279,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
 
         # 目标存放目录：
-        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{run_id}）保存，并在其中按 workflow_type 区分
+        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{create_date}-{run_id}）保存，并在其中按 workflow 目录（如 Full_Test_NPU）区分
         # 否则 → 按文件实际修改日期保存
         if [ -n "${BRANCH:-}" ]; then
             rel="${eval_src#${SRC_BASE}/}"
@@ -299,7 +299,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
 
         # 命名: {test_type}__{tc_name_clean}__{源目录日期}.log
         eval_dst="${EVAL_TARGET_DIR}/${test_type_name}__${ts_name_clean}__${CURRENT_DATE}.log"
-        # 如果已存在同名文件（来自不同 workflow_type 等），追加序号后缀区分
+        # 如果已存在同名文件（来自不同 workflow 目录等），追加序号后缀区分
         if [ -f "${eval_dst}" ]; then
             suffix=1
             while [ -f "${EVAL_TARGET_DIR}/${test_type_name}__${ts_name_clean}__${CURRENT_DATE}-${suffix}.log" ]; do
@@ -327,7 +327,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     if [ ${eval_count} -gt 0 ]; then
         echo ""
         if [ -n "${BRANCH:-}" ]; then
-            echo "完成: 共收集 ${eval_count} 个精度测试文件（按 ${SCRIPT_DIR}/{目录名}/{workflow_type}/eval/ 归类）"
+            echo "完成: 共收集 ${eval_count} 个精度测试文件（按 ${SCRIPT_DIR}/{目录名}/{workflow目录}/eval/ 归类）"
         else
             echo "完成: 共收集 ${eval_count} 个精度测试文件（按实际修改时间归类）"
         fi
