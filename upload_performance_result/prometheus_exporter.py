@@ -357,6 +357,14 @@ def collect_eval_data():
                     test_case_name = match.group(1)
 
             if not test_case_name:
+                # Fallback for old date-based directory format:
+                #   {date}__{tc_name}__{source_date}.log  or  {tc_name}__{date}.log
+                stripped = re.sub(r"^\d{8}__", "", base)
+                m = re.match(r"^(.+?)__(\d{8})(?:-[a-z]+)?$", stripped)
+                if m:
+                    test_case_name = m.group(1)
+
+            if not test_case_name:
                 continue
             filepath = os.path.join(eval_dir, filename)
             score = parse_eval_log(filepath)
@@ -411,6 +419,14 @@ def collect_accuracy_only_data():
                 match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
                 if match:
                     test_case_name = match.group(1)
+
+            if not test_case_name:
+                # Fallback for old date-based directory format:
+                #   {date}__{tc_name}__{source_date}.log  or  {tc_name}__{date}.log
+                stripped = re.sub(r"^\d{8}__", "", base)
+                m = re.match(r"^(.+?)__(\d{8})(?:-[a-z]+)?$", stripped)
+                if m:
+                    test_case_name = m.group(1)
 
             if not test_case_name:
                 continue
