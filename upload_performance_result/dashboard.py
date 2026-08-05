@@ -11,7 +11,7 @@ import http.server
 import socketserver
 import subprocess
 import sys
-from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, METRICS_DIR, GIT_PULL_ENABLED, get_metrics_dir
+from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, METRICS_DIR, GIT_PULL_ENABLED, get_metrics_dir, _iter_metrics_files
 
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
 
@@ -1156,44 +1156,36 @@ def collect_all_data():
     # Track which eval keys were consumed by benchmark results
     consumed_eval_keys = set()
 
-    for date_folder in sorted(os.listdir(metrics_dir)):
-        date_path = os.path.join(metrics_dir, date_folder)
-        if not os.path.isdir(date_path):
+    for date_folder, filepath in _iter_metrics_files(metrics_dir, ".txt"):
+        filename = os.path.basename(filepath)
+        parsed = parse_benchmark_file(filepath)
+        if parsed is None:
             continue
 
-        for filename in os.listdir(date_path):
-            if not filename.endswith(".txt"):
-                continue
+        labels = parse_filename(filename)
+        labels["date"] = date_folder
+        labels["yaml_name"] = filename_to_yaml_name(filename)
+        # Fallback: if stripped name not in expected, try with test_npu_ prefix
+        if labels["yaml_name"] not in expected_tc_ids:
+            alt = "test_npu_" + labels["yaml_name"]
+            if alt in expected_tc_ids:
+                labels["yaml_name"] = alt
+        labels.update(parsed)
 
-            filepath = os.path.join(date_path, filename)
-            parsed = parse_benchmark_file(filepath)
-            if parsed is None:
-                continue
+        # Strip __YYYYmmdd source date suffix for eval/baseline lookups
+        base_name = filename[:-4]  # strip .txt
+        base_name = re.sub(r"__\d{8}$", "", base_name)
+        test_case_name = base_name
 
-            labels = parse_filename(filename)
-            labels["date"] = date_folder
-            labels["yaml_name"] = filename_to_yaml_name(filename)
-            # Fallback: if stripped name not in expected, try with test_npu_ prefix
-            if labels["yaml_name"] not in expected_tc_ids:
-                alt = "test_npu_" + labels["yaml_name"]
-                if alt in expected_tc_ids:
-                    labels["yaml_name"] = alt
-            labels.update(parsed)
+        # Attach eval score: key is (test_case_name, date)
+        eval_key = (test_case_name, date_folder)
+        labels["eval_score"] = eval_data.get(eval_key)
+        consumed_eval_keys.add(eval_key)
 
-            # Strip __YYYYmmdd source date suffix for eval/baseline lookups
-            base_name = filename[:-4]  # strip .txt
-            base_name = re.sub(r"__\d{8}$", "", base_name)
-            test_case_name = base_name
+        # Attach baselines
+        labels["baselines"] = baselines.get(test_case_name, {})
 
-            # Attach eval score: key is (test_case_name, date)
-            eval_key = (test_case_name, date_folder)
-            labels["eval_score"] = eval_data.get(eval_key)
-            consumed_eval_keys.add(eval_key)
-
-            # Attach baselines
-            labels["baselines"] = baselines.get(test_case_name, {})
-
-            results.append(labels)
+        results.append(labels)
 
     # Append accuracy-only test results from accuracy/ directory (no performance metrics)
     accuracy_data = collect_accuracy_only_data()

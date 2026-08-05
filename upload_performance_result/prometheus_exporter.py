@@ -33,6 +33,75 @@ def get_metrics_dir():
 
 METRICS_DIR = get_metrics_dir()
 
+# ============================================================
+# 新目录结构 workflow 目录名 → 标准 workflow 类型
+# 新结构: metrics/sglang/{branch}-{run_id}/{workflow_name}/结果文件
+#   Full_Test_NPU    → fulltest
+#   Nightly_Test_NPU → nightly
+# ============================================================
+WORKFLOW_NAME_MAP = {
+    "Full_Test_NPU": "fulltest",
+    "Full_Test_(NPU)": "fulltest",
+    "Nightly_Test_NPU": "nightly",
+    "Nightly_Test_(NPU)": "nightly",
+    "Single_Test_NPU": "single",
+    "Single_Test_(NPU)": "single",
+}
+
+
+def _is_date_dir(name):
+    """判断目录名是否为日期格式（旧结构按日期存放）。"""
+    return bool(re.match(r"^\d{8}$", name))
+
+
+def _iter_metrics_files(metrics_dir, suffix, subdir=""):
+    """遍历 metrics 目录下所有结果文件，兼容新旧两种目录结构。
+
+    旧结构: {date}/file.suffix                    (date = 20260727)
+    新结构: {branch}-{run_id}/{workflow_name}/file.suffix
+            其中 workflow_name 映射为 fulltest/nightly
+
+    Args:
+        metrics_dir: metrics 根目录
+        suffix: 文件名后缀（如 ".txt" / ".log"）
+        subdir: 可选子目录名（如 "eval" / "accuracy"），仅在该子目录内查找
+
+    Yields:
+        (date_label, filepath)
+        date_label: 旧结构为日期，新结构为 "{branch}-{run_id}/{workflow}"
+    """
+    if not os.path.isdir(metrics_dir):
+        return
+
+    for top in sorted(os.listdir(metrics_dir)):
+        top_path = os.path.join(metrics_dir, top)
+        if not os.path.isdir(top_path):
+            continue
+
+        if _is_date_dir(top):
+            # 旧结构：日期目录
+            scan_dir = os.path.join(top_path, subdir) if subdir else top_path
+            if not os.path.isdir(scan_dir):
+                continue
+            for name in sorted(os.listdir(scan_dir)):
+                if name.endswith(suffix):
+                    yield top, os.path.join(scan_dir, name)
+        else:
+            # 新结构：{branch}-{run_id}/{workflow_name}/
+            for wf_dir in sorted(os.listdir(top_path)):
+                wf_path = os.path.join(top_path, wf_dir)
+                if not os.path.isdir(wf_path):
+                    continue
+                workflow = WORKFLOW_NAME_MAP.get(wf_dir, wf_dir.lower())
+                date_label = f"{top}/{workflow}"
+                scan_dir = os.path.join(wf_path, subdir) if subdir else wf_path
+                if not os.path.isdir(scan_dir):
+                    continue
+                for name in sorted(os.listdir(scan_dir)):
+                    if name.endswith(suffix):
+                        yield date_label, os.path.join(scan_dir, name)
+
+
 # Define the 4 key metrics as Gauges with labels
 LABELS = ["date", "model", "quantization", "parallelism", "input_len", "output_len", "request_rate", "dataset"]
 
@@ -323,56 +392,45 @@ def collect_eval_data():
     if not os.path.isdir(metrics_dir):
         return eval_data
 
-    for date_folder in sorted(os.listdir(metrics_dir)):
-        date_path = os.path.join(metrics_dir, date_folder)
-        if not os.path.isdir(date_path):
+    for date_folder, filepath in _iter_metrics_files(metrics_dir, ".log", "eval"):
+        filename = os.path.basename(filepath)
+
+        # Filename format (new): test_type__test_case_name__YYYYmmdd.log
+        # Filename format (old): test_case_name__YYYYMMDD_HHMMSS.log
+        #                                or test_case_name__YYYYMMDD_HHMMSS__YYYYmmdd.log
+        base = filename[:-4]  # strip .log
+        if "__" not in base:
             continue
 
-        eval_dir = os.path.join(date_path, "eval")
-        if not os.path.isdir(eval_dir):
-            continue
+        test_case_name = None
+        # Try new format first: {prefix}__{tc_name}__{date}.log
+        # prefix = perf/accuracy, tc_name = test case name without __
+        m = re.match(r"^[a-z]+__([^_]+(?:[^_]|_[^_])*?)__\d{8}(?:-\d+)?$", base)
+        if m and "__" not in m.group(1):
+            test_case_name = m.group(1)
 
-        for filename in os.listdir(eval_dir):
-            if not filename.endswith(".log"):
-                continue
+        if not test_case_name:
+            # Old format: test_case_name__YYYYMMDD_HHMMSS (optional __source_date)
+            match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
+            if match:
+                test_case_name = match.group(1)
 
-            # Filename format (new): test_type__test_case_name__YYYYmmdd.log
-            # Filename format (old): test_case_name__YYYYMMDD_HHMMSS.log
-            #                                or test_case_name__YYYYMMDD_HHMMSS__YYYYmmdd.log
-            base = filename[:-4]  # strip .log
-            if "__" not in base:
-                continue
-
-            test_case_name = None
-            # Try new format first: {prefix}__{tc_name}__{date}.log
-            # prefix = perf/accuracy, tc_name = test case name without __
-            m = re.match(r"^[a-z]+__([^_]+(?:[^_]|_[^_])*?)__\d{8}(?:-\d+)?$", base)
-            if m and "__" not in m.group(1):
+        if not test_case_name:
+            # Fallback for old date-based directory format:
+            #   {date}__{tc_name}__{source_date}.log  or  {tc_name}__{date}.log
+            stripped = re.sub(r"^\d{8}__", "", base)
+            m = re.match(r"^(.+?)__(\d{8})(?:-[a-z]+)?$", stripped)
+            if m:
                 test_case_name = m.group(1)
 
-            if not test_case_name:
-                # Old format: test_case_name__YYYYMMDD_HHMMSS (optional __source_date)
-                match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
-                if match:
-                    test_case_name = match.group(1)
+        if not test_case_name:
+            continue
+        score = parse_eval_log(filepath)
 
-            if not test_case_name:
-                # Fallback for old date-based directory format:
-                #   {date}__{tc_name}__{source_date}.log  or  {tc_name}__{date}.log
-                stripped = re.sub(r"^\d{8}__", "", base)
-                m = re.match(r"^(.+?)__(\d{8})(?:-[a-z]+)?$", stripped)
-                if m:
-                    test_case_name = m.group(1)
-
-            if not test_case_name:
-                continue
-            filepath = os.path.join(eval_dir, filename)
-            score = parse_eval_log(filepath)
-
-            if score is not None:
-                key = (test_case_name, date_folder)
-                if key not in eval_data or score > eval_data[key]:
-                    eval_data[key] = score
+        if score is not None:
+            key = (test_case_name, date_folder)
+            if key not in eval_data or score > eval_data[key]:
+                eval_data[key] = score
 
     return eval_data
 
@@ -388,79 +446,68 @@ def collect_accuracy_only_data():
     if not os.path.isdir(metrics_dir):
         return results
 
-    for date_folder in sorted(os.listdir(metrics_dir)):
-        date_path = os.path.join(metrics_dir, date_folder)
-        if not os.path.isdir(date_path):
+    # Track best score per test case per date (date_label)
+    best_scores = {}
+
+    for date_folder, filepath in _iter_metrics_files(metrics_dir, ".log", "accuracy"):
+        filename = os.path.basename(filepath)
+
+        base = filename[:-4]
+        if "__" not in base:
             continue
 
-        acc_dir = os.path.join(date_path, "accuracy")
-        if not os.path.isdir(acc_dir):
-            continue
+        test_case_name = None
+        # Try new format first: {prefix}__{tc_name}__{date}.log
+        m = re.match(r"^[a-z]+__([^_]+(?:[^_]|_[^_])*?)__\d{8}(?:-\d+)?$", base)
+        if m and "__" not in m.group(1):
+            test_case_name = m.group(1)
 
-        # Track best score per test case per date
-        best_scores = {}
+        if not test_case_name:
+            # Old format: test_case_name__YYYYMMDD_HHMMSS (optional __source_date)
+            match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
+            if match:
+                test_case_name = match.group(1)
 
-        for filename in os.listdir(acc_dir):
-            if not filename.endswith(".log"):
-                continue
-
-            base = filename[:-4]
-            if "__" not in base:
-                continue
-
-            test_case_name = None
-            # Try new format first: {prefix}__{tc_name}__{date}.log
-            m = re.match(r"^[a-z]+__([^_]+(?:[^_]|_[^_])*?)__\d{8}(?:-\d+)?$", base)
-            if m and "__" not in m.group(1):
+        if not test_case_name:
+            # Fallback for old date-based directory format:
+            #   {date}__{tc_name}__{source_date}.log  or  {tc_name}__{date}.log
+            stripped = re.sub(r"^\d{8}__", "", base)
+            m = re.match(r"^(.+?)__(\d{8})(?:-[a-z]+)?$", stripped)
+            if m:
                 test_case_name = m.group(1)
 
-            if not test_case_name:
-                # Old format: test_case_name__YYYYMMDD_HHMMSS (optional __source_date)
-                match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
-                if match:
-                    test_case_name = match.group(1)
+        if not test_case_name:
+            continue
+        score = parse_eval_log(filepath)
 
-            if not test_case_name:
-                # Fallback for old date-based directory format:
-                #   {date}__{tc_name}__{source_date}.log  or  {tc_name}__{date}.log
-                stripped = re.sub(r"^\d{8}__", "", base)
-                m = re.match(r"^(.+?)__(\d{8})(?:-[a-z]+)?$", stripped)
-                if m:
-                    test_case_name = m.group(1)
+        if score is not None:
+            key = (test_case_name, date_folder)
+            if key not in best_scores or score > best_scores[key]:
+                best_scores[key] = score
 
-            if not test_case_name:
-                continue
-            filepath = os.path.join(acc_dir, filename)
-            score = parse_eval_log(filepath)
-
-            if score is not None:
-                key = (test_case_name, date_folder)
-                if key not in best_scores or score > best_scores[key]:
-                    best_scores[key] = score
-
-        # Build result entries
-        for (test_case_name, date), score in best_scores.items():
-            labels = parse_filename(test_case_name + ".txt")
-            labels["date"] = date
-            labels["eval_score"] = score
-            # Derive yaml name from test_case_name
-            yaml_name = test_case_name
-            if yaml_name.startswith("test_npu_"):
-                yaml_name = yaml_name[len("test_npu_"):]
-            labels["yaml_name"] = yaml_name
-            # No performance metrics
-            labels["mean_ttft"] = None
-            labels["mean_tpot"] = None
-            labels["mean_e2e_latency"] = None
-            labels["output_token_throughput"] = None
-            labels["p90_ttft"] = None
-            labels["p90_tpot"] = None
-            labels["total_token_throughput"] = None
-            labels["total_requests"] = None
-            labels["max_concurrency"] = None
-            labels["system_concurrency"] = None
-            labels["request_throughput"] = None
-            results.append(labels)
+    # Build result entries
+    for (test_case_name, date), score in best_scores.items():
+        labels = parse_filename(test_case_name + ".txt")
+        labels["date"] = date
+        labels["eval_score"] = score
+        # Derive yaml name from test_case_name
+        yaml_name = test_case_name
+        if yaml_name.startswith("test_npu_"):
+            yaml_name = yaml_name[len("test_npu_"):]
+        labels["yaml_name"] = yaml_name
+        # No performance metrics
+        labels["mean_ttft"] = None
+        labels["mean_tpot"] = None
+        labels["mean_e2e_latency"] = None
+        labels["output_token_throughput"] = None
+        labels["p90_ttft"] = None
+        labels["p90_tpot"] = None
+        labels["total_token_throughput"] = None
+        labels["total_requests"] = None
+        labels["max_concurrency"] = None
+        labels["system_concurrency"] = None
+        labels["request_throughput"] = None
+        results.append(labels)
 
     return results
 
@@ -582,43 +629,35 @@ def collect_metrics():
         print(f"Metrics directory not found: {metrics_dir}")
         return
 
-    for date_folder in sorted(os.listdir(metrics_dir)):
-        date_path = os.path.join(metrics_dir, date_folder)
-        if not os.path.isdir(date_path):
+    for date_folder, filepath in _iter_metrics_files(metrics_dir, ".txt"):
+        filename = os.path.basename(filepath)
+        parsed = parse_benchmark_file(filepath)
+        if parsed is None:
             continue
 
-        for filename in os.listdir(date_path):
-            if not filename.endswith(".txt"):
-                continue
+        labels = parse_filename(filename)
+        labels["date"] = date_folder
 
-            filepath = os.path.join(date_path, filename)
-            parsed = parse_benchmark_file(filepath)
-            if parsed is None:
-                continue
+        label_values = [labels[k] for k in LABELS]
 
-            labels = parse_filename(filename)
-            labels["date"] = date_folder
-
-            label_values = [labels[k] for k in LABELS]
-
-            mean_ttft.labels(*label_values).set(parsed["mean_ttft"])
-            mean_tpot.labels(*label_values).set(parsed["mean_tpot"])
-            mean_e2e_latency.labels(*label_values).set(parsed["mean_e2e_latency"])
-            output_token_throughput.labels(*label_values).set(parsed["output_token_throughput"])
-            if parsed.get("p90_ttft") is not None:
-                p90_ttft.labels(*label_values).set(parsed["p90_ttft"])
-            if parsed.get("p90_tpot") is not None:
-                p90_tpot.labels(*label_values).set(parsed["p90_tpot"])
-            if parsed.get("total_token_throughput") is not None:
-                total_token_throughput.labels(*label_values).set(parsed["total_token_throughput"])
-            if parsed.get("total_requests") is not None:
-                total_requests.labels(*label_values).set(parsed["total_requests"])
-            if parsed.get("max_concurrency") is not None:
-                max_concurrency.labels(*label_values).set(parsed["max_concurrency"])
-            if parsed.get("system_concurrency") is not None:
-                system_concurrency.labels(*label_values).set(parsed["system_concurrency"])
-            if parsed.get("request_throughput") is not None:
-                request_throughput.labels(*label_values).set(parsed["request_throughput"])
+        mean_ttft.labels(*label_values).set(parsed["mean_ttft"])
+        mean_tpot.labels(*label_values).set(parsed["mean_tpot"])
+        mean_e2e_latency.labels(*label_values).set(parsed["mean_e2e_latency"])
+        output_token_throughput.labels(*label_values).set(parsed["output_token_throughput"])
+        if parsed.get("p90_ttft") is not None:
+            p90_ttft.labels(*label_values).set(parsed["p90_ttft"])
+        if parsed.get("p90_tpot") is not None:
+            p90_tpot.labels(*label_values).set(parsed["p90_tpot"])
+        if parsed.get("total_token_throughput") is not None:
+            total_token_throughput.labels(*label_values).set(parsed["total_token_throughput"])
+        if parsed.get("total_requests") is not None:
+            total_requests.labels(*label_values).set(parsed["total_requests"])
+        if parsed.get("max_concurrency") is not None:
+            max_concurrency.labels(*label_values).set(parsed["max_concurrency"])
+        if parsed.get("system_concurrency") is not None:
+            system_concurrency.labels(*label_values).set(parsed["system_concurrency"])
+        if parsed.get("request_throughput") is not None:
+            request_throughput.labels(*label_values).set(parsed["request_throughput"])
 
     print(f"Metrics updated at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
