@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --branch NAME         按前缀筛选收集任务结果"
             echo "                        如 --branch pllimax 匹配所有以 pllimax 开头的目录"
             echo "                        (即 pllimax 仓下所有分支的 CI 任务)"
-            echo "                        分支模式下结果按 CI 目录名({分支}-{run_id})存放，不使用日期"
+            echo "                        分支模式下结果按 CI 目录名({分支}-{run_id})/workflow_type 存放，不使用日期"
             echo "  --help, -h            显示此帮助信息"
             echo ""
             echo "环境变量:"
@@ -204,12 +204,14 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
 
         # 目标存放目录：
-        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{run_id}）保存，不使用日期
+        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{run_id}）保存，并在其中按 workflow_type 区分
         # 否则 → 按文件实际修改日期保存
         if [ -n "${BRANCH:-}" ]; then
             rel="${src_file#${SRC_BASE}/}"
             ci_dir_name="${rel%%/*}"
-            PERF_TARGET_DIR="${SCRIPT_DIR}/${ci_dir_name}"
+            tmp="${rel#*/}"
+            wf_type="${tmp%%/*}"
+            PERF_TARGET_DIR="${SCRIPT_DIR}/${ci_dir_name}/${wf_type}"
         else
             actual_date=$(date -d "@${mtime_epoch}" +%Y%m%d 2>/dev/null || date -r "${mtime_epoch}" +%Y%m%d 2>/dev/null)
             if [ -z "${actual_date}" ]; then
@@ -233,7 +235,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         } >> "${dst_file}"
 
         if [ -n "${BRANCH:-}" ]; then
-            echo "[OK] ${subdir_name_clean} (源目录: ${ci_dir_name}, 源目录日期: ${CURRENT_DATE})"
+            echo "[OK] ${subdir_name_clean} (源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
         else
             echo "[OK] ${subdir_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
         fi
@@ -242,7 +244,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
 
     echo ""
     if [ -n "${BRANCH:-}" ]; then
-        echo "完成: 共收集 ${count} 个性能测试文件（按 CI 目录名归类到 ${SCRIPT_DIR}/{目录名}/）"
+        echo "完成: 共收集 ${count} 个性能测试文件（按 ${SCRIPT_DIR}/{目录名}/{workflow_type}/ 归类）"
     else
         echo "完成: 共收集 ${count} 个性能测试文件（按实际修改时间归类）"
     fi
@@ -252,7 +254,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     # 收集精度测试结果 (eval_log.log)
     # 新 CI 结构: SRC_BASE/{branch}-{run_id}/{workflow_type}/{test_type}/{tc_name}-{timestamp}/logs/eval_log.log
     # 所有 perf 和 accuracy 类型的 eval 日志都在 SRC_BASE 下统一搜索
-    # 存储: 默认 SCRIPT_DIR/实际日期/eval/，分支模式 SCRIPT_DIR/{目录名}/eval/
+    # 存储: 默认 SCRIPT_DIR/实际日期/eval/，分支模式 SCRIPT_DIR/{目录名}/{workflow_type}/eval/
     # 命名: 按"用例名__时间戳__源日期.log"
     # ============================================================
 
@@ -277,12 +279,14 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
 
         # 目标存放目录：
-        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{run_id}）保存，不使用日期
+        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{run_id}）保存，并在其中按 workflow_type 区分
         # 否则 → 按文件实际修改日期保存
         if [ -n "${BRANCH:-}" ]; then
             rel="${eval_src#${SRC_BASE}/}"
             ci_dir_name="${rel%%/*}"
-            EVAL_TARGET_DIR="${SCRIPT_DIR}/${ci_dir_name}/eval"
+            tmp="${rel#*/}"
+            wf_type="${tmp%%/*}"
+            EVAL_TARGET_DIR="${SCRIPT_DIR}/${ci_dir_name}/${wf_type}/eval"
         else
             actual_date=$(date -d "@${mtime_epoch}" +%Y%m%d 2>/dev/null || date -r "${mtime_epoch}" +%Y%m%d 2>/dev/null)
             if [ -z "${actual_date}" ]; then
@@ -313,7 +317,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         } >> "${eval_dst}"
 
         if [ -n "${BRANCH:-}" ]; then
-            echo "[EVAL] ${test_type_name}__${ts_name_clean} (源目录: ${ci_dir_name}, 源目录日期: ${CURRENT_DATE})"
+            echo "[EVAL] ${test_type_name}__${ts_name_clean} (源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
         else
             echo "[EVAL] ${test_type_name}__${ts_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
         fi
@@ -323,7 +327,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     if [ ${eval_count} -gt 0 ]; then
         echo ""
         if [ -n "${BRANCH:-}" ]; then
-            echo "完成: 共收集 ${eval_count} 个精度测试文件（按 CI 目录名归类到 ${SCRIPT_DIR}/{目录名}/eval/）"
+            echo "完成: 共收集 ${eval_count} 个精度测试文件（按 ${SCRIPT_DIR}/{目录名}/{workflow_type}/eval/ 归类）"
         else
             echo "完成: 共收集 ${eval_count} 个精度测试文件（按实际修改时间归类）"
         fi
