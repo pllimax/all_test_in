@@ -18,6 +18,7 @@ SRC_BASE="${SRC_BASE:-/data/ascend-ci-share-pkking-sglang/tests/output}"
 GIT_REPO="${GIT_REPO:-git@github.com-pllimax:pllimax/all_test_in.git}"
 GIT_TARGET_PATH="${GIT_TARGET_PATH:-upload_performance_result/metrics/sglang}"
 GIT_LOCAL_DIR="${GIT_LOCAL_DIR:-}"
+BRANCH="${BRANCH:-}"
 
 # ============================================================
 # 参数解析
@@ -42,6 +43,10 @@ while [[ $# -gt 0 ]]; do
             GIT_TARGET_PATH="$2"
             shift 2
             ;;
+        --branch)
+            BRANCH="$2"
+            shift 2
+            ;;
         --help|-h)
             echo "用法: $0 [选项] [日期...]"
             echo ""
@@ -55,6 +60,8 @@ while [[ $# -gt 0 ]]; do
             echo "  --src-base PATH       源目录基础路径（不包含日期部分）"
             echo "  --git-repo REPO       Git仓库地址"
             echo "  --git-target-path PATH Git仓库中的目标路径"
+            echo "  --branch NAME         仅收集指定分支的任务结果"
+            echo "                        (匹配 SRC_BASE/{分支名}-{run_id}/ 目录)"
             echo "  --help, -h            显示此帮助信息"
             echo ""
             echo "环境变量:"
@@ -62,11 +69,14 @@ while [[ $# -gt 0 ]]; do
             echo "  GIT_REPO              Git仓库地址"
             echo "  GIT_TARGET_PATH       Git仓库中的目标路径"
             echo "  GIT_LOCAL_DIR         Git本地临时目录"
+            echo "  BRANCH                仅收集指定分支"
             echo ""
             echo "示例:"
             echo "  $0                        # 自动收集今天及前3天"
             echo "  $0 20260716               # 单个日期"
             echo "  $0 20260716 20260717 20260718   # 多个日期轮流执行"
+            echo "  $0 --branch pllimax-pr_branch_plli_for_check_in_2  # 收集指定分支所有任务"
+            echo "  $0 --branch pllimax-pr_branch_plli_for_check_in_2 20260727  # 指定分支+日期"
             echo "  SRC_BASE=/custom/path $0 20260716"
             echo "  $0 --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716"
             echo "  $0 --config my_config.conf 20260716"
@@ -122,10 +132,30 @@ if [ -z "$GIT_LOCAL_DIR" ]; then
 fi
 
 # ============================================================
+# 搜索根目录：支持按分支筛选
+# ============================================================
+if [ -n "${BRANCH:-}" ]; then
+    SEARCH_ROOTS=()
+    for d in "${SRC_BASE}"/"${BRANCH}"-*; do
+        [ -d "$d" ] && SEARCH_ROOTS+=("$d")
+    done
+    if [ ${#SEARCH_ROOTS[@]} -eq 0 ]; then
+        echo "错误: 未找到分支 ${BRANCH} 的任务目录 (${SRC_BASE}/${BRANCH}-*)"
+        exit 1
+    fi
+    echo "分支筛选: ${BRANCH} → 匹配 ${#SEARCH_ROOTS[@]} 个任务目录"
+else
+    SEARCH_ROOTS=("${SRC_BASE}")
+fi
+
+# ============================================================
 # 配置验证
 # ============================================================
 echo "========== 配置信息 =========="
 echo "源目录基础路径: ${SRC_BASE}"
+if [ -n "${BRANCH:-}" ]; then
+    echo "分支筛选:       ${BRANCH} (${#SEARCH_ROOTS[@]} 个任务目录)"
+fi
 echo "Git仓库:        ${GIT_REPO}"
 echo "Git目标路径:    ${GIT_TARGET_PATH}"
 if [ "$AUTO_MODE" = true ]; then
@@ -148,7 +178,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     # 新 CI 目录结构: SRC_BASE/{branch}-{run_id}/{workflow_type}/{test_type}/{tc_name}-{timestamp}/bench_serving_metrics.txt
     # 不再有空目录检查 —— 用 find 递归搜索 SRC_BASE 全树，由 mtime 日期过滤
 
-    echo "源目录: ${SRC_BASE} (递归搜索，按 mtime 日期过滤: ${CURRENT_DATE})"
+    echo "源目录: ${SEARCH_ROOTS[*]} (递归搜索，按 mtime 日期过滤: ${CURRENT_DATE})"
     echo "目标: 按文件实际修改时间归类到 SCRIPT_DIR/YYYYmmdd/"
     echo ""
 
@@ -193,7 +223,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
 
         echo "[OK] ${subdir_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
         count=$((count + 1))
-    done < <(find "${SRC_BASE}" -type f -name 'bench_serving_metrics.txt' -path '*/perf/*')
+    done < <(find "${SEARCH_ROOTS[@]}" -type f -name 'bench_serving_metrics.txt' -path '*/perf/*')
 
     echo ""
     echo "完成: 共收集 ${count} 个性能测试文件（按实际修改时间归类）"
@@ -256,7 +286,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
 
         echo "[EVAL] ${test_type_name}__${ts_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
         eval_count=$((eval_count + 1))
-    done < <(find "${SRC_BASE}" -type f -name 'eval_log.log' -path '*/logs/eval_log.log')
+    done < <(find "${SEARCH_ROOTS[@]}" -type f -name 'eval_log.log' -path '*/logs/eval_log.log')
 
     if [ ${eval_count} -gt 0 ]; then
         echo ""
