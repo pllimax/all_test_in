@@ -60,8 +60,9 @@ while [[ $# -gt 0 ]]; do
             echo "  --src-base PATH       源目录基础路径（不包含日期部分）"
             echo "  --git-repo REPO       Git仓库地址"
             echo "  --git-target-path PATH Git仓库中的目标路径"
-            echo "  --branch NAME         仅收集指定分支的任务结果"
-            echo "                        (匹配 SRC_BASE/{分支名}-{run_id}/ 目录)"
+            echo "  --branch NAME         按前缀筛选收集任务结果"
+            echo "                        如 --branch pllimax 匹配所有以 pllimax 开头的目录"
+            echo "                        (即 pllimax 仓下所有分支的 CI 任务)"
             echo "  --help, -h            显示此帮助信息"
             echo ""
             echo "环境变量:"
@@ -75,8 +76,8 @@ while [[ $# -gt 0 ]]; do
             echo "  $0                        # 自动收集今天及前3天"
             echo "  $0 20260716               # 单个日期"
             echo "  $0 20260716 20260717 20260718   # 多个日期轮流执行"
-            echo "  $0 --branch pllimax-pr_branch_plli_for_check_in_2  # 收集指定分支所有任务"
-            echo "  $0 --branch pllimax-pr_branch_plli_for_check_in_2 20260727  # 指定分支+日期"
+            echo "  $0 --branch pllimax                      # 前缀匹配，收集 pllimax 仓所有分支任务"
+            echo "  $0 --branch pllimax 20260727             # 前缀匹配 + 日期过滤"
             echo "  SRC_BASE=/custom/path $0 20260716"
             echo "  $0 --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716"
             echo "  $0 --config my_config.conf 20260716"
@@ -132,18 +133,19 @@ if [ -z "$GIT_LOCAL_DIR" ]; then
 fi
 
 # ============================================================
-# 搜索根目录：支持按分支筛选
+# 搜索根目录：支持按分支前缀筛选
+# 前缀匹配，如 --branch pllimax 可匹配 pllimax 下所有分支目录
 # ============================================================
 if [ -n "${BRANCH:-}" ]; then
     SEARCH_ROOTS=()
-    for d in "${SRC_BASE}"/"${BRANCH}"-*; do
+    for d in "${SRC_BASE}"/"${BRANCH}"*; do
         [ -d "$d" ] && SEARCH_ROOTS+=("$d")
     done
     if [ ${#SEARCH_ROOTS[@]} -eq 0 ]; then
-        echo "错误: 未找到分支 ${BRANCH} 的任务目录 (${SRC_BASE}/${BRANCH}-*)"
+        echo "错误: 未找到匹配分支前缀 ${BRANCH} 的任务目录 (${SRC_BASE}/${BRANCH}*)"
         exit 1
     fi
-    echo "分支筛选: ${BRANCH} → 匹配 ${#SEARCH_ROOTS[@]} 个任务目录"
+    echo "分支筛选: ${BRANCH} (前缀匹配) → 匹配 ${#SEARCH_ROOTS[@]} 个任务目录"
 else
     SEARCH_ROOTS=("${SRC_BASE}")
 fi
