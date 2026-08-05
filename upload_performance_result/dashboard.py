@@ -645,7 +645,12 @@ function onFilterChange() {
   let filtered = allData;
   Object.entries(filters).forEach(([key, vals]) => {
     if (vals !== null) {
-      filtered = filtered.filter(d => vals.includes(d[key]));
+      if (key === 'source') {
+        // source 可能为逗号分隔的多来源（如 "fulltest,nightly"），任一匹配即通过
+        filtered = filtered.filter(d => String(d.source || '').split(',').some(s => vals.includes(s)));
+      } else {
+        filtered = filtered.filter(d => vals.includes(d[key]));
+      }
     }
   });
 
@@ -891,7 +896,8 @@ function exportToExcel() {
     const statusVals = getSelectedValues('statusFilter');
 
     let filtered = allData;
-    if (sourceVals !== null) filtered = filtered.filter(d => sourceVals.includes(d.source));
+    // source 可能为逗号分隔的多来源（如 "fulltest,nightly"），任一匹配即通过
+    if (sourceVals !== null) filtered = filtered.filter(d => String(d.source || '').split(',').some(s => sourceVals.includes(s)));
     if (modelVals !== null) filtered = filtered.filter(d => modelVals.includes(d.model));
     if (dateVals !== null) filtered = filtered.filter(d => dateVals.includes(d.date));
 
@@ -1100,6 +1106,11 @@ def collect_expected_test_cases():
                         # Use YAML name directly as test case ID
                         if name not in expected:
                             expected[name] = {"labels": labels, "source": source, "yaml_name": name}
+                        else:
+                            # 同一用例可能同时存在于多个 workflow（如 fulltest + nightly），合并 source
+                            existing = expected[name]
+                            if source not in existing["source"].split(","):
+                                existing["source"] = existing["source"] + "," + source
 
     return expected
 
