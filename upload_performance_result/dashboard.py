@@ -1300,57 +1300,66 @@ def collect_all_data():
             filtered.append(r)
 
     # Add placeholder entries for expected test cases that have no data
-    # 为每个出现的日期补充占位符条目：该日期无结果的用例也显示（FAILED(无结果)）
+    # 为每个 (分支, 日期) 组合补充占位符条目：
+    # 选中具体分支或日期时，无结果的用例也显示（FAILED(无结果)）
 
-    # Collect all dates that appear in results
-    all_dates = sorted(set(r.get("date", "") for r in filtered if r.get("date")))
-    if not all_dates:
-        # No data at all: use a placeholder date so expected cases still render
-        all_dates = [""]
+    # Collect all (branch, date) pairs that appear in results
+    branch_dates = {}
+    for r in filtered:
+        b = r.get("branch", "")
+        d = r.get("date", "")
+        if d:
+            branch_dates.setdefault(b, set()).add(d)
+    if not branch_dates:
+        # No data at all: use a placeholder pair so expected cases still render
+        branch_dates = {"": {""}}
 
-    # Existing (yaml_name, date) pairs to avoid duplicating real results
-    existing_pairs = set((r.get("yaml_name", ""), r.get("date", "")) for r in filtered)
+    # Existing (yaml_name, branch, date) triples to avoid duplicating real results
+    existing_pairs = set(
+        (r.get("yaml_name", ""), r.get("branch", ""), r.get("date", ""))
+        for r in filtered
+    )
 
-    for date in all_dates:
-        for yaml_name, info in expected.items():
-            if (yaml_name, date) in existing_pairs:
-                continue
-            labels = info["labels"]
-            # Derive baseline key from yaml_name: prefix with "test_npu_" if not already
-            if yaml_name.startswith("test_npu_"):
-                baseline_key = yaml_name
-            else:
-                baseline_key = "test_npu_" + yaml_name
-            placeholder_baselines = baselines.get(baseline_key, {})
-            date_part, branch_part = split_date_label(date)
-            placeholder = {
-                "model": labels.get("model", ""),
-                "quantization": labels.get("quantization", ""),
-                "parallelism": labels.get("parallelism", ""),
-                "input_len": labels.get("input_len", ""),
-                "output_len": labels.get("output_len", ""),
-                "request_rate": labels.get("request_rate", ""),
-                "dataset": labels.get("dataset", ""),
-                "prefix": labels.get("prefix", ""),
-                "date": date_part,
-                "branch": branch_part,
-                "yaml_name": yaml_name,
-                "mean_ttft": None,
-                "mean_tpot": None,
-                "mean_e2e_latency": None,
-                "output_token_throughput": None,
-                "p90_ttft": None,
-                "p90_tpot": None,
-                "total_token_throughput": None,
-                "total_requests": None,
-                "max_concurrency": None,
-                "system_concurrency": None,
-                "request_throughput": None,
-                "eval_score": None,
-                "baselines": placeholder_baselines,
-                "source": info["source"],
-            }
-            filtered.append(placeholder)
+    for branch, dates in branch_dates.items():
+        for date in sorted(dates):
+            for yaml_name, info in expected.items():
+                if (yaml_name, branch, date) in existing_pairs:
+                    continue
+                labels = info["labels"]
+                # Derive baseline key from yaml_name: prefix with "test_npu_" if not already
+                if yaml_name.startswith("test_npu_"):
+                    baseline_key = yaml_name
+                else:
+                    baseline_key = "test_npu_" + yaml_name
+                placeholder_baselines = baselines.get(baseline_key, {})
+                placeholder = {
+                    "model": labels.get("model", ""),
+                    "quantization": labels.get("quantization", ""),
+                    "parallelism": labels.get("parallelism", ""),
+                    "input_len": labels.get("input_len", ""),
+                    "output_len": labels.get("output_len", ""),
+                    "request_rate": labels.get("request_rate", ""),
+                    "dataset": labels.get("dataset", ""),
+                    "prefix": labels.get("prefix", ""),
+                    "date": date,
+                    "branch": branch,
+                    "yaml_name": yaml_name,
+                    "mean_ttft": None,
+                    "mean_tpot": None,
+                    "mean_e2e_latency": None,
+                    "output_token_throughput": None,
+                    "p90_ttft": None,
+                    "p90_tpot": None,
+                    "total_token_throughput": None,
+                    "total_requests": None,
+                    "max_concurrency": None,
+                    "system_concurrency": None,
+                    "request_throughput": None,
+                    "eval_score": None,
+                    "baselines": placeholder_baselines,
+                    "source": info["source"],
+                }
+                filtered.append(placeholder)
 
     # Attach topology info to all items
     for item in filtered:

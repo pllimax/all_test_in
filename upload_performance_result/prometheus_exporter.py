@@ -402,27 +402,23 @@ def collect_eval_data():
         if "__" not in base:
             continue
 
-        test_case_name = None
-        # Try new format first: {prefix}__{tc_name}__{date}.log
-        # prefix = perf/accuracy, tc_name = test case name without __
-        m = re.match(r"^[a-z]+__([^_]+(?:[^_]|_[^_])*?)__\d{8}(?:-\d+)?$", base)
-        if m and "__" not in m.group(1):
-            test_case_name = m.group(1)
-
-        if not test_case_name:
-            # Old format: test_case_name__YYYYMMDD_HHMMSS (optional __source_date)
-            match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
-            if match:
-                test_case_name = match.group(1)
-
-        if not test_case_name:
-            # Fallback for old date-based directory format:
-            #   {date}__{tc_name}__{source_date}.log  or  {tc_name}__{date}.log
-            stripped = re.sub(r"^\d{8}__", "", base)
-            m = re.match(r"^(.+?)__(\d{8})(?:-[a-z]+)?$", stripped)
-            if m:
-                test_case_name = m.group(1)
-
+        # 统一命名解析：
+        #   简化格式: {tc_name}__{date}.log
+        #   新格式:   {test_type}__{tc_name}__{date}.log  (test_type = perf/accuracy)
+        #   历史格式: {tc_name}-{ci_ts}__{eval_ts}__{date}.log
+        #   历史格式: {date}__{tc_name}__{source_date}.log
+        parts = base.split("__")
+        if len(parts) < 2 or not re.match(r"^\d{8}(?:-\d+)?$", parts[-1]):
+            continue
+        test_case_name = parts[0]
+        # 兼容带前缀格式: {test_type}__{tc}__{date} / {date}__{tc}__{source_date}
+        if len(parts) >= 3 and (
+            test_case_name in ("perf", "accuracy")
+            or re.match(r"^\d{8}$", test_case_name)
+        ):
+            test_case_name = parts[1]
+        # 剥离 CI 时间戳后缀（-HHMMSS），如 test_npu_x-205203 → test_npu_x
+        test_case_name = re.sub(r"-\d{6}$", "", test_case_name)
         if not test_case_name:
             continue
         score = parse_eval_log(filepath)
@@ -456,26 +452,23 @@ def collect_accuracy_only_data():
         if "__" not in base:
             continue
 
-        test_case_name = None
-        # Try new format first: {prefix}__{tc_name}__{date}.log
-        m = re.match(r"^[a-z]+__([^_]+(?:[^_]|_[^_])*?)__\d{8}(?:-\d+)?$", base)
-        if m and "__" not in m.group(1):
-            test_case_name = m.group(1)
-
-        if not test_case_name:
-            # Old format: test_case_name__YYYYMMDD_HHMMSS (optional __source_date)
-            match = re.match(r"(.+?)__(\d{8}_\d{6})(?:__\d{8})?$", base)
-            if match:
-                test_case_name = match.group(1)
-
-        if not test_case_name:
-            # Fallback for old date-based directory format:
-            #   {date}__{tc_name}__{source_date}.log  or  {tc_name}__{date}.log
-            stripped = re.sub(r"^\d{8}__", "", base)
-            m = re.match(r"^(.+?)__(\d{8})(?:-[a-z]+)?$", stripped)
-            if m:
-                test_case_name = m.group(1)
-
+        # 统一命名解析：
+        #   简化格式: {tc_name}__{date}.log
+        #   新格式:   {test_type}__{tc_name}__{date}.log  (test_type = perf/accuracy)
+        #   历史格式: {tc_name}-{ci_ts}__{eval_ts}__{date}.log
+        #   历史格式: {date}__{tc_name}__{source_date}.log
+        parts = base.split("__")
+        if len(parts) < 2 or not re.match(r"^\d{8}(?:-\d+)?$", parts[-1]):
+            continue
+        test_case_name = parts[0]
+        # 兼容带前缀格式: {test_type}__{tc}__{date} / {date}__{tc}__{source_date}
+        if len(parts) >= 3 and (
+            test_case_name in ("perf", "accuracy")
+            or re.match(r"^\d{8}$", test_case_name)
+        ):
+            test_case_name = parts[1]
+        # 剥离 CI 时间戳后缀（-HHMMSS），如 test_npu_x-205203 → test_npu_x
+        test_case_name = re.sub(r"-\d{6}$", "", test_case_name)
         if not test_case_name:
             continue
         score = parse_eval_log(filepath)

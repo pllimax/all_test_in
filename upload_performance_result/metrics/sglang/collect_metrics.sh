@@ -275,7 +275,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     # 新 CI 结构: SRC_BASE/{branch_label}-{create_date}-{run_id}/{workflow_name}/{test_type}/{tc_name}-{timestamp}/logs/eval_log.log
     # 所有 perf 和 accuracy 类型的 eval 日志都在 SRC_BASE 下统一搜索
     # 存储: 默认 SCRIPT_DIR/实际日期/eval/，分支模式 SCRIPT_DIR/{目录名}/{workflow目录}/eval/
-    # 命名: 按"用例名__时间戳__源日期.log"
+    # 命名: 按"用例名__源日期.log"
     # ============================================================
 
     eval_count=0
@@ -317,15 +317,15 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
         mkdir -p "${EVAL_TARGET_DIR}"
 
-        # 命名: {test_type}__{tc_name_clean}__{源目录日期}.log
-        eval_dst="${EVAL_TARGET_DIR}/${test_type_name}__${ts_name_clean}__${CURRENT_DATE}.log"
+        # 命名: {tc_name_clean}__{源目录日期}.log
+        eval_dst="${EVAL_TARGET_DIR}/${ts_name_clean}__${CURRENT_DATE}.log"
         # 如果已存在同名文件（来自不同 workflow 目录等），追加序号后缀区分
         if [ -f "${eval_dst}" ]; then
             suffix=1
-            while [ -f "${EVAL_TARGET_DIR}/${test_type_name}__${ts_name_clean}__${CURRENT_DATE}-${suffix}.log" ]; do
+            while [ -f "${EVAL_TARGET_DIR}/${ts_name_clean}__${CURRENT_DATE}-${suffix}.log" ]; do
                 suffix=$((suffix + 1))
             done
-            eval_dst="${EVAL_TARGET_DIR}/${test_type_name}__${ts_name_clean}__${CURRENT_DATE}-${suffix}.log"
+            eval_dst="${EVAL_TARGET_DIR}/${ts_name_clean}__${CURRENT_DATE}-${suffix}.log"
         fi
         cp "${eval_src}" "${eval_dst}"
 
@@ -337,9 +337,9 @@ for CURRENT_DATE in "${DATES[@]}"; do
         } >> "${eval_dst}"
 
         if [ -n "${BRANCH:-}" ]; then
-            echo "[EVAL] ${test_type_name}__${ts_name_clean} (源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
+            echo "[EVAL] ${ts_name_clean} (源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
         else
-            echo "[EVAL] ${test_type_name}__${ts_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
+            echo "[EVAL] ${ts_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
         fi
         eval_count=$((eval_count + 1))
     done < <(find "${SEARCH_ROOTS[@]}" -type f -name 'eval_log.log' -path '*/logs/eval_log.log')
