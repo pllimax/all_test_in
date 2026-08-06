@@ -405,10 +405,14 @@ def collect_eval_data():
         # 统一命名解析：
         #   简化格式: {tc_name}__{date}.log
         #   新格式:   {test_type}__{tc_name}__{date}.log  (test_type = perf/accuracy)
+        #   历史格式: {tc_name}__{eval_ts}.log            (eval_ts = 20260717_204110)
         #   历史格式: {tc_name}-{ci_ts}__{eval_ts}__{date}.log
         #   历史格式: {date}__{tc_name}__{source_date}.log
+        #   变体后缀: __{eval_ts}-perf.log / __{eval_ts}-output.log
+        # 最后一段可能为: 20260726 | 20260717_204110 | 20260718_103021-perf |
+        #                 20260725_210147-output | 20260806-1
         parts = base.split("__")
-        if len(parts) < 2 or not re.match(r"^\d{8}(?:-\d+)?$", parts[-1]):
+        if len(parts) < 2 or not re.match(r"^\d{8}(?:_\d{6})?(?:-(?:\d+|perf|output))?$", parts[-1]):
             continue
         test_case_name = parts[0]
         # 兼容带前缀格式: {test_type}__{tc}__{date} / {date}__{tc}__{source_date}
@@ -455,10 +459,12 @@ def collect_accuracy_only_data():
         # 统一命名解析：
         #   简化格式: {tc_name}__{date}.log
         #   新格式:   {test_type}__{tc_name}__{date}.log  (test_type = perf/accuracy)
+        #   历史格式: {tc_name}__{eval_ts}.log            (eval_ts = 20260717_204110)
         #   历史格式: {tc_name}-{ci_ts}__{eval_ts}__{date}.log
         #   历史格式: {date}__{tc_name}__{source_date}.log
+        #   变体后缀: __{eval_ts}-perf.log / __{eval_ts}-output.log
         parts = base.split("__")
-        if len(parts) < 2 or not re.match(r"^\d{8}(?:-\d+)?$", parts[-1]):
+        if len(parts) < 2 or not re.match(r"^\d{8}(?:_\d{6})?(?:-(?:\d+|perf|output))?$", parts[-1]):
             continue
         test_case_name = parts[0]
         # 兼容带前缀格式: {test_type}__{tc}__{date} / {date}__{tc}__{source_date}

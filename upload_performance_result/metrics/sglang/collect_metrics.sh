@@ -401,8 +401,10 @@ fi
 mkdir -p "${GIT_LOCAL_DIR}/${GIT_TARGET_PATH}"
 
 # 拷贝脚本所在路径下所有目录及文件到目标路径（排除 .git 和自身临时目录）
+# 注意：不使用 --delete，避免删除 Git 仓库中已存在但本地 SCRIPT_DIR 缺失的历史数据
+#       （如换机器收集、或本地手动清理过某日期目录）
 echo "拷贝文件到仓库..."
-rsync -a --delete \
+rsync -a \
     --exclude='.git' \
     --exclude='.all_test_in_repo' \
     --exclude='collect_metrics.sh' \

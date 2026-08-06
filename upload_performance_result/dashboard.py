@@ -7,6 +7,7 @@ Results are compared across dates for each exact test case.
 import os
 import re
 import json
+import time
 import http.server
 import socketserver
 import subprocess
@@ -381,6 +382,10 @@ tr.selected:hover { background: #254070 !important; }
       <option value="FAILED">FAILED</option>
     </select>
   </div>
+  <div class="filter-group">
+    <label>历史天数</label>
+    <input type="number" id="historyDays" value="7" min="1" max="365" onchange="applyHistoryFilter()" style="width:70px;padding:5px;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:6px;">
+  </div>
   <button class="btn btn-reset" onclick="resetFilters()">重置筛选</button>
   <button class="btn" onclick="exportToExcel()">导出Excel</button>
 </div>
@@ -448,12 +453,20 @@ function initCharts() {
 }
 
 function showTestCaseChart(tcId, label) {
-  const items = allData.filter(d => d._id === tcId);
+  // 仅保留有执行结果的条目：无结果日期不显示在折线图中，保证折线连续
+  const items = allData.filter(d => d._id === tcId && hasData(d));
   items.sort((a, b) => a.date.localeCompare(b.date));
   const dates = items.map(d => d.date);
 
   const chartRow = document.getElementById('chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_'));
   if (!chartRow) return;
+
+  // Chart.js 未加载（如内网无法访问 CDN）时给出提示而非静默失败
+  if (typeof Chart === 'undefined') {
+    chartRow.querySelector('td').innerHTML =
+      '<div style="padding:12px;color:#8b949e;font-size:13px;">图表库加载失败（无法访问 CDN），历史数据仍可在表格中查看。</div>';
+    return;
+  }
 
   // Build chart definitions from baseline keys
   const baselineMetricDefs = {
@@ -611,8 +624,10 @@ function computeStatus(d) {
   const hasBaseline = Object.keys(b).length > 0;
   if (!hasBaseline) return hasPerf || hasEval ? '' : 'FAILED(无结果)';
   if (!hasPerf && !hasEval) return 'FAILED(无结果)';
+  // 性能类基线仅在该用例有性能数据时校验
+  // （避免 accuracy-only 用例因合并了同名 perf 脚本基线而被误判）
   // TPOT: baseline < 50 → +1ms absolute; baseline >= 50 → +2% relative
-  if (b.mean_tpot != null) {
+  if (hasPerf && b.mean_tpot != null) {
     if (d.mean_tpot == null) return 'FAILED';
     const tpotLimit = b.mean_tpot < TPOT_THRESHOLD
       ? b.mean_tpot + TPOT_TOLERANCE_LOW
@@ -620,17 +635,17 @@ function computeStatus(d) {
     if (d.mean_tpot > tpotLimit) return 'FAILED';
   }
   // TTFT: +2% tolerance
-  if (b.mean_ttft != null) {
+  if (hasPerf && b.mean_ttft != null) {
     if (d.mean_ttft == null) return 'FAILED';
     if (d.mean_ttft > b.mean_ttft * TTFT_TOLERANCE) return 'FAILED';
   }
   // E2E Latency: +2% tolerance
-  if (b.mean_e2e_latency != null) {
+  if (hasPerf && b.mean_e2e_latency != null) {
     if (d.mean_e2e_latency == null) return 'FAILED';
     if (d.mean_e2e_latency > b.mean_e2e_latency * E2E_TOLERANCE) return 'FAILED';
   }
   // Output Token Throughput: -2% tolerance
-  if (b.output_token_throughput != null) {
+  if (hasPerf && b.output_token_throughput != null) {
     if (d.output_token_throughput == null) return 'FAILED';
     if (d.output_token_throughput < b.output_token_throughput * THROUGHPUT_TOLERANCE) return 'FAILED';
   }
@@ -700,7 +715,10 @@ function resetFilters() {
     const sel = document.getElementById(id);
     [...sel.options].forEach(o => o.selected = o.value === '__all__');
   });
+  // 历史天数一并重置为默认 7 天
+  document.getElementById('historyDays').value = 7;
   onFilterChange();
+  applyHistoryFilter();
 }
 
 function updateTable(data) {
@@ -744,13 +762,17 @@ function updateTable(data) {
     return n > 0 ? (val / n).toFixed(2) : '--';
   }
 
-  function fmtBaseline(b) {
+  function fmtBaseline(b, d) {
+    // 按该用例实际拥有的数据类型显示对应基线：
+    // accuracy-only 用例（如拆分后的 *_aime25/gpqa 精度用例）不显示合并来的性能基线
+    const hasPerf = d != null && d.mean_ttft != null;
+    const hasEval = d != null && d.eval_score != null;
     const parts = [];
-    if (b.mean_ttft != null) parts.push(`TTFT≤${b.mean_ttft}`);
-    if (b.mean_tpot != null) parts.push(`TPOT≤${b.mean_tpot}`);
-    if (b.mean_e2e_latency != null) parts.push(`E2E时间≤${b.mean_e2e_latency}`);
-    if (b.output_token_throughput != null) parts.push(`输出吞吐≥${b.output_token_throughput}`);
-    if (b.eval_score != null) parts.push(`精度≥${b.eval_score}`);
+    if (hasPerf && b.mean_ttft != null) parts.push(`TTFT≤${b.mean_ttft}`);
+    if (hasPerf && b.mean_tpot != null) parts.push(`TPOT≤${b.mean_tpot}`);
+    if (hasPerf && b.mean_e2e_latency != null) parts.push(`E2E时间≤${b.mean_e2e_latency}`);
+    if (hasPerf && b.output_token_throughput != null) parts.push(`输出吞吐≥${b.output_token_throughput}`);
+    if (hasEval && b.eval_score != null) parts.push(`精度≥${b.eval_score}`);
     return parts.length > 0 ? parts.join(', ') : '--';
   }
 
@@ -815,13 +837,13 @@ function updateTable(data) {
       const rowStyle = isLatest ? '' : 'style="display:none"';
       if (isLatest) visibleCount++;
       const modelDisplay = isLatest && groupShowModel[gIdx] ? d.model : '';
-      rows += `<tr class="data-row" data-tc="${safeId}" ${rowStyle}>
+      rows += `<tr class="data-row" data-tc="${safeId}" data-date="${d.date}" data-hasdata="${hasData(d) ? '1' : '0'}" ${rowStyle}>
         <td>${modelDisplay}</td>
         <td><span class="testcase-id" title="${tcId}">${expandIcon}${tcId}</span></td>
         <td>${d.date}</td>
         <td>${d.source || '--'}</td>
         <td><span class="${statusCls}">${status}</span></td>
-        <td><span class="baseline-col" title="${fmtBaseline(b)}">${fmtBaseline(b)}</span></td>
+        <td><span class="baseline-col" title="${fmtBaseline(b, d)}">${fmtBaseline(b, d)}</span></td>
         <td class="col-uniform">${d.topology || '--'}</td>
         <td class="col-uniform">${d.card_count || '--'}</td>
         <td class="col-uniform">${d.seq_length || '--'}</td>
@@ -850,6 +872,34 @@ function updateTable(data) {
   });
   document.getElementById('tableCount').textContent = `(${visibleCount} 条)`;
   tbody.innerHTML = rows;
+}
+
+// 日期辅助：YYYYMMDD 纯日期字符串（date 标签已拆分，格式固定）
+function pad2(n) { return String(n).padStart(2, '0'); }
+function getDateCutoff(days) {
+  // 最近 N 天 → 今天往前推 (N-1) 天；如 7 天 = 今天+前6天
+  const t = new Date();
+  t.setDate(t.getDate() - (days - 1));
+  return `${t.getFullYear()}${pad2(t.getMonth() + 1)}${pad2(t.getDate())}`;
+}
+
+// 修改历史天数配置后，对当前展开的用例重新应用过滤
+function applyHistoryFilter() {
+  const histDays = parseInt(document.getElementById('historyDays').value) || 7;
+  const cutoff = getDateCutoff(histDays);
+  document.querySelectorAll('.chart-row').forEach(chartRow => {
+    if (chartRow.style.display !== 'none') {
+      const tcId = chartRow.getAttribute('data-tc');
+      const allRows = document.querySelectorAll(`tr[data-tc="${tcId}"].data-row`);
+      allRows.forEach((r, i) => {
+        const isLast = i === allRows.length - 1;
+        const rd = r.getAttribute('data-date');
+        const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
+        r.style.display = show ? '' : 'none';
+        if (show) r.classList.add('selected');
+      });
+    }
+  });
 }
 
 // Click row to expand/collapse history and charts
@@ -890,8 +940,17 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
       }
     });
 
-    // Expand: show all rows for this test case, highlight, show chart
-    allRows.forEach(r => { r.style.display = ''; r.classList.add('selected'); });
+    // Expand: show history rows within the configured day range, highlight, show chart
+    const histDays = parseInt(document.getElementById('historyDays').value) || 7;
+    const cutoff = getDateCutoff(histDays);
+    allRows.forEach((r, i) => {
+      // 最新行始终显示；历史行仅显示配置天数内且有执行结果的行（无结果日期不显示）
+      const isLast = i === allRows.length - 1;
+      const rd = r.getAttribute('data-date');
+      const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
+      r.style.display = show ? '' : 'none';
+      if (show) r.classList.add('selected');
+    });
     const latestRow = allRows[allRows.length - 1];
     if (latestRow) {
       const icon = latestRow.querySelector('.expand-icon');
@@ -974,12 +1033,15 @@ function exportToExcel() {
     const dataRows = rows.map(d => {
       const b = d.baselines || {};
       const n = getCardCount(d);
+      // 按数据类型过滤基线：accuracy-only 用例不显示合并来的性能基线
+      const hasPerf = d.mean_ttft != null;
+      const hasEval = d.eval_score != null;
       const blParts = [];
-      if (b.mean_ttft != null) blParts.push('TTFT≤' + b.mean_ttft);
-      if (b.mean_tpot != null) blParts.push('TPOT≤' + b.mean_tpot);
-      if (b.mean_e2e_latency != null) blParts.push('E2E≤' + b.mean_e2e_latency);
-      if (b.output_token_throughput != null) blParts.push('吞吐≥' + b.output_token_throughput);
-      if (b.eval_score != null) blParts.push('精度≥' + b.eval_score);
+      if (hasPerf && b.mean_ttft != null) blParts.push('TTFT≤' + b.mean_ttft);
+      if (hasPerf && b.mean_tpot != null) blParts.push('TPOT≤' + b.mean_tpot);
+      if (hasPerf && b.mean_e2e_latency != null) blParts.push('E2E≤' + b.mean_e2e_latency);
+      if (hasPerf && b.output_token_throughput != null) blParts.push('吞吐≥' + b.output_token_throughput);
+      if (hasEval && b.eval_score != null) blParts.push('精度≥' + b.eval_score);
       return [
         d.model || '', d._id || '', d.date || '', d.source || '', computeStatus(d),
         blParts.join(', '),
@@ -1101,6 +1163,7 @@ def collect_expected_test_cases():
         source = yaml_source_map.get(yaml_path, "unknown")
         in_test_config = False
         test_config_indent = 0
+        current_name = None
 
         for line in lines:
             stripped = line.strip()
@@ -1120,28 +1183,45 @@ def collect_expected_test_cases():
                 # Exit block when we hit a non-empty line at or before test_config indent
                 if stripped and current_indent <= test_config_indent:
                     in_test_config = False
+                    current_name = None
                     continue
 
                 # Only match - name: entries that are indented deeper than test_config
                 if current_indent > test_config_indent:
                     name_match = re.match(r'- name:\s*(\S+)', stripped)
                     if name_match:
-                        name = name_match.group(1)
+                        current_name = name_match.group(1)
+                        name = current_name
                         labels = parse_yaml_test_name(name)
                         model = labels.get("model", "")
                         if " " in model or not model:
+                            current_name = None
                             continue
                         # Skip excluded test cases
                         if name in EXCLUDED_TEST_CASES:
+                            current_name = None
                             continue
                         # Use YAML name directly as test case ID
                         if name not in expected:
-                            expected[name] = {"labels": labels, "source": source, "yaml_name": name}
+                            expected[name] = {"labels": labels, "source": source, "yaml_name": name, "type": "unknown"}
                         else:
                             # 同一用例可能同时存在于多个 workflow（如 fulltest + nightly），合并 source
                             existing = expected[name]
                             if source not in existing["source"].split(","):
                                 existing["source"] = existing["source"] + "," + source
+                    else:
+                        # 解析 test_case 路径，判断用例类型（accuracy/performance）
+                        tc_match = re.match(r'test_case:\s*(\S+)', stripped)
+                        if tc_match and current_name and current_name in expected:
+                            tc_path = tc_match.group(1)
+                            if "/accuracy/" in tc_path or tc_path.startswith("accuracy"):
+                                case_type = "accuracy"
+                            elif "/performance/" in tc_path or tc_path.startswith("performance"):
+                                case_type = "performance"
+                            else:
+                                case_type = "unknown"
+                            if expected[current_name].get("type") == "unknown":
+                                expected[current_name]["type"] = case_type
 
     return expected
 
@@ -1188,6 +1268,14 @@ def split_date_label(date_label):
     if m:
         return m.group(2), m.group(1)
     return date_label, ""
+
+
+# 性能指标字段：纯精度用例（accuracy）在输出时清空这些字段，只保留精度结果
+PERF_ONLY_FIELDS = [
+    "mean_ttft", "mean_tpot", "mean_e2e_latency", "output_token_throughput",
+    "p90_ttft", "p90_tpot", "total_token_throughput", "total_requests",
+    "max_concurrency", "system_concurrency", "request_throughput",
+]
 
 
 def collect_all_data():
@@ -1297,6 +1385,11 @@ def collect_all_data():
         yaml_name = r.get("yaml_name", "")
         if yaml_name in expected_tc_ids:
             r["source"] = expected[yaml_name]["source"]
+            # 纯精度用例（YAML 定义为 accuracy 测试）只显示精度结果：
+            # 丢弃因同名 perf 脚本或历史数据混入的性能字段
+            if expected[yaml_name].get("type") == "accuracy":
+                for k in PERF_ONLY_FIELDS:
+                    r[k] = None
             filtered.append(r)
 
     # Add placeholder entries for expected test cases that have no data
@@ -1313,6 +1406,19 @@ def collect_all_data():
     if not branch_dates:
         # No data at all: use a placeholder pair so expected cases still render
         branch_dates = {"": {""}}
+
+    # 同一 (用例, 分支, 日期) 可能来自多个数据源（.txt / accuracy 子目录 / eval 兜底），
+    # 合并去重：保留所有非 None 字段（字段级合并）
+    merged = {}
+    for r in filtered:
+        key = (r.get("yaml_name", ""), r.get("branch", ""), r.get("date", ""))
+        if key in merged:
+            for k, v in r.items():
+                if v is not None and merged[key].get(k) is None:
+                    merged[key][k] = v
+        else:
+            merged[key] = r
+    filtered = list(merged.values())
 
     # Existing (yaml_name, branch, date) triples to avoid duplicating real results
     existing_pairs = set(
@@ -1372,6 +1478,20 @@ def collect_all_data():
     return filtered
 
 
+# /api/data 结果缓存：metrics 数据更新不频繁（每 300s 轮询 + 手动刷新），
+# 加 TTL 缓存避免每次请求全量重扫 metrics 目录与解析 YAML。
+DATA_CACHE_TTL = 30  # 秒
+_data_cache = {"ts": 0, "payload": None}
+
+
+def _get_data():
+    now = time.time()
+    if _data_cache["payload"] is None or now - _data_cache["ts"] >= DATA_CACHE_TTL:
+        _data_cache["payload"] = collect_all_data()
+        _data_cache["ts"] = now
+    return _data_cache["payload"]
+
+
 class DashboardHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         if self.path == "/" or self.path == "/index.html":
@@ -1380,7 +1500,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
         elif self.path == "/api/data":
-            data = collect_all_data()
+            data = _get_data()
             self.send_response(200)
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Access-Control-Allow-Origin", "*")
@@ -1430,13 +1550,26 @@ def sync_repos():
 
         # Repo exists - force pull latest
         print(f"[sync] {src_name}: pulling latest from {repo_root}")
+        stashed = False
         try:
-            # Reset any local changes and pull
-            subprocess.run(
-                ["git", "reset", "--hard", "HEAD"],
+            # 检查是否有本地未提交改动，避免 reset --hard 清空用户改动
+            status = subprocess.run(
+                ["git", "status", "--porcelain"],
                 capture_output=True, text=True, timeout=30,
                 cwd=repo_root,
             )
+            has_local_changes = bool(status.stdout.strip())
+            if has_local_changes:
+                print(f"[sync] {src_name}: 检测到本地未提交改动，使用 stash 暂存后再更新（保留用户改动）")
+                stash = subprocess.run(
+                    ["git", "stash", "push", "-u", "-m", "dashboard-sync"],
+                    capture_output=True, text=True, timeout=30,
+                    cwd=repo_root,
+                )
+                stashed = stash.returncode == 0
+                if not stashed:
+                    print(f"[sync] {src_name}: stash 失败，跳过更新: {stash.stderr.strip()}")
+
             result = subprocess.run(
                 ["git", "pull", "--ff-only"],
                 capture_output=True, text=True, timeout=60,
@@ -1448,6 +1581,19 @@ def sync_repos():
                     print(f"[sync] {src_name}: updated to latest")
             else:
                 print(f"[sync] {src_name}: pull failed: {result.stderr.strip()}")
+
+            # 恢复被暂存的本地改动
+            if stashed:
+                pop = subprocess.run(
+                    ["git", "stash", "pop"],
+                    capture_output=True, text=True, timeout=30,
+                    cwd=repo_root,
+                )
+                if pop.returncode != 0:
+                    # pop 失败（冲突）时改动仍在 stash 中，不丢失，仅提示
+                    print(f"[sync] {src_name}: stash pop 冲突，改动保留在 stash 中，请手动处理: {pop.stderr.strip()}")
+                else:
+                    print(f"[sync] {src_name}: 本地改动已恢复")
         except subprocess.TimeoutExpired:
             print(f"[sync] {src_name}: pull timed out")
         except Exception as e:
