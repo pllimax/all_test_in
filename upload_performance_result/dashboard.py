@@ -1179,14 +1179,14 @@ def _match_baselines_for_item(item, baselines):
 def split_date_label(date_label):
     """拆分 date_label 为 (date, branch)。
     新格式: {branch_label}-{create_date}-{run_id}/{workflow}
-            → (create_date, 完整 date_label)
+            → (create_date, branch_label)   # branch 仅取日期之前的字段
     旧格式: YYYYMMDD → (YYYYMMDD, "")
     """
     if not date_label:
         return date_label, ""
     m = re.match(r"^(.+)-(\d{8})-(\d+)/(.+)$", date_label)
     if m:
-        return m.group(2), date_label
+        return m.group(2), m.group(1)
     return date_label, ""
 
 
