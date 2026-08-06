@@ -282,10 +282,16 @@ for CURRENT_DATE in "${DATES[@]}"; do
     while IFS= read -r eval_src; do
         [ -f "${eval_src}" ] || continue
 
-        # 新结构路径: .../output/{branch_label}-{create_date}-{run_id}/{workflow_name}/{test_type}/{tc_name}-{timestamp}/logs/eval_log.log
-        logs_dir=$(dirname "${eval_src}")
-        ts_dir=$(dirname "${logs_dir}")           # .../{tc_name}-{timestamp}
-        ts_name=$(basename "${ts_dir}")           # {tc_name}-{timestamp}
+        # 新结构路径: .../output/{branch_label}-{create_date}-{run_id}/{workflow_name}/{test_type}/{tc_name}-{ci_ts}/{eval_ts}/logs/eval_log.log
+        # 注意 CI 中 {tc_name}-{ci_ts} 下可能还有一层 {eval_ts}（eval 执行时间戳目录）
+        logs_dir=$(dirname "${eval_src}")         # .../{eval_ts}/logs 或 .../{tc_name}-{ci_ts}/logs
+        ts_dir=$(dirname "${logs_dir}")           # .../{eval_ts} 或 .../{tc_name}-{ci_ts}
+        ts_name=$(basename "${ts_dir}")
+        # 兼容两种结构：ts_name 为 eval_ts（如 20260805_193018）时，再向上一级取 {tc_name}-{ci_ts}
+        if echo "${ts_name}" | grep -qE '^[0-9]{8}_[0-9]{6}$'; then
+            ts_dir=$(dirname "${ts_dir}")
+            ts_name=$(basename "${ts_dir}")
+        fi
         # 剥离 CI 时间戳后缀，保留干净的用例名
         ts_name_clean=$(echo "${ts_name}" | sed 's/-[0-9]\{6\}$//')
         test_type_dir=$(dirname "${ts_dir}")      # .../{test_type}
