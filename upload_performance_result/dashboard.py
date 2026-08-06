@@ -1259,16 +1259,21 @@ def collect_all_data():
             filtered.append(r)
 
     # Add placeholder entries for expected test cases that have no data
-    existing_yaml_names = set(r.get("yaml_name", "") for r in filtered)
+    # 为每个出现的日期补充占位符条目：该日期无结果的用例也显示（FAILED(无结果)）
 
-    # Get the latest date from existing results
-    latest_date = ""
-    if filtered:
-        dates = sorted(set(r["date"] for r in filtered))
-        latest_date = dates[-1] if dates else ""
+    # Collect all dates that appear in results
+    all_dates = sorted(set(r.get("date", "") for r in filtered if r.get("date")))
+    if not all_dates:
+        # No data at all: use a placeholder date so expected cases still render
+        all_dates = [""]
 
-    for yaml_name, info in expected.items():
-        if yaml_name not in existing_yaml_names:
+    # Existing (yaml_name, date) pairs to avoid duplicating real results
+    existing_pairs = set((r.get("yaml_name", ""), r.get("date", "")) for r in filtered)
+
+    for date in all_dates:
+        for yaml_name, info in expected.items():
+            if (yaml_name, date) in existing_pairs:
+                continue
             labels = info["labels"]
             # Derive baseline key from yaml_name: prefix with "test_npu_" if not already
             if yaml_name.startswith("test_npu_"):
@@ -1285,7 +1290,7 @@ def collect_all_data():
                 "request_rate": labels.get("request_rate", ""),
                 "dataset": labels.get("dataset", ""),
                 "prefix": labels.get("prefix", ""),
-                "date": latest_date,
+                "date": date,
                 "yaml_name": yaml_name,
                 "mean_ttft": None,
                 "mean_tpot": None,
