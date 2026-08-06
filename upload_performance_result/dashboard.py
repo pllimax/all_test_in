@@ -127,11 +127,12 @@ def get_config_paths():
     yaml_configs = []
     for src_name, src_cfg in valid_sources.items():
         repo_root = src_cfg["repo_root"]
-        # Test scripts are under {repo_root}/test/registered/ascend
-        scripts_path = os.path.join(repo_root, "test", "registered", "ascend")
+        # 测试脚本可能位于 test/registered/ascend 或 test/registered/npu
         if repo_root and os.path.isdir(repo_root):
-            if scripts_path not in test_scripts_roots:
-                test_scripts_roots.append(scripts_path)
+            for sub in ("ascend", "npu"):
+                scripts_path = os.path.join(repo_root, "test", "registered", sub)
+                if os.path.isdir(scripts_path) and scripts_path not in test_scripts_roots:
+                    test_scripts_roots.append(scripts_path)
         yaml_configs.append(src_cfg["yaml_config"])
 
     return {
@@ -190,10 +191,19 @@ def parse_test_script_baselines(filepath):
     return baselines
 
 
-def collect_baselines():
+# 基线缓存：启动时从两个仓刷新一次，请求期间复用
+_baselines_cache = None
+
+
+def collect_baselines(force=False):
     """Scan all test scripts and collect baseline values.
     Returns a dict: {test_case_name: {metric: value, ...}}
+    每次启动 dashboard 时通过 force=True 从两个代码仓的测试脚本刷新，请求期间复用缓存。
     """
+    global _baselines_cache
+    if not force and _baselines_cache is not None:
+        return _baselines_cache
+
     results = {}
     for category in ["performance", "accuracy"]:
         for test_scripts_root in TEST_SCRIPTS_ROOTS:
@@ -211,6 +221,7 @@ def collect_baselines():
                         if test_case_name not in results:
                             results[test_case_name] = {}
                         results[test_case_name].update(baselines)
+    _baselines_cache = results
     return results
 
 _nnodes_cache = {}
@@ -1390,6 +1401,9 @@ def start_dashboard():
     print("=" * 60)
     print("[startup] Syncing test case repos...")
     sync_repos()
+    # 启动时从两个代码仓的测试脚本刷新基线缓存
+    print("[startup] Refreshing baselines from test scripts...")
+    collect_baselines(force=True)
     print("=" * 60)
     server = socketserver.ThreadingTCPServer(("0.0.0.0", DASHBOARD_PORT), DashboardHandler)
     print(f"Dashboard running at http://localhost:{DASHBOARD_PORT}")
