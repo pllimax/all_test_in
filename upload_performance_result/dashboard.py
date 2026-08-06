@@ -370,6 +370,10 @@ tr.selected:hover { background: #254070 !important; }
     </select>
   </div>
   <div class="filter-group">
+    <label>分支</label>
+    <select id="branchFilter" multiple onchange="onFilterChange()"></select>
+  </div>
+  <div class="filter-group">
     <label>状态</label>
     <select id="statusFilter" multiple onchange="onFilterChange()">
       <option value="__all__" selected>全部</option>
@@ -565,8 +569,8 @@ function populateMultiSelect(id, values, allLabel) {
 }
 
 function populateFilters() {
-  const keys = ['model','date'];
-  const ids = ['modelFilter','dateFilter'];
+  const keys = ['model','date','branch'];
+  const ids = ['modelFilter','dateFilter','branchFilter'];
   keys.forEach((k, i) => {
     const vals = [...new Set(allData.map(d => d[k]).filter(Boolean))].sort();
     populateMultiSelect(ids[i], vals, '全部');
@@ -641,8 +645,14 @@ function computeStatus(d) {
 
 function getTestCaseStatus(items) {
   if (items.length === 0) return 'FAILED(无结果)';
-  const latest = items[items.length - 1];
+  // 取时间段内最新一次有结果的执行；全部无结果时取最后一项
+  const withData = items.filter(d => hasData(d));
+  const latest = withData.length > 0 ? withData[withData.length - 1] : items[items.length - 1];
   return computeStatus(latest);
+}
+
+function hasData(d) {
+  return d.mean_ttft != null || d.eval_score != null;
 }
 
 function onFilterChange() {
@@ -650,6 +660,7 @@ function onFilterChange() {
     source: getSelectedValues('sourceFilter'),
     model: getSelectedValues('modelFilter'),
     date: getSelectedValues('dateFilter'),
+    branch: getSelectedValues('branchFilter'),
   };
   const statusFilter = getSelectedValues('statusFilter');
 
@@ -685,7 +696,7 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  ['sourceFilter','modelFilter','dateFilter','statusFilter'].forEach(id => {
+  ['sourceFilter','modelFilter','dateFilter','branchFilter','statusFilter'].forEach(id => {
     const sel = document.getElementById(id);
     [...sel.options].forEach(o => o.selected = o.value === '__all__');
   });
@@ -706,7 +717,12 @@ function updateTable(data) {
     if (!groups[d._id]) groups[d._id] = [];
     groups[d._id].push(d);
   });
-  Object.values(groups).forEach(g => g.sort((a, b) => a.date.localeCompare(b.date)));
+  Object.values(groups).forEach(g => {
+    g.sort((a, b) => a.date.localeCompare(b.date));
+    // 勾选多日期时显示时间段内最新一次有结果的执行：
+    // 无结果的占位符排前，有结果的按日期升序排后，isLatest 即最新有结果条目
+    g.sort((a, b) => (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
+  });
 
   // Sort groups by test case ID
   const sortedGroups = Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
@@ -904,6 +920,7 @@ function exportToExcel() {
     const sourceVals = getSelectedValues('sourceFilter');
     const modelVals = getSelectedValues('modelFilter');
     const dateVals = getSelectedValues('dateFilter');
+    const branchVals = getSelectedValues('branchFilter');
     const statusVals = getSelectedValues('statusFilter');
 
     let filtered = allData;
@@ -911,6 +928,7 @@ function exportToExcel() {
     if (sourceVals !== null) filtered = filtered.filter(d => String(d.source || '').split(',').some(s => sourceVals.includes(s)));
     if (modelVals !== null) filtered = filtered.filter(d => modelVals.includes(d.model));
     if (dateVals !== null) filtered = filtered.filter(d => dateVals.includes(d.date));
+    if (branchVals !== null) filtered = filtered.filter(d => branchVals.includes(d.branch));
 
     // Group by test case ID, keep latest only
     const groups = {};
@@ -922,6 +940,8 @@ function exportToExcel() {
     let rows = [];
     Object.entries(groups).forEach(([id, items]) => {
       items.sort((a, b) => a.date.localeCompare(b.date));
+      // 最新有结果优先：无结果占位符排前，有结果的按日期升序排后
+      items.sort((a, b) => (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
       if (statusVals !== null) {
         const status = getTestCaseStatus(items);
         const keep = (statusVals.includes('PASS') && status === 'PASS') ||
@@ -1156,6 +1176,20 @@ def _match_baselines_for_item(item, baselines):
             break
 
 
+def split_date_label(date_label):
+    """拆分 date_label 为 (date, branch)。
+    新格式: {branch_label}-{create_date}-{run_id}/{workflow}
+            → (create_date, 完整 date_label)
+    旧格式: YYYYMMDD → (YYYYMMDD, "")
+    """
+    if not date_label:
+        return date_label, ""
+    m = re.match(r"^(.+)-(\d{8})-(\d+)/(.+)$", date_label)
+    if m:
+        return m.group(2), date_label
+    return date_label, ""
+
+
 def collect_all_data():
     """Collect all benchmark data into a list of dicts.
     Only includes test cases defined in YAML workflow configs.
@@ -1185,7 +1219,9 @@ def collect_all_data():
             continue
 
         labels = parse_filename(filename)
-        labels["date"] = date_folder
+        date_part, branch_part = split_date_label(date_folder)
+        labels["date"] = date_part
+        labels["branch"] = branch_part
         labels["yaml_name"] = filename_to_yaml_name(filename)
         # Fallback: if stripped name not in expected, try with test_npu_ prefix
         if labels["yaml_name"] not in expected_tc_ids:
@@ -1213,6 +1249,9 @@ def collect_all_data():
     accuracy_data = collect_accuracy_only_data()
     for item in accuracy_data:
         _match_baselines_for_item(item, baselines)
+        date_part, branch_part = split_date_label(item.get("date", ""))
+        item["date"] = date_part
+        item["branch"] = branch_part
     results.extend(accuracy_data)
 
     # Append accuracy-only entries for eval/ scores not matched to benchmark results
@@ -1221,7 +1260,9 @@ def collect_all_data():
     for (test_case_name, date), score in eval_data.items():
         if (test_case_name, date) not in consumed_eval_keys:
             labels = parse_filename(test_case_name + ".txt")
-            labels["date"] = date
+            date_part, branch_part = split_date_label(date)
+            labels["date"] = date_part
+            labels["branch"] = branch_part
             labels["yaml_name"] = filename_to_yaml_name(test_case_name)
             if labels["yaml_name"] not in expected_tc_ids:
                 alt = "test_npu_" + labels["yaml_name"]
@@ -1281,6 +1322,7 @@ def collect_all_data():
             else:
                 baseline_key = "test_npu_" + yaml_name
             placeholder_baselines = baselines.get(baseline_key, {})
+            date_part, branch_part = split_date_label(date)
             placeholder = {
                 "model": labels.get("model", ""),
                 "quantization": labels.get("quantization", ""),
@@ -1290,7 +1332,8 @@ def collect_all_data():
                 "request_rate": labels.get("request_rate", ""),
                 "dataset": labels.get("dataset", ""),
                 "prefix": labels.get("prefix", ""),
-                "date": date,
+                "date": date_part,
+                "branch": branch_part,
                 "yaml_name": yaml_name,
                 "mean_ttft": None,
                 "mean_tpot": None,
