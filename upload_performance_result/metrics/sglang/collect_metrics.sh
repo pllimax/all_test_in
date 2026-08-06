@@ -136,17 +136,25 @@ fi
 # ============================================================
 # 搜索根目录：支持按分支前缀筛选
 # 前缀匹配，如 --branch pllimax 可匹配 pllimax 下所有分支目录
+# 分支模式下排除仅以日期命名的旧结构目录（YYYYMMDD）
 # ============================================================
 if [ -n "${BRANCH:-}" ]; then
     SEARCH_ROOTS=()
     for d in "${SRC_BASE}"/"${BRANCH}"*; do
-        [ -d "$d" ] && SEARCH_ROOTS+=("$d")
+        if [ -d "$d" ]; then
+            base_name=$(basename "$d")
+            # 仅收集 CI 运行目录（如 {branch}-{create_date}-{run_id}），
+            # 跳过仅以日期为文件夹名的目录（旧结构按日期存放的结果）
+            if ! echo "${base_name}" | grep -qE '^[0-9]{8}$'; then
+                SEARCH_ROOTS+=("$d")
+            fi
+        fi
     done
     if [ ${#SEARCH_ROOTS[@]} -eq 0 ]; then
-        echo "错误: 未找到匹配分支前缀 ${BRANCH} 的任务目录 (${SRC_BASE}/${BRANCH}*)"
+        echo "错误: 未找到匹配分支前缀 ${BRANCH} 的任务目录 (${SRC_BASE}/${BRANCH}*，且排除日期目录)"
         exit 1
     fi
-    echo "分支筛选: ${BRANCH} (前缀匹配) → 匹配 ${#SEARCH_ROOTS[@]} 个任务目录"
+    echo "分支筛选: ${BRANCH} (前缀匹配, 排除日期目录) → 匹配 ${#SEARCH_ROOTS[@]} 个任务目录"
 else
     SEARCH_ROOTS=("${SRC_BASE}")
 fi
