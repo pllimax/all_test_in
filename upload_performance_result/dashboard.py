@@ -8,13 +8,35 @@ import os
 import re
 import json
 import time
+import threading
+import urllib.request
+import urllib.error
 import http.server
 import socketserver
 import subprocess
 import sys
+import shutil
 from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, METRICS_DIR, GIT_PULL_ENABLED, get_metrics_dir, _iter_metrics_files
 
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
+
+# ============================================================
+# 受管源码仓缓存目录（方案A）
+# 配置了 repo_url 的 source，其用例列表 YAML 与测试脚本（基线）由
+# dashboard 自己稀疏克隆/更新到该缓存目录，不再依赖本地手动克隆路径。
+# 稀疏检出仅保留 workflows YAML 与测试脚本目录，避免全量克隆过大。
+# ============================================================
+TESTCASES_CACHE_DIR = os.environ.get(
+    "TESTCASES_CACHE_DIR",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), ".testcases_repo"),
+)
+SPARSE_CHECKOUT_PATHS = [
+    ".github/workflows",
+    "test/registered/ascend",
+    "test/registered/npu",
+]
+# 源码仓周期性同步间隔（秒），与基线/链接缓存 TTL 一致（默认每 2 小时）
+SOURCE_SYNC_INTERVAL = int(os.environ.get("SOURCE_SYNC_INTERVAL", "7200"))
 
 
 def get_config_paths():
@@ -53,12 +75,24 @@ def get_config_paths():
             repo_root = source_cfg.get("repo_root", "")
             yaml_rel = source_cfg.get("yaml_config", "")
             repo_url = source_cfg.get("repo_url", "")
+            branch = source_cfg.get("branch", "")
             env_prefix = source_name.upper()
 
             # env var overrides
             repo_root = os.environ.get(f"{env_prefix}_REPO_ROOT", repo_root)
             yaml_rel = os.environ.get(f"{env_prefix}_YAML_CONFIG", yaml_rel)
             repo_url = os.environ.get(f"{env_prefix}_REPO_URL", repo_url)
+            branch = os.environ.get(f"{env_prefix}_BRANCH", branch)
+
+            # 方案A：配置了 repo_url 时，repo_root 指向 dashboard 自管理的
+            # 稀疏克隆缓存目录（.testcases_repo/{source_name}），
+            # 用例 YAML 与测试脚本均从该缓存读取，不依赖本地手动克隆。
+            # 未配置 repo_url 时保持原有本地路径行为（回退模式）。
+            if repo_url:
+                managed_root = os.path.join(TESTCASES_CACHE_DIR, source_name)
+                if repo_root and yaml_rel:
+                    print(f"[config] {source_name}: 使用受管克隆目录 {managed_root} (branch={branch or 'main'}, 本地回退 {repo_root})")
+                repo_root = managed_root
 
             if repo_root and yaml_rel:
                 yaml_abs = os.path.join(repo_root, yaml_rel)
@@ -66,6 +100,7 @@ def get_config_paths():
                     "repo_root": repo_root,
                     "yaml_config": yaml_abs,
                     "repo_url": repo_url,
+                    "branch": branch,
                 }
                 print(f"[config] {source_name}: repo={repo_root}, yaml={yaml_abs}")
             else:
@@ -107,6 +142,7 @@ def get_config_paths():
                 "repo_root": root,
                 "yaml_config": yp,
                 "repo_url": "",
+                "branch": "",
             }
 
     # Validate and build derived structures
@@ -117,7 +153,9 @@ def get_config_paths():
         if os.path.isfile(yaml_config):
             valid_sources[src_name] = src_cfg.copy()
         else:
-            print(f"[config] Warning: yaml not found for '{src_name}': {yaml_config}")
+            # 方案A：受管克隆目录在 sync_repos 前尚未创建，属正常现象，不告警
+            if not src_cfg.get("repo_url"):
+                print(f"[config] Warning: yaml not found for '{src_name}': {yaml_config}")
             # still keep it for repo sync, but mark yaml as missing
             valid_sources[src_name] = src_cfg.copy()
             valid_sources[src_name]["yaml_valid"] = False
@@ -129,17 +167,42 @@ def get_config_paths():
     for src_name, src_cfg in valid_sources.items():
         repo_root = src_cfg["repo_root"]
         # 测试脚本可能位于 test/registered/ascend 或 test/registered/npu
-        if repo_root and os.path.isdir(repo_root):
+        # 注：不在此处用 os.path.isdir 过滤 —— 方案A 的受管目录由 sync_repos
+        # 在启动后克隆创建；collect_baselines / _get_nnodes_from_script /
+        # collect_script_urls 内部均会跳过不存在的目录，这里仅登记候选路径。
+        if repo_root:
             for sub in ("ascend", "npu"):
                 scripts_path = os.path.join(repo_root, "test", "registered", sub)
-                if os.path.isdir(scripts_path) and scripts_path not in test_scripts_roots:
+                if scripts_path not in test_scripts_roots:
                     test_scripts_roots.append(scripts_path)
         yaml_configs.append(src_cfg["yaml_config"])
+
+    # Parse branch_repo_map: {branch前缀: repo_url}
+    # 用于解析 CI 运行（GitHub Actions run）所属的仓库，
+    # 分支模式数据目录名为 {分支}-{create_date}-{run_id}，run 通常运行在分支的 fork 仓。
+    branch_repo_map = {}
+    if "branch_repo_map" in config_data:
+        branch_repo_map = {
+            str(k).strip(): str(v).strip()
+            for k, v in config_data["branch_repo_map"].items()
+            if str(k).strip() and str(v).strip()
+        }
+    branch_repo_map_env = os.environ.get("BRANCH_REPO_MAP", "")
+    if branch_repo_map_env:
+        try:
+            parsed = json.loads(branch_repo_map_env)
+            if isinstance(parsed, dict):
+                branch_repo_map = {str(k).strip(): str(v).strip() for k, v in parsed.items()}
+        except Exception as e:
+            print(f"[config] Warning: Failed to parse BRANCH_REPO_MAP env: {e}")
+    if branch_repo_map:
+        print(f"[config] branch_repo_map: {branch_repo_map}")
 
     return {
         "sources": valid_sources,
         "yaml_configs": yaml_configs,
         "test_scripts_roots": test_scripts_roots,
+        "branch_repo_map": branch_repo_map,
     }
 
 
@@ -147,6 +210,7 @@ _config = get_config_paths()
 SOURCES = _config["sources"]
 YAML_CONFIGS = _config["yaml_configs"]
 TEST_SCRIPTS_ROOTS = _config["test_scripts_roots"]
+BRANCH_REPO_MAP = _config["branch_repo_map"]
 
 # Test cases to exclude from the dashboard
 EXCLUDED_TEST_CASES = {
@@ -229,6 +293,416 @@ def collect_baselines(force=False):
     _baselines_cache = results
     _baselines_cache_ts = time.time()
     return results
+
+
+# ============================================================
+# 用例脚本 Git 平台链接
+# 启动时（sync_repos 拉取最新脚本后）强制重建一次，此后每
+# SCRIPT_URLS_CACHE_TTL 秒自动重扫，保证新增/更新用例的链接始终最新。
+# 结果形如: {script_name: {source_name: web_url}}
+#   script_name = test_npu_xxx.py 去掉后缀；source_name = fulltest/nightly
+# ============================================================
+SCRIPT_URLS_CACHE_TTL = 600  # 秒
+_script_urls_cache = {}
+_script_urls_cache_ts = 0.0
+
+
+def _get_git_web_url(repo_root, repo_url):
+    """获取仓库在 Git 平台上的网页访问基地址（不含 .git 后缀）。
+    优先使用配置的 repo_url，为空时回退到本地 git remote origin。
+    支持 https://host/org/repo.git 与 git@host:org/repo.git 两种形式。
+    无法解析时返回空字符串。
+    """
+    url = (repo_url or "").strip()
+    if not url:
+        try:
+            result = subprocess.run(
+                ["git", "remote", "get-url", "origin"],
+                capture_output=True, text=True, timeout=15,
+                cwd=repo_root,
+            )
+            if result.returncode == 0:
+                url = result.stdout.strip()
+        except Exception:
+            pass
+    if not url:
+        return ""
+    url = re.sub(r"\.git$", "", url)
+    m = re.match(r"^git@([^:]+):(.+)$", url)
+    if m:
+        url = "https://" + m.group(1) + "/" + m.group(2)
+    return url.rstrip("/")
+
+
+def _get_git_branch(repo_root):
+    """获取仓库当前分支名，失败时返回空字符串。"""
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True, text=True, timeout=15,
+            cwd=repo_root,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return ""
+
+
+def collect_script_urls(force=False):
+    """扫描各测试脚本仓（test/registered/{ascend|npu}），构建脚本 → Git 平台链接映射。
+    每次启动 dashboard 时通过 force=True 重建；此后每 SCRIPT_URLS_CACHE_TTL 秒自动重扫。
+    """
+    global _script_urls_cache, _script_urls_cache_ts
+    now = time.time()
+    if not force and _script_urls_cache and (now - _script_urls_cache_ts) < SCRIPT_URLS_CACHE_TTL:
+        return _script_urls_cache
+
+    results = {}
+    for src_name, src_cfg in SOURCES.items():
+        repo_root = src_cfg.get("repo_root", "")
+        repo_url = src_cfg.get("repo_url", "")
+        if not repo_root or not os.path.isdir(repo_root):
+            continue
+        web_base = _get_git_web_url(repo_root, repo_url)
+        branch = _get_git_branch(repo_root)
+        if not web_base or not branch:
+            continue
+        for sub in ("ascend", "npu"):
+            scripts_root = os.path.join(repo_root, "test", "registered", sub)
+            if not os.path.isdir(scripts_root):
+                continue
+            for dirpath, _, filenames in os.walk(scripts_root):
+                for filename in filenames:
+                    if not filename.endswith(".py") or filename.startswith("__"):
+                        continue
+                    script_name = filename[:-3]
+                    rel_path = os.path.relpath(
+                        os.path.join(dirpath, filename), repo_root
+                    ).replace("\\", "/")
+                    url = f"{web_base}/blob/{branch}/{rel_path}"
+                    results.setdefault(script_name, {})[src_name] = url
+
+    _script_urls_cache = results
+    _script_urls_cache_ts = time.time()
+    return results
+
+
+def _match_script_urls(yaml_name, sources, script_urls):
+    """根据用例 yaml_name 与其来源（fulltest/nightly）匹配脚本链接列表。
+    yaml_name 可能带/不带 test_npu_ 前缀，两种形式都尝试。
+    返回: [{"source": "fulltest", "url": "https://..."}, ...]
+    """
+    candidates = []
+    if yaml_name:
+        candidates.append(yaml_name)
+        if not yaml_name.startswith("test_npu_"):
+            candidates.append("test_npu_" + yaml_name)
+    links = []
+    for key in candidates:
+        mapping = script_urls.get(key, {})
+        if not mapping:
+            continue
+        for s in sources:
+            url = mapping.get(s, "")
+            if url and all(link["url"] != url for link in links):
+                links.append({"source": s, "url": url})
+        if links:
+            break
+    return links
+
+
+def _resolve_repo_web_url(url):
+    """将 repo_url 归一化为网页基地址（去掉 .git 后缀，ssh 形式转 https）。"""
+    url = re.sub(r"\.git$", "", (url or "").strip())
+    m = re.match(r"^git@([^:]+):(.+)$", url)
+    if m:
+        url = "https://" + m.group(1) + "/" + m.group(2)
+    return url.rstrip("/")
+
+
+def _get_repo_web_base_for_run(branch, source, run_workflow=""):
+    """确定 CI 运行（GitHub Actions run）链接所属的仓库网页基地址。
+    匹配优先级：
+      0. 按数据实际来源的 workflow 目录（如 Nightly_Test_NPU → nightly）查 branch_repo_map；
+      1. 按来源名（fulltest/nightly）查 branch_repo_map；
+      2. 按分支前缀（最长优先）查 branch_repo_map；
+      3. 回退到该来源配置的 base 仓（git remote）。
+    无法解析时返回空字符串。
+    """
+    sources = [s.strip() for s in str(source or "").split(",") if s.strip()]
+    # 0) 实际 workflow 目录优先（最精确：run 具体跑在哪个 workflow）。
+    #    _iter_metrics_files 产出的 workflow 已是映射后的来源名（fulltest/nightly）。
+    if run_workflow and run_workflow in BRANCH_REPO_MAP:
+        web = _resolve_repo_web_url(BRANCH_REPO_MAP[run_workflow])
+        if web:
+            return web
+    # 1) 来源名直查（如 "fulltest" / "nightly"）
+    for s in sources:
+        if s in BRANCH_REPO_MAP:
+            web = _resolve_repo_web_url(BRANCH_REPO_MAP[s])
+            if web:
+                return web
+    # 2) 分支前缀最长匹配（兼容分支模式数据目录 {branch}-{date}-{run_id}）
+    if branch:
+        for prefix in sorted(BRANCH_REPO_MAP, key=len, reverse=True):
+            if branch.startswith(prefix):
+                web = _resolve_repo_web_url(BRANCH_REPO_MAP[prefix])
+                if web:
+                    return web
+    # 3) 回退来源配置的 base 仓
+    for s in sources:
+        src_cfg = SOURCES.get(s, {})
+        repo_root = src_cfg.get("repo_root", "")
+        if repo_root:
+            web = _get_git_web_url(repo_root, src_cfg.get("repo_url", ""))
+            if web:
+                return web
+    return ""
+
+
+def _attach_script_urls(items):
+    """为每个数据条目附加 script_urls（用例脚本在 Git 平台的链接）与 run_url（GitHub Actions 运行链接）。"""
+    script_urls = collect_script_urls()
+    for item in items:
+        sources = [s.strip() for s in str(item.get("source", "")).split(",") if s.strip()]
+        item["script_urls"] = _match_script_urls(item.get("yaml_name", ""), sources, script_urls)
+        run_id = str(item.get("run_id", "") or "")
+        if run_id:
+            web_base = _get_repo_web_base_for_run(
+                item.get("branch", ""), item.get("source", ""), item.get("run_workflow", "")
+            )
+            if web_base:
+                item["run_url"] = f"{web_base}/actions/runs/{run_id}"
+
+    # 解析到具体 job（GitHub Actions job_id），失败时保留 run_url 兜底
+    jobs_cache = fetch_run_jobs_for_items(items)
+    for item in items:
+        run_id = str(item.get("run_id", "") or "")
+        run_url = item.get("run_url", "")
+        if run_id and run_url:
+            repo = _web_base_to_repo(run_url)
+            jobs_for_run = jobs_cache.get((repo, run_id))
+            job = _match_job_for_case(item.get("yaml_name", ""), jobs_for_run)
+            if job:
+                item["job_url"] = f"{run_url}/job/{job['job_id']}"
+                # job 状态/结论用于前端区分「已执行但失败」与「尚未执行」
+                item["job_status"] = job.get("status", "")
+                item["job_conclusion"] = job.get("conclusion", "")
+            elif jobs_for_run is not None:
+                # 该 run 的 job 列表已抓取到但未匹配到本用例 → 该 run 未执行此用例
+                item["job_status"] = "no_job"
+
+
+# ============================================================
+# GitHub Actions job 级链接解析
+# 通过 GitHub REST API 拉取每个 run 下的 jobs 列表并按用例名匹配，
+# 生成直达具体 job 的链接（actions/runs/{run_id}/job/{job_id}）。
+# 需要环境变量 GH_TOKEN / GITHUB_TOKEN（认证限流 5000 次/小时）；
+# 未配置或调用失败时回退到 run 级链接。
+# ============================================================
+JOBS_CACHE_TTL = 600  # 秒：已完成（终态）job 的缓存时长，过期后不再重复请求
+JOBS_REFRESH_INTERVAL = 60  # 秒：非终态（queued/in_progress）job 的刷新间隔，用于更新执行状态
+JOBS_RETRY_INTERVAL = 300  # 秒：抓取失败后的退避重试间隔，避免频繁请求耗尽 API 配额
+JOBS_API_TIMEOUT = 20  # 秒
+_jobs_cache = {}       # {(repo, run_id): {case_name: {"job_id": ..., "name": ...}}}
+_jobs_cache_ts = {}    # {(repo, run_id): 最近一次成功抓取时间}
+_jobs_failed_ts = {}   # {(repo, run_id): 最近一次失败时间（退避用）}
+_jobs_pending = set()  # 待后台抓取的 (repo, run_id)
+_jobs_refresh_started = False
+_jobs_fetch_logged = {}
+
+
+def _github_token():
+    """读取 GitHub API token（环境变量 GH_TOKEN 或 GITHUB_TOKEN）。"""
+    return os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or ""
+
+
+def _web_base_to_repo(run_url):
+    """从 run/job 链接中提取 owner/repo（如 https://github.com/sgl-project/sglang/actions/runs/... → sgl-project/sglang）。"""
+    m = re.search(r"https://([^/]+)/([^/]+)/([^/]+)(?:/|$)", run_url)
+    if m:
+        return f"{m.group(2)}/{m.group(3)}"
+    return ""
+
+
+def _fetch_run_jobs(repo, run_id):
+    """调用 GitHub API 获取指定 run 的 jobs 列表，返回 {case_name: {job_id, name}}。
+    调用失败（网络/限流/token 无效）时返回 None。
+    """
+    if not repo or not run_id:
+        return None
+    token = _github_token()
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "sglang-dashboard",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        with urllib.request.urlopen(req, timeout=JOBS_API_TIMEOUT) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        key = (repo, run_id)
+        if _jobs_fetch_logged.get(key) != str(e):
+            _jobs_fetch_logged[key] = str(e)
+            print(f"[jobs] fetch failed for {repo}/{run_id}: {e}")
+        return None
+    result = {}
+    for job in data.get("jobs", []):
+        name = job.get("name", "")
+        job_id = job.get("id")
+        if not name or job_id is None:
+            continue
+        # 保存 status/conclusion，用于区分「已执行但失败」与「尚未执行」
+        job_info = {
+            "job_id": str(job_id),
+            "name": name,
+            "status": str(job.get("status", "") or ""),
+            "conclusion": str(job.get("conclusion", "") or ""),
+        }
+        for case in _extract_case_names(name):
+            result[case] = job_info
+    return result
+
+
+def _extract_case_names(job_name):
+    """从 job name 中提取候选用例名（去重保序）。
+    实际格式：single-node-poc (qwen3_6_35b_a3b_1p_aime26, runner, test/... / qwen3_6_35b_a3b_1p_aime26
+    提取括号内第一个字段与末尾 / 后的字段，并去掉 test_npu_ 前缀。
+    """
+    cases = []
+    m = re.search(r"\(\s*([^,()]+?)\s*,", job_name)
+    if m:
+        c = m.group(1).strip()
+        if c:
+            cases.append(c)
+    m = re.search(r"/\s*([^\s/()]+)\s*$", job_name)
+    if m:
+        c = m.group(1).strip()
+        if c:
+            cases.append(c)
+    result = []
+    for c in cases:
+        c = re.sub(r"^test_npu_", "", c)
+        if c and c not in result:
+            result.append(c)
+    return result
+
+
+def _match_job_for_case(case_key, jobs):
+    """按用例名匹配 job。jobs 形如 {case_name: {job_id, name}}。
+    兼容 yaml_name 带/不带 test_npu_ 前缀、带/不带 _a2 后缀。
+    """
+    if not jobs:
+        return None
+    candidates = []
+    if case_key:
+        candidates.append(case_key)
+        if case_key.startswith("test_npu_"):
+            candidates.append(case_key[len("test_npu_"):])
+        else:
+            candidates.append("test_npu_" + case_key)
+    # 末尾 _a2 芯片标记差异容错
+    for c in list(candidates):
+        if c.endswith("_a2"):
+            candidates.append(c[:-3])
+        else:
+            candidates.append(c + "_a2")
+    for c in candidates:
+        if c in jobs:
+            return jobs[c]
+    return None
+
+
+def fetch_run_jobs_for_items(items):
+    """读取 jobs 缓存；将数据中未缓存或需刷新/重试的 (repo, run_id) 提交到后台线程，不阻塞当前请求。
+    返回缓存字典 {(repo, run_id): {case_name: {job_id, name}}}。
+    调度规则：
+      - 未缓存且距上次失败超过退避间隔 → 加入抓取队列
+      - 已缓存但存在非终态 job（queued/in_progress）且超过刷新间隔 → 重新抓取以更新状态
+      - 已缓存且全部为终态 → 不再重复请求（避免浪费 API 配额）
+    """
+    global _jobs_cache
+    now = time.time()
+    pairs = {}
+    for item in items:
+        run_id = str(item.get("run_id", "") or "")
+        run_url = item.get("run_url", "")
+        if not run_id or not run_url:
+            continue
+        repo = _web_base_to_repo(run_url)
+        if repo and run_id:
+            pairs[(repo, run_id)] = True
+    for p in pairs:
+        cached = _jobs_cache.get(p)
+        if cached is None:
+            # 未缓存：失败退避后重试
+            last_fail = _jobs_failed_ts.get(p, 0)
+            if now - last_fail >= JOBS_RETRY_INTERVAL:
+                _jobs_pending.add(p)
+        elif _has_incomplete_jobs(cached):
+            # 存在执行中的 job：超过刷新间隔后重新抓取，保证状态更新
+            # 同时尊重失败退避，避免持续失败导致高频重试
+            last_ts = _jobs_cache_ts.get(p, 0)
+            last_fail = _jobs_failed_ts.get(p, 0)
+            if now - last_ts >= JOBS_REFRESH_INTERVAL and now - last_fail >= JOBS_RETRY_INTERVAL:
+                _jobs_pending.add(p)
+        # 全部终态：保持缓存，不重复请求
+    _ensure_jobs_thread()
+    return _jobs_cache
+
+
+def _has_incomplete_jobs(jobs):
+    """判断缓存中的 jobs 是否存在非终态（queued/in_progress/waiting 等）条目。"""
+    for info in jobs.values():
+        status = str(info.get("status", "") or "")
+        if status and status != "completed":
+            return True
+    return False
+
+
+def _ensure_jobs_thread():
+    """确保后台 jobs 刷新线程已启动（单次）。"""
+    global _jobs_refresh_started
+    if _jobs_refresh_started:
+        return
+    _jobs_refresh_started = True
+    t = threading.Thread(target=_jobs_refresh_worker, daemon=True)
+    t.start()
+
+
+def _jobs_refresh_worker():
+    """后台线程：逐个抓取待处理 (repo, run_id) 的 jobs 并写入缓存。
+    记录成功/失败时间戳，供调度逻辑（刷新间隔 / 退避重试）使用。
+    """
+    global _jobs_cache
+    while True:
+        try:
+            if _jobs_pending:
+                p = _jobs_pending.pop()
+                fetched = _fetch_run_jobs(p[0], p[1])
+                if fetched is not None:
+                    _jobs_cache[p] = fetched
+                    _jobs_cache_ts[p] = time.time()
+                    _jobs_failed_ts.pop(p, None)
+                else:
+                    _jobs_failed_ts[p] = time.time()
+        except Exception as e:
+            print(f"[jobs] worker error: {e}")
+        time.sleep(2)
+
+
+def force_refresh_jobs():
+    """启动时清空 jobs 缓存，让后台线程对当前数据重新抓取。"""
+    global _jobs_cache
+    _jobs_cache = {}
+    _jobs_cache_ts.clear()
+    _jobs_failed_ts.clear()
+    return _jobs_cache
 
 _nnodes_cache = {}
 
@@ -338,6 +812,8 @@ tr.selected { background: #1f3a5f !important; }
 tr.selected:hover { background: #254070 !important; }
 .no-data { text-align: center; padding: 40px; color: #8b949e; }
 .testcase-id { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; color: #58a6ff; max-width: 400px; overflow: hidden; text-overflow: ellipsis; }
+.script-link { color: #58a6ff; text-decoration: none; font-size: 12px; margin-right: 6px; white-space: nowrap; }
+.script-link:hover { text-decoration: underline; color: #79c0ff; }
 .status-pass { color: #7ee787; font-weight: 700; }
 .status-fail { color: #ff7b72; font-weight: 700; }
 .status-none { color: #ff7b72; font-weight: 700; }
@@ -402,8 +878,9 @@ tr.selected:hover { background: #254070 !important; }
         <th>模型</th>
         <th>测试用例ID</th>
         <th>日期</th>
-        <th>来源</th>
         <th>状态</th>
+        <th>用例脚本</th>
+        <th>任务</th>
         <th>基线</th>
         <th class="col-uniform">组网</th>
         <th class="col-uniform">卡数</th>
@@ -622,13 +1099,42 @@ function getAccuracyThreshold(baseline, dataset) {
   return baseline * ACCURACY_TOLERANCE;
 }
 
+// 结合 run_id 关联的 GitHub Actions job 状态，推断「无结果」的成因。
+// 仅当存在 run_id（分支模式数据）且已抓到 job 信息时才能区分：
+//   completed + conclusion ∈ {failure, timed_out, action_required, cancelled} → 已执行但失败
+//   completed + conclusion == success                                        → 执行成功但指标未上传
+//   completed + conclusion ∈ {skipped, stale, neutral}（未实际运行）          → 未执行
+//   queued / in_progress / waiting / requested / pending                     → 执行中
+//   匹配到 job 列表但未命中本用例（no_job）                                  → 未执行
+// 无 run_id（旧格式）或 job 尚未抓取到时返回空串，保持原「FAILED(无结果)」显示。
+const FAIL_JOB_CONCLUSIONS = ['failure', 'timed_out', 'action_required', 'cancelled'];
+const SKIP_JOB_CONCLUSIONS = ['skipped', 'stale', 'neutral'];
+function jobRunLabel(d) {
+  if (!d.run_id) return '';
+  const s = String(d.job_status || '').toLowerCase();
+  const c = String(d.job_conclusion || '').toLowerCase();
+  if (s === 'no_job') return '未执行';
+  if (!s && !c) return ''; // job 信息尚未抓取到
+  if (s === 'completed') {
+    if (FAIL_JOB_CONCLUSIONS.includes(c)) return '已执行失败';
+    if (c === 'success') return '成功无结果';
+    if (SKIP_JOB_CONCLUSIONS.includes(c)) return '未执行';
+    return ''; // completed 但结论未知（异常），保持原「无结果」显示
+  }
+  return '执行中'; // queued / in_progress / waiting / requested / pending
+}
+
 function computeStatus(d) {
   const b = d.baselines || {};
   const hasPerf = d.mean_ttft != null;
   const hasEval = d.eval_score != null;
   const hasBaseline = Object.keys(b).length > 0;
-  if (!hasBaseline) return hasPerf || hasEval ? '' : 'FAILED(无结果)';
-  if (!hasPerf && !hasEval) return 'FAILED(无结果)';
+  if (!hasPerf && !hasEval) {
+    // 无执行结果：结合 run_id 关联的 CI job 状态归因（已执行失败/执行中/未执行）
+    const runLabel = jobRunLabel(d);
+    return runLabel ? runLabel + '(无结果)' : 'FAILED(无结果)';
+  }
+  if (!hasBaseline) return '';
   // 性能类基线仅在该用例有性能数据时校验
   // （避免 accuracy-only 用例因合并了同名 perf 脚本基线而被误判）
   // TPOT: baseline < 50 → +1ms absolute; baseline >= 50 → +2% relative
@@ -707,7 +1213,7 @@ function onFilterChange() {
       items.sort((a, b) => a.date.localeCompare(b.date));
       const status = getTestCaseStatus(items);
       if (statusFilter.includes('PASS') && status === 'PASS') keepIds.add(id);
-      if (statusFilter.includes('FAILED') && (status === 'FAILED' || status === 'FAILED(无结果)')) keepIds.add(id);
+      if (statusFilter.includes('FAILED') && (status === 'FAILED' || status.endsWith('(无结果)'))) keepIds.add(id);
     });
     filtered = filtered.filter(d => keepIds.has(d._id));
   }
@@ -730,7 +1236,7 @@ function updateTable(data) {
   const tbody = document.getElementById('tableBody');
   if (data.length === 0) {
     document.getElementById('tableCount').textContent = '(0 条)';
-    tbody.innerHTML = '<tr><td colspan="27" class="no-data">无匹配数据</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="28" class="no-data">无匹配数据</td></tr>';
     return;
   }
 
@@ -826,6 +1332,32 @@ function updateTable(data) {
     return v;
   }
 
+  // 渲染用例脚本在 Git 平台的链接（可能来自多个来源仓）
+  // 渲染来源 + 用例脚本链接（合并展示）：
+  // 有脚本链接 → 链接标签即来源名（如 fulltest↗ / nightly↗）；
+  // 无链接但有来源 → 显示来源文本；都无 → '--'
+  function fmtScriptLinks(d) {
+    const urls = d.script_urls || [];
+    const src = d.source || '';
+    if (urls.length > 0) {
+      return urls.map(u =>
+        `<a class="script-link" href="${u.url}" target="_blank" rel="noopener" title="${u.url}">${u.source}↗</a>`
+      ).join('');
+    }
+    return src || '--';
+  }
+
+  // 渲染 CI 运行/任务链接：有具体 job 链接时优先显示，否则回退到 run 链接
+  function fmtRunLink(d) {
+    if (d.job_url) {
+      return `<a class="script-link" href="${d.job_url}" target="_blank" rel="noopener" title="${d.job_url}">job↗</a>`;
+    }
+    if (d.run_url) {
+      return `<a class="script-link" href="${d.run_url}" target="_blank" rel="noopener" title="${d.run_url}">运行↗</a>`;
+    }
+    return '--';
+  }
+
   let rows = '';
   let visibleCount = 0;
   // 预计算每个分组在 collapsed 视图中是否应显示模型名
@@ -842,7 +1374,7 @@ function updateTable(data) {
     items.forEach((d, i) => {
       const isLatest = i === items.length - 1;
       const status = computeStatus(d);
-      const statusCls = status === 'PASS' ? 'status-pass' : status === 'FAILED' ? 'status-fail' : 'status-none';
+      const statusCls = status === 'PASS' ? 'status-pass' : (status === '' ? 'status-none' : 'status-fail');
       const b = d.baselines || {};
       const bl = (key, sym) => b[key] != null ? `<br><span class="baseline-val">${sym}${b[key]}</span>` : '';
       const expandIcon = isLatest && items.length > 1
@@ -855,8 +1387,9 @@ function updateTable(data) {
         <td>${modelDisplay}</td>
         <td><span class="testcase-id" title="${tcId}">${expandIcon}${tcId}</span></td>
         <td>${d.date}</td>
-        <td>${d.source || '--'}</td>
         <td><span class="${statusCls}">${status}</span></td>
+        <td>${fmtScriptLinks(d)}</td>
+        <td>${fmtRunLink(d)}</td>
         <td><span class="baseline-col" title="${fmtBaseline(b, d)}">${fmtBaseline(b, d)}</span></td>
         <td class="col-uniform">${d.topology || '--'}</td>
         <td class="col-uniform">${d.card_count || '--'}</td>
@@ -882,7 +1415,7 @@ function updateTable(data) {
       </tr>`;
     });
     // Add hidden chart row after each test case group
-    rows += `<tr class="chart-row" id="chart_${safeId}" data-tc="${safeId}" style="display:none"><td colspan="27"></td></tr>`;
+    rows += `<tr class="chart-row" id="chart_${safeId}" data-tc="${safeId}" style="display:none"><td colspan="28"></td></tr>`;
   });
   document.getElementById('tableCount').textContent = `(${visibleCount} 条)`;
   tbody.innerHTML = rows;
@@ -1018,7 +1551,7 @@ function exportToExcel() {
       if (statusVals !== null) {
         const status = getTestCaseStatus(items);
         const keep = (statusVals.includes('PASS') && status === 'PASS') ||
-                     (statusVals.includes('FAILED') && (status === 'FAILED' || status === 'FAILED(无结果)'));
+                     (statusVals.includes('FAILED') && (status === 'FAILED' || status.endsWith('(无结果)')));
         if (!keep) return;
       }
       rows.push(items[items.length - 1]);
@@ -1031,7 +1564,7 @@ function exportToExcel() {
 
     // Build Excel data
     const headers = [
-      '模型', '测试用例ID', '日期', '来源', '状态', '基线',
+      '模型', '测试用例ID', '日期', '状态', '用例脚本', '任务', '基线',
       '组网', '卡数', '序列长度', 'PREFIX', '数据集',
       '精度', '总请求数', '最大并发数', '系统并发数', '请求频率',
       'TTFT(ms)', 'TTFT P90(ms)', 'TPOT(ms)', 'TPOT P90(ms)',
@@ -1066,7 +1599,10 @@ function exportToExcel() {
         if (b.eval_score != null) blParts.push('精度≥' + b.eval_score);
       }
       return [
-        d.model || '', d._id || '', d.date || '', d.source || '', computeStatus(d),
+        d.model || '', d._id || '', d.date || '', computeStatus(d),
+        // 用例脚本列（合并来源）：有脚本链接时显示 来源(URL)，否则显示来源
+        (d.script_urls || []).map(u => u.source + '(' + u.url + ')').join('; ') || d.source || '',
+        d.job_url || d.run_url || '',
         blParts.join(', '),
         d.topology || '', d.card_count || '', d.seq_length || '',
         (d.prefix || '').replace('prefix', '') || '0', d.dataset || '',
@@ -1104,7 +1640,9 @@ function exportToExcel() {
 document.addEventListener('DOMContentLoaded', () => {
   initCharts();
   loadData();
-  setInterval(loadData, 300000);
+  // 轮询间隔 60s：与后端 DATA_CACHE_TTL(30s) + jobs 后台刷新配合，
+  // 保证「执行中/已执行失败/成功无结果」等 job 状态与任务链接及时更新
+  setInterval(loadData, 60000);
 });
 </script>
 </body>
@@ -1280,17 +1818,19 @@ def _match_baselines_for_item(item, baselines):
 
 
 def split_date_label(date_label):
-    """拆分 date_label 为 (date, branch)。
+    """拆分 date_label 为 (date, branch, run_id, run_workflow)。
     新格式: {branch_label}-{create_date}-{run_id}/{workflow}
-            → (create_date, branch_label)   # branch 仅取日期之前的字段
-    旧格式: YYYYMMDD → (YYYYMMDD, "")
+            → (create_date, branch_label, run_id, workflow)
+              # branch 仅取日期之前的字段，run_id 用于 GitHub Actions 链接，
+              # workflow（如 Nightly_Test_NPU）用于确定 run 实际所属来源仓
+    旧格式: YYYYMMDD → (YYYYMMDD, "", "", "")
     """
     if not date_label:
-        return date_label, ""
+        return date_label, "", "", ""
     m = re.match(r"^(.+)-(\d{8})-(\d+)/(.+)$", date_label)
     if m:
-        return m.group(2), m.group(1)
-    return date_label, ""
+        return m.group(2), m.group(1), m.group(3), m.group(4)
+    return date_label, "", "", ""
 
 
 # 性能指标字段：纯精度用例（accuracy）在输出时清空这些字段，只保留精度结果
@@ -1330,9 +1870,11 @@ def collect_all_data():
             continue
 
         labels = parse_filename(filename)
-        date_part, branch_part = split_date_label(date_folder)
+        date_part, branch_part, run_id, run_workflow = split_date_label(date_folder)
         labels["date"] = date_part
         labels["branch"] = branch_part
+        labels["run_id"] = run_id
+        labels["run_workflow"] = run_workflow
         labels["yaml_name"] = filename_to_yaml_name(filename)
         # Fallback: if stripped name not in expected, try with test_npu_ prefix
         if labels["yaml_name"] not in expected_tc_ids:
@@ -1360,9 +1902,11 @@ def collect_all_data():
     accuracy_data = collect_accuracy_only_data()
     for item in accuracy_data:
         _match_baselines_for_item(item, baselines)
-        date_part, branch_part = split_date_label(item.get("date", ""))
+        date_part, branch_part, run_id, run_workflow = split_date_label(item.get("date", ""))
         item["date"] = date_part
         item["branch"] = branch_part
+        item["run_id"] = run_id
+        item["run_workflow"] = run_workflow
     results.extend(accuracy_data)
 
     # Append accuracy-only entries for eval/ scores not matched to benchmark results
@@ -1371,9 +1915,11 @@ def collect_all_data():
     for (test_case_name, date), score in eval_data.items():
         if (test_case_name, date) not in consumed_eval_keys:
             labels = parse_filename(test_case_name + ".txt")
-            date_part, branch_part = split_date_label(date)
+            date_part, branch_part, run_id, run_workflow = split_date_label(date)
             labels["date"] = date_part
             labels["branch"] = branch_part
+            labels["run_id"] = run_id
+            labels["run_workflow"] = run_workflow
             labels["yaml_name"] = filename_to_yaml_name(test_case_name)
             if labels["yaml_name"] not in expected_tc_ids:
                 alt = "test_npu_" + labels["yaml_name"]
@@ -1422,12 +1968,19 @@ def collect_all_data():
     # 选中具体分支或日期时，无结果的用例也显示（FAILED(无结果)）
 
     # Collect all (branch, date) pairs that appear in results
+    # 同时记录每个 (branch, date) 对应的 run 上下文（run_id / run_workflow），
+    # 使占位符条目也能解析 GitHub Actions 任务链接与 job 状态
     branch_dates = {}
+    run_context = {}  # (branch, date) -> (run_id, run_workflow)
     for r in filtered:
         b = r.get("branch", "")
         d = r.get("date", "")
         if d:
             branch_dates.setdefault(b, set()).add(d)
+            rid = r.get("run_id", "") or ""
+            rwf = r.get("run_workflow", "") or ""
+            if rid:
+                run_context[(b, d)] = (rid, rwf)
     if not branch_dates:
         # No data at all: use a placeholder pair so expected cases still render
         branch_dates = {"": {""}}
@@ -1453,6 +2006,7 @@ def collect_all_data():
 
     for branch, dates in branch_dates.items():
         for date in sorted(dates):
+            rid, rwf = run_context.get((branch, date), ("", ""))
             for yaml_name, info in expected.items():
                 if (yaml_name, branch, date) in existing_pairs:
                     continue
@@ -1474,6 +2028,8 @@ def collect_all_data():
                     "prefix": labels.get("prefix", ""),
                     "date": date,
                     "branch": branch,
+                    "run_id": rid,
+                    "run_workflow": rwf,
                     "yaml_name": yaml_name,
                     "case_type": info.get("type", "unknown"),
                     "mean_ttft": None,
@@ -1500,6 +2056,9 @@ def collect_all_data():
         item["topology"] = topology
         item["card_count"] = card_count
         item["seq_length"] = seq_length
+
+    # Attach git platform script links for each test case
+    _attach_script_urls(filtered)
 
     return filtered
 
@@ -1546,84 +2105,189 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
+def _sync_managed_repo(src_name, repo_root, repo_url, branch):
+    """受管模式（方案A）：在 TESTCASES_CACHE_DIR 下稀疏克隆/更新源码仓缓存。
+    只检出 workflows YAML 与测试脚本目录，避免全量克隆。
+    """
+    branch = branch or "main"
+    if os.path.isdir(os.path.join(repo_root, ".git")):
+        _update_managed_repo(src_name, repo_root, repo_url, branch)
+    else:
+        _clone_managed_repo(src_name, repo_root, repo_url, branch)
+
+
+def _clone_managed_repo(src_name, repo_root, repo_url, branch):
+    """稀疏克隆源码仓到缓存目录（首次）。"""
+    parent_dir = os.path.dirname(repo_root)
+    os.makedirs(parent_dir, exist_ok=True)
+    if os.path.exists(repo_root):
+        shutil.rmtree(repo_root, ignore_errors=True)
+    print(f"[sync] {src_name}: 稀疏克隆 {repo_url} ({branch}) -> {repo_root}")
+    try:
+        result = subprocess.run(
+            ["git", "clone", "--depth=1", "--no-checkout", "--branch", branch, repo_url, repo_root],
+            capture_output=True, text=True, timeout=120,
+        )
+        if result.returncode != 0:
+            print(f"[sync] {src_name}: clone failed: {result.stderr.strip()}")
+            return
+        result = subprocess.run(
+            ["git", "sparse-checkout", "init", "--cone"],
+            cwd=repo_root, capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            print(f"[sync] {src_name}: sparse-checkout init failed: {result.stderr.strip()}")
+            return
+        result = subprocess.run(
+            ["git", "sparse-checkout", "set"] + SPARSE_CHECKOUT_PATHS,
+            cwd=repo_root, capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode != 0:
+            print(f"[sync] {src_name}: sparse-checkout set failed: {result.stderr.strip()}")
+            return
+        result = subprocess.run(
+            ["git", "checkout", branch],
+            cwd=repo_root, capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode != 0:
+            print(f"[sync] {src_name}: checkout failed: {result.stderr.strip()}")
+            return
+        print(f"[sync] {src_name}: 稀疏克隆完成")
+    except Exception as e:
+        print(f"[sync] {src_name}: clone error: {e}")
+
+
+def _update_managed_repo(src_name, repo_root, repo_url, branch):
+    """受管模式增量更新：fetch + reset 到远端分支；失败则重新克隆。"""
+    branch = branch or "main"
+    print(f"[sync] {src_name}: 增量更新 {repo_root} ({branch})")
+    try:
+        result = subprocess.run(
+            ["git", "fetch", "origin", branch, "--depth=1"],
+            cwd=repo_root, capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode != 0:
+            # 增量更新失败（如远程 force push 导致历史不相关），重新克隆
+            print(f"[sync] {src_name}: fetch 失败 ({result.stderr.strip()})，重新克隆")
+            shutil.rmtree(repo_root, ignore_errors=True)
+            _clone_managed_repo(src_name, repo_root, repo_url, branch)
+            return
+        # reset --hard 在 cone 稀疏检出下仅物化稀疏路径内的文件
+        result = subprocess.run(
+            ["git", "reset", "--hard", f"origin/{branch}"],
+            cwd=repo_root, capture_output=True, text=True, timeout=60,
+        )
+        if result.returncode != 0:
+            print(f"[sync] {src_name}: reset failed: {result.stderr.strip()}")
+            return
+        print(f"[sync] {src_name}: 更新完成")
+    except Exception as e:
+        print(f"[sync] {src_name}: update error: {e}")
+
+
+def _sync_local_repo(src_name, repo_root):
+    """回退模式：repo_url 为空时，对本地路径执行原 git pull 逻辑。"""
+    if not os.path.isdir(repo_root):
+        print(f"[sync] {src_name}: repo not found at {repo_root} and no repo_url to clone")
+        return
+
+    print(f"[sync] {src_name}: pulling latest from {repo_root}")
+    stashed = False
+    try:
+        # 检查是否有本地未提交改动，避免 reset --hard 清空用户改动
+        status = subprocess.run(
+            ["git", "status", "--porcelain"],
+            capture_output=True, text=True, timeout=30,
+            cwd=repo_root,
+        )
+        has_local_changes = bool(status.stdout.strip())
+        if has_local_changes:
+            print(f"[sync] {src_name}: 检测到本地未提交改动，使用 stash 暂存后再更新（保留用户改动）")
+            stash = subprocess.run(
+                ["git", "stash", "push", "-u", "-m", "dashboard-sync"],
+                capture_output=True, text=True, timeout=30,
+                cwd=repo_root,
+            )
+            stashed = stash.returncode == 0
+            if not stashed:
+                print(f"[sync] {src_name}: stash 失败，跳过更新: {stash.stderr.strip()}")
+
+        result = subprocess.run(
+            ["git", "pull", "--ff-only"],
+            capture_output=True, text=True, timeout=60,
+            cwd=repo_root,
+        )
+        if result.returncode == 0:
+            print(f"[sync] {src_name}: pull OK")
+            if "Already up to date" not in (result.stdout + result.stderr):
+                print(f"[sync] {src_name}: updated to latest")
+        else:
+            print(f"[sync] {src_name}: pull failed: {result.stderr.strip()}")
+
+        # 恢复被暂存的本地改动
+        if stashed:
+            pop = subprocess.run(
+                ["git", "stash", "pop"],
+                capture_output=True, text=True, timeout=30,
+                cwd=repo_root,
+            )
+            if pop.returncode != 0:
+                # pop 失败（冲突）时改动仍在 stash 中，不丢失，仅提示
+                print(f"[sync] {src_name}: stash pop 冲突，改动保留在 stash 中，请手动处理: {pop.stderr.strip()}")
+            else:
+                print(f"[sync] {src_name}: 本地改动已恢复")
+    except subprocess.TimeoutExpired:
+        print(f"[sync] {src_name}: pull timed out")
+    except Exception as e:
+        print(f"[sync] {src_name}: pull error: {e}")
+
+
 def sync_repos():
-    """Force-sync (git pull) all configured source repos on startup."""
+    """同步所有配置的源码仓（用例列表 YAML + 测试脚本基线）。
+
+    方案A（受管模式）：配置了 repo_url 的 source 在 TESTCASES_CACHE_DIR 下
+    稀疏克隆/更新，只检出 workflows 与测试脚本目录，不依赖本地手动克隆。
+    回退模式：repo_url 为空时沿用原逻辑，对本地路径执行 git pull。
+    """
     for src_name, src_cfg in SOURCES.items():
         repo_root = src_cfg.get("repo_root", "")
         repo_url = src_cfg.get("repo_url", "")
+        branch = src_cfg.get("branch", "")
         if not repo_root:
             print(f"[sync] {src_name}: no repo_root configured, skipping")
             continue
 
-        if not os.path.isdir(repo_root):
-            # Repo doesn't exist locally - try to clone
-            if repo_url:
-                parent_dir = os.path.dirname(repo_root)
-                os.makedirs(parent_dir, exist_ok=True)
-                print(f"[sync] {src_name}: cloning {repo_url} -> {repo_root}")
-                try:
-                    subprocess.run(
-                        ["git", "clone", repo_url, repo_root],
-                        capture_output=True, text=True, timeout=120,
-                        cwd=parent_dir,
-                    )
-                    print(f"[sync] {src_name}: clone OK")
-                except Exception as e:
-                    print(f"[sync] {src_name}: clone failed: {e}")
-            else:
-                print(f"[sync] {src_name}: repo not found at {repo_root} and no repo_url to clone")
-            continue
+        if repo_url:
+            _sync_managed_repo(src_name, repo_root, repo_url, branch)
+        else:
+            _sync_local_repo(src_name, repo_root)
 
-        # Repo exists - force pull latest
-        print(f"[sync] {src_name}: pulling latest from {repo_root}")
-        stashed = False
+
+_sync_thread_started = False
+
+
+def _ensure_sync_thread():
+    """确保后台周期同步线程已启动（单次）。"""
+    global _sync_thread_started
+    if _sync_thread_started:
+        return
+    _sync_thread_started = True
+    t = threading.Thread(target=_sync_worker, daemon=True)
+    t.start()
+
+
+def _sync_worker():
+    """后台线程：周期性同步源码仓并刷新基线/脚本链接缓存，
+    保证平台长时间运行期间脚本仓新增/更新用例持续生效。
+    """
+    while True:
+        time.sleep(SOURCE_SYNC_INTERVAL)
         try:
-            # 检查是否有本地未提交改动，避免 reset --hard 清空用户改动
-            status = subprocess.run(
-                ["git", "status", "--porcelain"],
-                capture_output=True, text=True, timeout=30,
-                cwd=repo_root,
-            )
-            has_local_changes = bool(status.stdout.strip())
-            if has_local_changes:
-                print(f"[sync] {src_name}: 检测到本地未提交改动，使用 stash 暂存后再更新（保留用户改动）")
-                stash = subprocess.run(
-                    ["git", "stash", "push", "-u", "-m", "dashboard-sync"],
-                    capture_output=True, text=True, timeout=30,
-                    cwd=repo_root,
-                )
-                stashed = stash.returncode == 0
-                if not stashed:
-                    print(f"[sync] {src_name}: stash 失败，跳过更新: {stash.stderr.strip()}")
-
-            result = subprocess.run(
-                ["git", "pull", "--ff-only"],
-                capture_output=True, text=True, timeout=60,
-                cwd=repo_root,
-            )
-            if result.returncode == 0:
-                print(f"[sync] {src_name}: pull OK")
-                if "Already up to date" not in (result.stdout + result.stderr):
-                    print(f"[sync] {src_name}: updated to latest")
-            else:
-                print(f"[sync] {src_name}: pull failed: {result.stderr.strip()}")
-
-            # 恢复被暂存的本地改动
-            if stashed:
-                pop = subprocess.run(
-                    ["git", "stash", "pop"],
-                    capture_output=True, text=True, timeout=30,
-                    cwd=repo_root,
-                )
-                if pop.returncode != 0:
-                    # pop 失败（冲突）时改动仍在 stash 中，不丢失，仅提示
-                    print(f"[sync] {src_name}: stash pop 冲突，改动保留在 stash 中，请手动处理: {pop.stderr.strip()}")
-                else:
-                    print(f"[sync] {src_name}: 本地改动已恢复")
-        except subprocess.TimeoutExpired:
-            print(f"[sync] {src_name}: pull timed out")
+            sync_repos()
+            collect_baselines(force=True)
+            collect_script_urls(force=True)
         except Exception as e:
-            print(f"[sync] {src_name}: pull error: {e}")
+            print(f"[sync] periodic sync error: {e}")
 
 
 def start_dashboard():
@@ -1633,6 +2297,14 @@ def start_dashboard():
     # 启动时从两个代码仓的测试脚本刷新基线缓存
     print("[startup] Refreshing baselines from test scripts...")
     collect_baselines(force=True)
+    # 启动时重建用例脚本在 Git 平台的链接映射（sync_repos 已拉取最新脚本）
+    print("[startup] Refreshing test script git links...")
+    collect_script_urls(force=True)
+    # 清空 GitHub jobs 缓存，让首次数据加载时重新拉取每个 run 的 job 列表
+    print("[startup] Resetting GitHub Actions jobs cache...")
+    force_refresh_jobs()
+    # 后台周期同步：持续拉取最新用例/基线
+    _ensure_sync_thread()
     print("=" * 60)
     server = socketserver.ThreadingTCPServer(("0.0.0.0", DASHBOARD_PORT), DashboardHandler)
     print(f"Dashboard running at http://localhost:{DASHBOARD_PORT}")
