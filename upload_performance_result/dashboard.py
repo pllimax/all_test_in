@@ -192,17 +192,21 @@ def parse_test_script_baselines(filepath):
     return baselines
 
 
-# 基线缓存：启动时从两个仓刷新一次，请求期间复用
+# 基线缓存：启动时从两个仓刷新一次，此后周期性自动刷新（TTL），
+# 避免平台长时间运行期间脚本仓新增/更新用例而基线不更新。
+BASELINES_CACHE_TTL = 600  # 秒
 _baselines_cache = None
+_baselines_cache_ts = 0.0
 
 
 def collect_baselines(force=False):
     """Scan all test scripts and collect baseline values.
     Returns a dict: {test_case_name: {metric: value, ...}}
-    每次启动 dashboard 时通过 force=True 从两个代码仓的测试脚本刷新，请求期间复用缓存。
+    每次启动 dashboard 时通过 force=True 刷新；此后每 BASELINES_CACHE_TTL 秒自动重扫。
     """
-    global _baselines_cache
-    if not force and _baselines_cache is not None:
+    global _baselines_cache, _baselines_cache_ts
+    now = time.time()
+    if not force and _baselines_cache is not None and (now - _baselines_cache_ts) < BASELINES_CACHE_TTL:
         return _baselines_cache
 
     results = {}
@@ -223,6 +227,7 @@ def collect_baselines(force=False):
                             results[test_case_name] = {}
                         results[test_case_name].update(baselines)
     _baselines_cache = results
+    _baselines_cache_ts = time.time()
     return results
 
 _nnodes_cache = {}
@@ -763,16 +768,25 @@ function updateTable(data) {
   }
 
   function fmtBaseline(b, d) {
-    // 按该用例实际拥有的数据类型显示对应基线：
-    // accuracy-only 用例（如拆分后的 *_aime25/gpqa 精度用例）不显示合并来的性能基线
-    const hasPerf = d != null && d.mean_ttft != null;
-    const hasEval = d != null && d.eval_score != null;
+    // 基线来自用例脚本，与是否有执行结果无关：
+    // accuracy-only 用例显示精度基线；performance 用例显示性能基线；unknown/混合显示全部。
+    // （避免无结果占位符条目因缺少数据而误显示为空）
     const parts = [];
-    if (hasPerf && b.mean_ttft != null) parts.push(`TTFT≤${b.mean_ttft}`);
-    if (hasPerf && b.mean_tpot != null) parts.push(`TPOT≤${b.mean_tpot}`);
-    if (hasPerf && b.mean_e2e_latency != null) parts.push(`E2E时间≤${b.mean_e2e_latency}`);
-    if (hasPerf && b.output_token_throughput != null) parts.push(`输出吞吐≥${b.output_token_throughput}`);
-    if (hasEval && b.eval_score != null) parts.push(`精度≥${b.eval_score}`);
+    const t = d != null ? d.case_type : 'unknown';
+    if (t === 'accuracy') {
+      if (b.eval_score != null) parts.push(`精度≥${b.eval_score}`);
+    } else if (t === 'performance') {
+      if (b.mean_ttft != null) parts.push(`TTFT≤${b.mean_ttft}`);
+      if (b.mean_tpot != null) parts.push(`TPOT≤${b.mean_tpot}`);
+      if (b.mean_e2e_latency != null) parts.push(`E2E时间≤${b.mean_e2e_latency}`);
+      if (b.output_token_throughput != null) parts.push(`输出吞吐≥${b.output_token_throughput}`);
+    } else {
+      if (b.mean_ttft != null) parts.push(`TTFT≤${b.mean_ttft}`);
+      if (b.mean_tpot != null) parts.push(`TPOT≤${b.mean_tpot}`);
+      if (b.mean_e2e_latency != null) parts.push(`E2E时间≤${b.mean_e2e_latency}`);
+      if (b.output_token_throughput != null) parts.push(`输出吞吐≥${b.output_token_throughput}`);
+      if (b.eval_score != null) parts.push(`精度≥${b.eval_score}`);
+    }
     return parts.length > 0 ? parts.join(', ') : '--';
   }
 
@@ -1033,15 +1047,24 @@ function exportToExcel() {
     const dataRows = rows.map(d => {
       const b = d.baselines || {};
       const n = getCardCount(d);
-      // 按数据类型过滤基线：accuracy-only 用例不显示合并来的性能基线
-      const hasPerf = d.mean_ttft != null;
-      const hasEval = d.eval_score != null;
+      // 基线来自用例脚本，与是否有执行结果无关；按用例类型过滤
+      // （accuracy-only 只显示精度基线，performance 只显示性能基线）
+      const t = d.case_type;
       const blParts = [];
-      if (hasPerf && b.mean_ttft != null) blParts.push('TTFT≤' + b.mean_ttft);
-      if (hasPerf && b.mean_tpot != null) blParts.push('TPOT≤' + b.mean_tpot);
-      if (hasPerf && b.mean_e2e_latency != null) blParts.push('E2E≤' + b.mean_e2e_latency);
-      if (hasPerf && b.output_token_throughput != null) blParts.push('吞吐≥' + b.output_token_throughput);
-      if (hasEval && b.eval_score != null) blParts.push('精度≥' + b.eval_score);
+      if (t === 'accuracy') {
+        if (b.eval_score != null) blParts.push('精度≥' + b.eval_score);
+      } else if (t === 'performance') {
+        if (b.mean_ttft != null) blParts.push('TTFT≤' + b.mean_ttft);
+        if (b.mean_tpot != null) blParts.push('TPOT≤' + b.mean_tpot);
+        if (b.mean_e2e_latency != null) blParts.push('E2E≤' + b.mean_e2e_latency);
+        if (b.output_token_throughput != null) blParts.push('吞吐≥' + b.output_token_throughput);
+      } else {
+        if (b.mean_ttft != null) blParts.push('TTFT≤' + b.mean_ttft);
+        if (b.mean_tpot != null) blParts.push('TPOT≤' + b.mean_tpot);
+        if (b.mean_e2e_latency != null) blParts.push('E2E≤' + b.mean_e2e_latency);
+        if (b.output_token_throughput != null) blParts.push('吞吐≥' + b.output_token_throughput);
+        if (b.eval_score != null) blParts.push('精度≥' + b.eval_score);
+      }
       return [
         d.model || '', d._id || '', d.date || '', d.source || '', computeStatus(d),
         blParts.join(', '),
@@ -1385,9 +1408,11 @@ def collect_all_data():
         yaml_name = r.get("yaml_name", "")
         if yaml_name in expected_tc_ids:
             r["source"] = expected[yaml_name]["source"]
+            # 用例类型（accuracy/performance/unknown）用于前端基线显示与状态判定
+            r["case_type"] = expected[yaml_name].get("type", "unknown")
             # 纯精度用例（YAML 定义为 accuracy 测试）只显示精度结果：
             # 丢弃因同名 perf 脚本或历史数据混入的性能字段
-            if expected[yaml_name].get("type") == "accuracy":
+            if r["case_type"] == "accuracy":
                 for k in PERF_ONLY_FIELDS:
                     r[k] = None
             filtered.append(r)
@@ -1450,6 +1475,7 @@ def collect_all_data():
                     "date": date,
                     "branch": branch,
                     "yaml_name": yaml_name,
+                    "case_type": info.get("type", "unknown"),
                     "mean_ttft": None,
                     "mean_tpot": None,
                     "mean_e2e_latency": None,
