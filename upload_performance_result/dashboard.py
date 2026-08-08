@@ -212,6 +212,78 @@ YAML_CONFIGS = _config["yaml_configs"]
 TEST_SCRIPTS_ROOTS = _config["test_scripts_roots"]
 BRANCH_REPO_MAP = _config["branch_repo_map"]
 
+# ============================================================
+# 用例备注（notes）
+# 每个用例（yaml_name）可填写一条备注，本地持久化到 notes.json，
+# 并可选定期 commit/push 到 git 仓（与 collect_metrics.sh 的 git 上传模式一致）。
+# ============================================================
+NOTES_FILE = os.environ.get(
+    "NOTES_FILE",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "notes.json"),
+)
+# 定期将备注持久化到 git 仓的间隔（秒），默认 600s（10 分钟）
+NOTES_GIT_INTERVAL = int(os.environ.get("NOTES_GIT_INTERVAL", "600"))
+# 是否启用 git 持久化（配置 repo 与 git 可用时才有意义）
+NOTES_GIT_PUSH_ENABLED = os.environ.get("NOTES_GIT_PUSH", "1") != "0"
+
+_notes = {}          # {yaml_name: note_text}
+_notes_loaded = False
+_notes_dirty = False  # 本地已有变更但尚未提交到 git
+_notes_lock = threading.RLock()  # RLock：save_note 内调用 load_notes 需可重入
+
+
+def _notes_path():
+    return NOTES_FILE
+
+
+def load_notes():
+    """加载备注（进程内缓存，首次从 notes.json 读取）。"""
+    global _notes, _notes_loaded
+    if _notes_loaded:
+        return _notes
+    with _notes_lock:
+        if _notes_loaded:
+            return _notes
+        _notes = {}
+        if os.path.isfile(_notes_path()):
+            try:
+                with open(_notes_path(), "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if isinstance(data, dict):
+                    _notes = {str(k): str(v) for k, v in data.items()}
+            except Exception as e:
+                print(f"[notes] load notes failed: {e}")
+        _notes_loaded = True
+        return _notes
+
+
+def save_note(yaml_name, note_text):
+    """保存单条用例备注，立即写盘。返回 True 表示成功。"""
+    global _notes, _notes_dirty
+    with _notes_lock:
+        load_notes()
+        note_text = (note_text or "").strip()
+        if note_text:
+            _notes[yaml_name] = note_text
+        else:
+            _notes.pop(yaml_name, None)
+        try:
+            with open(_notes_path(), "w", encoding="utf-8") as f:
+                json.dump(_notes, f, ensure_ascii=False, indent=2)
+            _notes_dirty = True
+            return True
+        except Exception as e:
+            print(f"[notes] save notes failed: {e}")
+            return False
+
+
+def attach_notes(items):
+    """为每条数据附加 note 字段（按 yaml_name 匹配）。"""
+    notes = load_notes()
+    for item in items:
+        item["note"] = notes.get(str(item.get("yaml_name", "") or ""), "")
+    return items
+
 # Test cases to exclude from the dashboard
 EXCLUDED_TEST_CASES = {
     "glm4_6v_flash_1p_mmmu",
@@ -820,6 +892,10 @@ tr.selected:hover { background: #254070 !important; }
 .baseline-val { font-size: 11px; color: #8b949e; }
 .metric-fail { color: #ff7b72; font-weight: 700; }
 .baseline-col { font-size: 11px; color: #8b949e; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.col-note { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.note-text { color: #e6edf3; font-size: 12px; }
+.note-edit { cursor: pointer; color: #58a6ff; margin-left: 4px; font-size: 12px; }
+.note-edit:hover { color: #79c0ff; }
 .chart-row td { padding: 0; }
 .tc-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; padding: 12px; background: #0d1117; }
 .tc-chart-box { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 8px; }
@@ -881,6 +957,7 @@ tr.selected:hover { background: #254070 !important; }
         <th>状态</th>
         <th>用例脚本</th>
         <th>任务</th>
+        <th>备注</th>
         <th>基线</th>
         <th class="col-uniform">组网</th>
         <th class="col-uniform">卡数</th>
@@ -907,6 +984,19 @@ tr.selected:hover { background: #254070 !important; }
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
+</div>
+
+<!-- 备注编辑弹窗 -->
+<div id="noteModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;width:480px;max-width:92vw;">
+    <h4 style="margin:0 0 6px;color:#e6edf3;">填写用例备注</h4>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:8px;word-break:break-all;" id="noteModalTc"></div>
+    <textarea id="noteInput" rows="4" placeholder="输入该用例的备注..." style="width:100%;box-sizing:border-box;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:13px;"></textarea>
+    <div style="margin-top:10px;text-align:right;">
+      <button class="btn btn-reset" onclick="closeNoteEditor()">取消</button>
+      <button class="btn" onclick="saveNote()">保存</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1031,6 +1121,56 @@ function destroyCharts(tcId) {
     chartRow.querySelector('td').innerHTML = '';
   }
 }
+
+// ===== 用例备注编辑 =====
+let _noteEditingTc = null;
+
+function openNoteEditor(tcId) {
+  _noteEditingTc = tcId;
+  const item = allData.find(d => d._id === tcId) || {};
+  document.getElementById('noteModalTc').textContent = tcId;
+  document.getElementById('noteInput').value = item.note || '';
+  const modal = document.getElementById('noteModal');
+  modal.style.display = 'flex';
+  document.getElementById('noteInput').focus();
+}
+
+function closeNoteEditor() {
+  document.getElementById('noteModal').style.display = 'none';
+  _noteEditingTc = null;
+}
+
+async function saveNote() {
+  if (!_noteEditingTc) return;
+  const note = document.getElementById('noteInput').value || '';
+  try {
+    const resp = await fetch('/api/note', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({yaml_name: _noteEditingTc, note: note})
+    });
+    const res = await resp.json();
+    if (res.ok) {
+      // 更新本地数据，重新渲染表格
+      allData.forEach(d => { if (d._id === _noteEditingTc) d.note = note; });
+      closeNoteEditor();
+      onFilterChange();
+    } else {
+      alert('保存失败: ' + (res.error || '未知错误'));
+    }
+  } catch (e) {
+    alert('保存失败: ' + e);
+  }
+}
+
+// 点击弹窗背景关闭
+document.addEventListener('click', (e) => {
+  if (e.target && e.target.id === 'noteModal') closeNoteEditor();
+});
+// 按 Esc 关闭弹窗
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeNoteEditor();
+});
 
 async function loadData() {
   const resp = await fetch('/api/data');
@@ -1236,7 +1376,7 @@ function updateTable(data) {
   const tbody = document.getElementById('tableBody');
   if (data.length === 0) {
     document.getElementById('tableCount').textContent = '(0 条)';
-    tbody.innerHTML = '<tr><td colspan="28" class="no-data">无匹配数据</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="29" class="no-data">无匹配数据</td></tr>';
     return;
   }
 
@@ -1358,6 +1498,20 @@ function updateTable(data) {
     return '--';
   }
 
+  // 渲染用例备注：显示文本 + 编辑按钮（点击弹窗编辑，备注按 yaml_name 对应用例）
+  function escHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function fmtNote(d) {
+    const note = d.note || '';
+    const display = note.length > 12 ? note.substring(0, 12) + '…' : note;
+    const editBtn = `<span class="note-edit" onclick="openNoteEditor('${d._id.replace(/'/g, "\\'")}')" title="填写备注">✏️</span>`;
+    const text = note ? `<span class="note-text" title="${escHtml(note)}">${escHtml(display)}</span>` : '';
+    return `${text}${editBtn}`;
+  }
+
   let rows = '';
   let visibleCount = 0;
   // 预计算每个分组在 collapsed 视图中是否应显示模型名
@@ -1390,6 +1544,7 @@ function updateTable(data) {
         <td><span class="${statusCls}">${status}</span></td>
         <td>${fmtScriptLinks(d)}</td>
         <td>${fmtRunLink(d)}</td>
+        <td class="col-note">${fmtNote(d)}</td>
         <td><span class="baseline-col" title="${fmtBaseline(b, d)}">${fmtBaseline(b, d)}</span></td>
         <td class="col-uniform">${d.topology || '--'}</td>
         <td class="col-uniform">${d.card_count || '--'}</td>
@@ -1415,7 +1570,7 @@ function updateTable(data) {
       </tr>`;
     });
     // Add hidden chart row after each test case group
-    rows += `<tr class="chart-row" id="chart_${safeId}" data-tc="${safeId}" style="display:none"><td colspan="28"></td></tr>`;
+    rows += `<tr class="chart-row" id="chart_${safeId}" data-tc="${safeId}" style="display:none"><td colspan="29"></td></tr>`;
   });
   document.getElementById('tableCount').textContent = `(${visibleCount} 条)`;
   tbody.innerHTML = rows;
@@ -1564,7 +1719,7 @@ function exportToExcel() {
 
     // Build Excel data
     const headers = [
-      '模型', '测试用例ID', '日期', '状态', '用例脚本', '任务', '基线',
+      '模型', '测试用例ID', '日期', '状态', '用例脚本', '任务', '备注', '基线',
       '组网', '卡数', '序列长度', 'PREFIX', '数据集',
       '精度', '总请求数', '最大并发数', '系统并发数', '请求频率',
       'TTFT(ms)', 'TTFT P90(ms)', 'TPOT(ms)', 'TPOT P90(ms)',
@@ -1603,6 +1758,7 @@ function exportToExcel() {
         // 用例脚本列（合并来源）：有脚本链接时显示 来源(URL)，否则显示来源
         (d.script_urls || []).map(u => u.source + '(' + u.url + ')').join('; ') || d.source || '',
         d.job_url || d.run_url || '',
+        d.note || '',
         blParts.join(', '),
         d.topology || '', d.card_count || '', d.seq_length || '',
         (d.prefix || '').replace('prefix', '') || '0', d.dataset || '',
@@ -2074,10 +2230,22 @@ def _get_data():
     if _data_cache["payload"] is None or now - _data_cache["ts"] >= DATA_CACHE_TTL:
         _data_cache["payload"] = collect_all_data()
         _data_cache["ts"] = now
-    return _data_cache["payload"]
+    payload = _data_cache["payload"]
+    # 附加用例备注（每次请求都刷新，保证保存后立即可见）
+    attach_notes(payload)
+    return payload
 
 
 class DashboardHandler(http.server.BaseHTTPRequestHandler):
+    def _send_json(self, obj, status=200):
+        body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(body)
+
     def do_GET(self):
         if self.path == "/" or self.path == "/index.html":
             self.send_response(200)
@@ -2086,17 +2254,30 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
         elif self.path == "/api/data":
             data = _get_data()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
-            self.send_header("Access-Control-Allow-Origin", "*")
-            self.end_headers()
-            self.wfile.write(json.dumps(data, ensure_ascii=False).encode("utf-8"))
+            self._send_json(data)
         elif self.path == "/api/status":
             source = "本地文件"
-            self.send_response(200)
-            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self._send_json({"source": source, "git_enabled": GIT_PULL_ENABLED})
+        else:
+            self.send_response(404)
             self.end_headers()
-            self.wfile.write(json.dumps({"source": source, "git_enabled": GIT_PULL_ENABLED}).encode("utf-8"))
+
+    def do_POST(self):
+        """保存用例备注。请求体: {"yaml_name": "...", "note": "..."}"""
+        if self.path == "/api/note":
+            try:
+                length = int(self.headers.get("Content-Length", 0) or 0)
+                body = self.rfile.read(length).decode("utf-8") if length else "{}"
+                data = json.loads(body)
+                yaml_name = str(data.get("yaml_name", "") or "").strip()
+                note = str(data.get("note", "") or "")
+                if not yaml_name:
+                    self._send_json({"ok": False, "error": "yaml_name is required"}, status=400)
+                    return
+                ok = save_note(yaml_name, note)
+                self._send_json({"ok": ok, "yaml_name": yaml_name})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)}, status=400)
         else:
             self.send_response(404)
             self.end_headers()
@@ -2290,6 +2471,83 @@ def _sync_worker():
             print(f"[sync] periodic sync error: {e}")
 
 
+# ============================================================
+# 备注 git 持久化：定期将 notes.json commit + push 到当前 git 仓。
+# 与 collect_metrics.sh 的上传模式一致，仅在存在变更时提交。
+# 未配置 git / push 失败时静默跳过（本地 notes.json 始终已持久化）。
+# ============================================================
+_notes_git_thread_started = False
+
+
+def _git_repo_root():
+    """查找当前项目所在 git 仓根目录（向上遍历直到找到 .git）。"""
+    d = os.path.dirname(os.path.abspath(__file__))
+    while True:
+        if os.path.isdir(os.path.join(d, ".git")):
+            return d
+        parent = os.path.dirname(d)
+        if parent == d:
+            return None
+        d = parent
+
+
+def _push_notes_to_git():
+    """将 notes.json 提交并推送到当前 git 仓。成功返回 True。"""
+    global _notes_dirty
+    repo_root = _git_repo_root()
+    if not repo_root:
+        return False
+    rel_path = os.path.relpath(_notes_path(), repo_root).replace("\\", "/")
+    try:
+        # 只提交 notes.json，避免把其他未跟踪/改动文件带入
+        r = subprocess.run(
+            ["git", "add", "--", rel_path], cwd=repo_root,
+            capture_output=True, text=True, timeout=60,
+        )
+        if r.returncode != 0:
+            print(f"[notes-git] add failed: {r.stderr.strip()[:200]}")
+            return False
+        r = subprocess.run(
+            ["git", "commit", "-m", "dashboard: update test case notes", "--", rel_path],
+            cwd=repo_root, capture_output=True, text=True, timeout=60,
+        )
+        if r.returncode != 0 and "nothing to commit" not in r.stdout + r.stderr:
+            print(f"[notes-git] commit failed: {r.stderr.strip()[:200]}")
+            return False
+        r = subprocess.run(
+            ["git", "push", "origin", "HEAD"], cwd=repo_root,
+            capture_output=True, text=True, timeout=120,
+        )
+        if r.returncode != 0:
+            print(f"[notes-git] push failed: {r.stderr.strip()[:200]}")
+            return False
+        _notes_dirty = False
+        return True
+    except Exception as e:
+        print(f"[notes-git] error: {e}")
+        return False
+
+
+def _notes_git_worker():
+    """后台线程：定期将变更的备注提交到 git 仓。"""
+    while True:
+        time.sleep(NOTES_GIT_INTERVAL)
+        if not NOTES_GIT_PUSH_ENABLED:
+            continue
+        if _notes_dirty:
+            _push_notes_to_git()
+
+
+def _ensure_notes_git_thread():
+    """确保备注 git 持久化线程已启动（单次）。"""
+    global _notes_git_thread_started
+    if _notes_git_thread_started:
+        return
+    _notes_git_thread_started = True
+    t = threading.Thread(target=_notes_git_worker, daemon=True)
+    t.start()
+
+
 def start_dashboard():
     print("=" * 60)
     print("[startup] Syncing test case repos...")
@@ -2305,6 +2563,10 @@ def start_dashboard():
     force_refresh_jobs()
     # 后台周期同步：持续拉取最新用例/基线
     _ensure_sync_thread()
+    # 后台定期将用例备注持久化到 git 仓
+    if NOTES_GIT_PUSH_ENABLED:
+        print(f"[startup] Notes git persistence enabled (every {NOTES_GIT_INTERVAL}s)")
+        _ensure_notes_git_thread()
     print("=" * 60)
     server = socketserver.ThreadingTCPServer(("0.0.0.0", DASHBOARD_PORT), DashboardHandler)
     print(f"Dashboard running at http://localhost:{DASHBOARD_PORT}")
