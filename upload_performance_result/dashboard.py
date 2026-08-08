@@ -84,15 +84,20 @@ def get_config_paths():
             repo_url = os.environ.get(f"{env_prefix}_REPO_URL", repo_url)
             branch = os.environ.get(f"{env_prefix}_BRANCH", branch)
 
-            # 方案A：配置了 repo_url 时，repo_root 指向 dashboard 自管理的
-            # 稀疏克隆缓存目录（.testcases_repo/{source_name}），
-            # 用例 YAML 与测试脚本均从该缓存读取，不依赖本地手动克隆。
-            # 未配置 repo_url 时保持原有本地路径行为（回退模式）。
+            # 方案A：配置了 repo_url 时，优先使用 dashboard 自管理的
+            # 稀疏克隆缓存目录（.testcases_repo/{source_name}）。
+            # 仅当该目录已实际检出（yaml 文件存在）时才使用；
+            # 否则（未克隆/克隆损坏/网络不可达）回退到 config 的本地 repo_root，
+            # 避免受管目录不可用导致 YAML 与测试脚本全部缺失。
             if repo_url:
                 managed_root = os.path.join(TESTCASES_CACHE_DIR, source_name)
-                if repo_root and yaml_rel:
-                    print(f"[config] {source_name}: 使用受管克隆目录 {managed_root} (branch={branch or 'main'}, 本地回退 {repo_root})")
-                repo_root = managed_root
+                managed_yaml = os.path.join(managed_root, yaml_rel) if yaml_rel else ""
+                if managed_yaml and os.path.isfile(managed_yaml):
+                    print(f"[config] {source_name}: 使用受管克隆目录 {managed_root} (branch={branch or 'main'})")
+                    repo_root = managed_root
+                else:
+                    print(f"[config] {source_name}: 受管克隆目录不可用({managed_root})，回退本地 {repo_root}")
+                    # repo_root 保持 config 中的本地路径
 
             if repo_root and yaml_rel:
                 yaml_abs = os.path.join(repo_root, yaml_rel)
