@@ -86,18 +86,15 @@ def get_config_paths():
 
             # 方案A：配置了 repo_url 时，优先使用 dashboard 自管理的
             # 稀疏克隆缓存目录（.testcases_repo/{source_name}）。
-            # 仅当该目录已实际检出（yaml 文件存在）时才使用；
-            # 否则（未克隆/克隆损坏/网络不可达）回退到 config 的本地 repo_root，
-            # 避免受管目录不可用导致 YAML 与测试脚本全部缺失。
+            # 用例 YAML 与测试脚本（基线）均从该 git 仓动态读取，
+            # 不依赖本地手动克隆的社区仓/测试仓路径。
+            # 受管目录由 sync_repos 在启动时克隆/更新（clone 失败时
+            # _sync_managed_repo 会打印错误，collect_* 内部跳过不存在的目录，
+            # 不会因受管目录不可用导致 YAML 与测试脚本全部缺失）。
             if repo_url:
                 managed_root = os.path.join(TESTCASES_CACHE_DIR, source_name)
-                managed_yaml = os.path.join(managed_root, yaml_rel) if yaml_rel else ""
-                if managed_yaml and os.path.isfile(managed_yaml):
-                    print(f"[config] {source_name}: 使用受管克隆目录 {managed_root} (branch={branch or 'main'})")
-                    repo_root = managed_root
-                else:
-                    print(f"[config] {source_name}: 受管克隆目录不可用({managed_root})，回退本地 {repo_root}")
-                    # repo_root 保持 config 中的本地路径
+                print(f"[config] {source_name}: 使用受管克隆目录 {managed_root} (branch={branch or 'main'}, 本地回退 {repo_root})")
+                repo_root = managed_root
 
             if repo_root and yaml_rel:
                 yaml_abs = os.path.join(repo_root, yaml_rel)
@@ -2294,12 +2291,58 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
 def _sync_managed_repo(src_name, repo_root, repo_url, branch):
     """受管模式（方案A）：在 TESTCASES_CACHE_DIR 下稀疏克隆/更新源码仓缓存。
     只检出 workflows YAML 与测试脚本目录，避免全量克隆。
+    检测半初始化残留（有 .git 但非 sparse 检出）时重新完整克隆。
     """
     branch = branch or "main"
     if os.path.isdir(os.path.join(repo_root, ".git")):
-        _update_managed_repo(src_name, repo_root, repo_url, branch)
+        # 历史残留：.git 存在但未启用 sparse-checkout（或未检出任何文件），
+        # 增量更新无法修复，直接删除后重新稀疏克隆。
+        if not _is_sparse_worktree(repo_root):
+            print(f"[sync] {src_name}: 检测到未完成/损坏的受管目录，重新克隆 {repo_root}")
+            _remove_dir_force(repo_root)
+            _clone_managed_repo(src_name, repo_root, repo_url, branch)
+        else:
+            _update_managed_repo(src_name, repo_root, repo_url, branch)
     else:
         _clone_managed_repo(src_name, repo_root, repo_url, branch)
+
+
+def _is_sparse_worktree(repo_root):
+    """判断仓库是否已启用 sparse-checkout（受管目录正常状态）。"""
+    try:
+        result = subprocess.run(
+            ["git", "sparse-checkout", "list"],
+            cwd=repo_root, capture_output=True, text=True, timeout=30,
+        )
+        return result.returncode == 0 and bool(result.stdout.strip())
+    except Exception:
+        return False
+
+
+def _remove_dir_force(path):
+    """可靠删除目录：Windows 上 .git 文件常带只读属性，shutil.rmtree 会失败，
+    先解除只读再删除。返回是否成功。"""
+    if not os.path.exists(path):
+        return True
+    try:
+        # 递归解除只读属性（git 对象/索引文件常见只读）
+        for root, dirs, files in os.walk(path, topdown=False):
+            for name in files:
+                p = os.path.join(root, name)
+                try:
+                    os.chmod(p, 0o777)
+                except OSError:
+                    pass
+            for name in dirs:
+                p = os.path.join(root, name)
+                try:
+                    os.chmod(p, 0o777)
+                except OSError:
+                    pass
+        shutil.rmtree(path, ignore_errors=True)
+    except Exception:
+        pass
+    return not os.path.exists(path)
 
 
 def _clone_managed_repo(src_name, repo_root, repo_url, branch):
@@ -2307,7 +2350,7 @@ def _clone_managed_repo(src_name, repo_root, repo_url, branch):
     parent_dir = os.path.dirname(repo_root)
     os.makedirs(parent_dir, exist_ok=True)
     if os.path.exists(repo_root):
-        shutil.rmtree(repo_root, ignore_errors=True)
+        _remove_dir_force(repo_root)
     print(f"[sync] {src_name}: 稀疏克隆 {repo_url} ({branch}) -> {repo_root}")
     try:
         result = subprocess.run(
@@ -2355,7 +2398,7 @@ def _update_managed_repo(src_name, repo_root, repo_url, branch):
         if result.returncode != 0:
             # 增量更新失败（如远程 force push 导致历史不相关），重新克隆
             print(f"[sync] {src_name}: fetch 失败 ({result.stderr.strip()})，重新克隆")
-            shutil.rmtree(repo_root, ignore_errors=True)
+            _remove_dir_force(repo_root)
             _clone_managed_repo(src_name, repo_root, repo_url, branch)
             return
         # reset --hard 在 cone 稀疏检出下仅物化稀疏路径内的文件
