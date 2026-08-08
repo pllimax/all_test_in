@@ -133,6 +133,26 @@ if [ -z "$GIT_LOCAL_DIR" ]; then
     GIT_LOCAL_DIR="${SCRIPT_DIR}/.all_test_in_repo"
 fi
 
+# 本次收集文件清单：仅上传本次实际收集的用例文件，
+# 避免 CI 机器上旧的/未收集的文件覆盖 git 仓库中他人刚提交的新内容。
+# 清单放在系统临时目录，避免落入仓库目录被 git add 误提交。
+UPLOAD_LIST="${TMPDIR:-/tmp}/upload_list_$$"
+: > "${UPLOAD_LIST}"
+trap 'rm -f "${UPLOAD_LIST}"' EXIT
+
+# 提醒：脚本所在 checkout 若落后于远端，用旧代码/旧数据运行会有回退仓库新提交的风险
+if git -C "${SCRIPT_DIR}" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    repo_root=$(git -C "${SCRIPT_DIR}" rev-parse --show-toplevel 2>/dev/null || true)
+    if [ -n "${repo_root}" ]; then
+        local_head=$(git -C "${repo_root}" rev-parse HEAD 2>/dev/null || true)
+        remote_head=$(git -C "${repo_root}" ls-remote origin HEAD 2>/dev/null | awk '{print $1}')
+        if [ -n "${local_head}" ] && [ -n "${remote_head}" ] && [ "${local_head}" != "${remote_head}" ]; then
+            echo "警告: 脚本所在仓库落后于远端 (本地 ${local_head:0:8} vs 远端 ${remote_head:0:8})。"
+            echo "      建议先在 CI 上同步最新代码再执行本脚本，否则可能用旧逻辑/旧数据覆盖仓库中的新提交。"
+        fi
+    fi
+fi
+
 # ============================================================
 # 搜索根目录：支持按分支前缀筛选
 # 前缀匹配，如 --branch pllimax 可匹配 pllimax 下所有分支目录
@@ -254,6 +274,9 @@ for CURRENT_DATE in "${DATES[@]}"; do
             echo "# [collect_metrics] CI运行目录: ${subdir_name}"
         } >> "${dst_file}"
 
+        # 记录本次收集的文件（上传时仅推送清单内文件，避免回退仓库新提交）
+        echo "${dst_file}" >> "${UPLOAD_LIST}"
+
         if [ -n "${BRANCH:-}" ]; then
             echo "[OK] ${subdir_name_clean} (源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
         else
@@ -342,6 +365,9 @@ for CURRENT_DATE in "${DATES[@]}"; do
             echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
         } >> "${eval_dst}"
 
+        # 记录本次收集的文件（上传时仅推送清单内文件，避免回退仓库新提交）
+        echo "${eval_dst}" >> "${UPLOAD_LIST}"
+
         if [ -n "${BRANCH:-}" ]; then
             echo "[EVAL] ${ts_name_clean} (源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
         else
@@ -400,15 +426,26 @@ fi
 # 确保目标路径存在
 mkdir -p "${GIT_LOCAL_DIR}/${GIT_TARGET_PATH}"
 
-# 拷贝脚本所在路径下所有目录及文件到目标路径（排除 .git 和自身临时目录）
-# 注意：不使用 --delete，避免删除 Git 仓库中已存在但本地 SCRIPT_DIR 缺失的历史数据
-#       （如换机器收集、或本地手动清理过某日期目录）
-echo "拷贝文件到仓库..."
-rsync -a \
-    --exclude='.git' \
-    --exclude='.all_test_in_repo' \
-    --exclude='collect_metrics.sh' \
-    "${SCRIPT_DIR}/" "${GIT_LOCAL_DIR}/${GIT_TARGET_PATH}/"
+# 仅上传本次实际收集的文件（清单驱动）：
+# 1) 未在本次收集的旧文件不会推送，避免把 CI 机器上旧内容回退到 git 仓库的新提交上
+# 2) 不使用 --delete，避免删除 Git 仓库中已存在但本地 SCRIPT_DIR 缺失的历史数据
+#    （如换机器收集、或本地手动清理过某日期目录）
+echo "拷贝本次收集的文件到仓库..."
+if [ -s "${UPLOAD_LIST}" ]; then
+    while IFS= read -r f; do
+        [ -f "${f}" ] || continue
+        rel="${f#${SCRIPT_DIR}/}"
+        case "${rel}" in
+            /*) continue ;;  # 不在 SCRIPT_DIR 下（理论不会发生），跳过
+        esac
+        dst="${GIT_LOCAL_DIR}/${GIT_TARGET_PATH}/${rel}"
+        mkdir -p "$(dirname "${dst}")"
+        cp -a "${f}" "${dst}"
+    done < "${UPLOAD_LIST}"
+    rm -f "${UPLOAD_LIST}"
+else
+    echo "警告: 本次未收集到任何文件，跳过拷贝。"
+fi
 
 # 提交并推送
 cd "${GIT_LOCAL_DIR}"
