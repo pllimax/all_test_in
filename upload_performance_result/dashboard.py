@@ -223,8 +223,8 @@ NOTES_FILE = os.environ.get(
     "NOTES_FILE",
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "notes.json"),
 )
-# 定期将备注持久化到 git 仓的间隔（秒），默认 600s（10 分钟）
-NOTES_GIT_INTERVAL = int(os.environ.get("NOTES_GIT_INTERVAL", "600"))
+# 定期将备注持久化到 git 仓的间隔（秒），默认 14400s（4 小时）
+NOTES_GIT_INTERVAL = int(os.environ.get("NOTES_GIT_INTERVAL", "14400"))
 # 是否启用 git 持久化（配置 repo 与 git 可用时才有意义）
 NOTES_GIT_PUSH_ENABLED = os.environ.get("NOTES_GIT_PUSH", "1") != "0"
 
@@ -1980,14 +1980,17 @@ def split_date_label(date_label):
     新格式: {branch_label}-{create_date}-{run_id}/{workflow}
             → (create_date, branch_label, run_id, workflow)
               # branch 仅取日期之前的字段，run_id 用于 GitHub Actions 链接，
-              # workflow（如 Nightly_Test_NPU）用于确定 run 实际所属来源仓
+              # workflow（如 Nightly_Test_NPU）用于确定 run 实际所属来源仓。
+              # run_id 可能带本地去重后缀（如 31168435480-1），GitHub API 的
+              # run_id 为纯数字，故剥离 -N 后缀后再返回。
     旧格式: YYYYMMDD → (YYYYMMDD, "", "", "")
     """
     if not date_label:
         return date_label, "", "", ""
-    m = re.match(r"^(.+)-(\d{8})-(\d+)/(.+)$", date_label)
+    m = re.match(r"^(.+)-(\d{8})-([0-9]+(?:-[0-9]+)?)/(.+)$", date_label)
     if m:
-        return m.group(2), m.group(1), m.group(3), m.group(4)
+        run_id = re.sub(r"-\d+$", "", m.group(3))
+        return m.group(2), m.group(1), run_id, m.group(4)
     return date_label, "", "", ""
 
 
