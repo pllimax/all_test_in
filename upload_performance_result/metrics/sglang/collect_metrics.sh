@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --branch NAME         按前缀筛选收集任务结果"
             echo "                        如 --branch pllimax 匹配所有以 pllimax 开头的目录"
             echo "                        (即 pllimax 仓下所有分支的 CI 任务)"
-            echo "                        分支模式下结果按 CI 目录名({分支}-{create_date}-{run_id})/workflow目录 存放，不使用日期"
+            echo "                        分支模式下结果按 CI 目录名({branch}-{date}-{run_id}-{attempt})/workflow目录 存放，不使用日期"
             echo "  --help, -h            显示此帮助信息"
             echo ""
             echo "环境变量:"
@@ -163,7 +163,7 @@ if [ -n "${BRANCH:-}" ]; then
     for d in "${SRC_BASE}"/"${BRANCH}"*; do
         if [ -d "$d" ]; then
             base_name=$(basename "$d")
-            # 仅收集 CI 运行目录（如 {branch}-{create_date}-{run_id}），
+            # 仅收集 CI 运行目录（如 {branch}-{date}-{run_id}-{attempt}），
             # 跳过仅以日期为文件夹名的目录（旧结构按日期存放的结果）
             if ! echo "${base_name}" | grep -qE '^[0-9]{8}$'; then
                 SEARCH_ROOTS+=("$d")
@@ -181,7 +181,7 @@ fi
 
 # ============================================================
 # 分支模式：取消按日期循环收集
-# 分支目录名已含任务创建日期（{branch}-{create_date}-{run_id}），
+# 分支目录名已含任务创建日期（{branch}-{date}-{run_id}-{attempt}），
 # 自动日期循环（今天及前3天）会导致同一批结果被重复收集 4 次。
 # 未显式指定日期时，分支模式仅收集一次，文件名以今天日期作标记。
 # ============================================================
@@ -218,7 +218,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     echo ""
     echo "========== 处理日期: ${CURRENT_DATE} =========="
 
-    # 新 CI 目录结构: SRC_BASE/{branch_label}-{create_date}-{run_id}/{workflow_name}/{test_type}/{tc_name}-{timestamp}/bench_serving_metrics.txt
+    # 新 CI 目录结构: SRC_BASE/{branch}-{date}-{run_id}-{attempt}/{workflow}/{type}/{suite}-{timestamp}/{tc_name}/bench_serving_metrics.txt
     # 不再有空目录检查 —— 用 find 递归搜索 SRC_BASE 全树，由 mtime 日期过滤
 
     echo "源目录: ${SEARCH_ROOTS[*]} (递归搜索，按 mtime 日期过滤: ${CURRENT_DATE})"
@@ -230,11 +230,15 @@ for CURRENT_DATE in "${DATES[@]}"; do
     while IFS= read -r src_file; do
         [ -f "${src_file}" ] || continue
 
+        # 新结构: subdir = {suite}-{timestamp}/{tc_name}，subdir_name 即 {tc_name}
+        # 旧结构: subdir = {tc_name}-{timestamp}
         subdir=$(dirname "${src_file}")
         subdir_name=$(basename "${subdir}")
-        # 新结构: subdir_name = {tc_name}-{timestamp}，如 test_qwen3_8b-093000
-        # 剥离 CI 时间戳后缀，保留干净的用例名
+        # 剥离可能的 CI 时间戳后缀（兼容旧结构 {tc_name}-{timestamp}），保留干净的用例名
         subdir_name_clean=$(echo "${subdir_name}" | sed 's/-[0-9]\{6\}$//')
+        # 新结构: 父目录为 {suite}-{timestamp}，用于日志展示与来源追溯
+        suite_dir=$(dirname "${subdir}")
+        suite_name=$(basename "${suite_dir}")
 
         # 获取文件实际修改时间（秒级时间戳），兼容 Linux/macOS
         mtime_epoch=$(stat -c '%Y' "${src_file}" 2>/dev/null || stat -f '%m' "${src_file}" 2>/dev/null)
@@ -244,7 +248,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
 
         # 目标存放目录：
-        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{create_date}-{run_id}）保存，并在其中按 workflow 目录（如 Full_Test_NPU）区分
+        # 分支模式（--branch）→ 按 CI 顶层目录名（{branch}-{date}-{run_id}-{attempt}）保存，并在其中按 workflow 目录（如 Full_Test_NPU）区分
         # 否则 → 按文件实际修改日期保存
         if [ -n "${BRANCH:-}" ]; then
             rel="${src_file#${SRC_BASE}/}"
@@ -271,16 +275,16 @@ for CURRENT_DATE in "${DATES[@]}"; do
             echo ""
             echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
             echo "# [collect_metrics] 源目录日期: ${CURRENT_DATE}"
-            echo "# [collect_metrics] CI运行目录: ${subdir_name}"
+            echo "# [collect_metrics] CI运行目录: ${suite_name}/${subdir_name}"
         } >> "${dst_file}"
 
         # 记录本次收集的文件（上传时仅推送清单内文件，避免回退仓库新提交）
         echo "${dst_file}" >> "${UPLOAD_LIST}"
 
         if [ -n "${BRANCH:-}" ]; then
-            echo "[OK] ${subdir_name_clean} (源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
+            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
         else
-            echo "[OK] ${subdir_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
+            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
         fi
         count=$((count + 1))
     done < <(find "${SEARCH_ROOTS[@]}" -type f -name 'bench_serving_metrics.txt' -path '*/perf/*')
@@ -295,7 +299,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
 
     # ============================================================
     # 收集精度测试结果 (eval_log.log)
-    # 新 CI 结构: SRC_BASE/{branch_label}-{create_date}-{run_id}/{workflow_name}/{test_type}/{tc_name}-{timestamp}/logs/eval_log.log
+    # 新 CI 结构: SRC_BASE/{branch}-{date}-{run_id}-{attempt}/{workflow}/{type}/{suite}-{timestamp}/{tc_name}/[eval_ts]/logs/eval_log.log
     # 所有 perf 和 accuracy 类型的 eval 日志都在 SRC_BASE 下统一搜索
     # 存储: 默认 SCRIPT_DIR/实际日期/eval/，分支模式 SCRIPT_DIR/{目录名}/{workflow目录}/eval/
     # 命名: 按"用例名__源日期.log"
@@ -305,20 +309,29 @@ for CURRENT_DATE in "${DATES[@]}"; do
     while IFS= read -r eval_src; do
         [ -f "${eval_src}" ] || continue
 
-        # 新结构路径: .../output/{branch_label}-{create_date}-{run_id}/{workflow_name}/{test_type}/{tc_name}-{ci_ts}/{eval_ts}/logs/eval_log.log
-        # 注意 CI 中 {tc_name}-{ci_ts} 下可能还有一层 {eval_ts}（eval 执行时间戳目录）
-        logs_dir=$(dirname "${eval_src}")         # .../{eval_ts}/logs 或 .../{tc_name}-{ci_ts}/logs
-        ts_dir=$(dirname "${logs_dir}")           # .../{eval_ts} 或 .../{tc_name}-{ci_ts}
-        ts_name=$(basename "${ts_dir}")
-        # 兼容两种结构：ts_name 为 eval_ts（如 20260805_193018）时，再向上一级取 {tc_name}-{ci_ts}
+        # 新结构路径: .../output/{branch}-{date}-{run_id}-{attempt}/{workflow}/{type}/{suite}-{timestamp}/{tc_name}/[eval_ts]/logs/eval_log.log
+        # 注意 CI 中 {suite}-{timestamp}/{tc_name} 下可能还有一层 {eval_ts}（eval 执行时间戳目录）
+        logs_dir=$(dirname "${eval_src}")         # .../{eval_ts}/logs 或 .../{tc_name}/logs
+        ts_dir=$(dirname "${logs_dir}")           # .../{eval_ts} 或 .../{suite}-{timestamp}/{tc_name}
+        ts_name=$(basename "${ts_dir}")           # {eval_ts} 或 {tc_name}
+        # 兼容两种结构：ts_name 为 eval_ts（如 20260805_193018）时，再向上一级取 {tc_name}
         if echo "${ts_name}" | grep -qE '^[0-9]{8}_[0-9]{6}$'; then
             ts_dir=$(dirname "${ts_dir}")
             ts_name=$(basename "${ts_dir}")
         fi
-        # 剥离 CI 时间戳后缀，保留干净的用例名
+        # 剥离可能的 CI 时间戳后缀（兼容旧结构 {tc_name}-{ci_ts}），保留干净的用例名
         ts_name_clean=$(echo "${ts_name}" | sed 's/-[0-9]\{6\}$//')
-        test_type_dir=$(dirname "${ts_dir}")      # .../{test_type}
-        test_type_name=$(basename "${test_type_dir}")  # perf / accuracy
+        # 确定 test_type（perf / accuracy）：
+        # 新结构: ts_dir 父目录为 {suite}-{timestamp}（带时间戳），再上一级才是 {type}
+        # 旧结构: ts_dir 父目录即为 {test_type}
+        suite_dir=$(dirname "${ts_dir}")
+        suite_name=$(basename "${suite_dir}")
+        if echo "${suite_name}" | grep -qE -- '-[0-9]{6}$'; then
+            type_dir=$(dirname "${suite_dir}")
+            test_type_name=$(basename "${type_dir}")
+        else
+            test_type_name="${suite_name}"
+        fi
 
         # 获取文件实际修改时间（秒级时间戳），兼容 Linux/macOS
         mtime_epoch=$(stat -c '%Y' "${eval_src}" 2>/dev/null || stat -f '%m' "${eval_src}" 2>/dev/null)
@@ -328,7 +341,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
 
         # 目标存放目录：
-        # 分支模式（--branch）→ 按 CI 顶层目录名（{分支}-{create_date}-{run_id}）保存，并在其中按 workflow 目录（如 Full_Test_NPU）区分
+        # 分支模式（--branch）→ 按 CI 顶层目录名（{branch}-{date}-{run_id}-{attempt}）保存，并在其中按 workflow 目录（如 Full_Test_NPU）区分
         # 否则 → 按文件实际修改日期保存
         if [ -n "${BRANCH:-}" ]; then
             rel="${eval_src#${SRC_BASE}/}"

@@ -38,6 +38,31 @@ SPARSE_CHECKOUT_PATHS = [
 # 源码仓周期性同步间隔（秒），与基线/链接缓存 TTL 一致（默认每 2 小时）
 SOURCE_SYNC_INTERVAL = int(os.environ.get("SOURCE_SYNC_INTERVAL", "7200"))
 
+# ============================================================
+# suite → 用例 映射（新框架聚合 job 适配）
+# 新测试框架将 a3 芯片用例聚合到 suite job（如 nightly-perf-2-npu-a3）运行，
+# job 名 = suite 名，不含具体用例名。为把用例链接到其聚合 job，需从用例文件
+# 的 register_npu_ci(suite="X", nightly=True) 注册信息构建 suite→用例 映射。
+# 映射数据源从 pllimax 分支拉取（main 分支尚未合入该重构）；后续合入主线后
+# 将 SUITE_REGISTRY_REPO_URL / BRANCH 切回 sgl-project/sglang main 即可。
+# ============================================================
+SUITE_REGISTRY_CACHE_DIR = os.environ.get(
+    "SUITE_REGISTRY_CACHE_DIR",
+    os.path.join(TESTCASES_CACHE_DIR, "suite_registry"),
+)
+SUITE_REGISTRY_REPO_URL = os.environ.get(
+    "SUITE_REGISTRY_REPO_URL", "https://github.com/pllimax/sglang.git"
+)
+SUITE_REGISTRY_BRANCH = os.environ.get(
+    "SUITE_REGISTRY_BRANCH", "pllimax/output-log-dir-structure"
+)
+SUITE_REGISTRY_SUBDIR = "test/registered/npu"
+
+# 用例 → suite 全局映射（构建成功后缓存）
+_suite_case_map = None       # {suite: [case_name, ...]}
+_case_suite_map = None       # {case_name: suite}
+_suite_map_ts = 0.0
+
 
 def get_config_paths():
     """
@@ -550,14 +575,17 @@ def _attach_script_urls(items):
                 item["run_url"] = f"{web_base}/actions/runs/{run_id}"
 
     # 解析到具体 job（GitHub Actions job_id），失败时保留 run_url 兜底
+    # 新框架：matrix job 名含用例名；聚合 suite job 名 = suite 名（如 nightly-perf-2-npu-a3），
+    # 用例通过 suite→用例 映射匹配到聚合 job。
     jobs_cache = fetch_run_jobs_for_items(items)
+    case_suite_map = get_case_suite_map()
     for item in items:
         run_id = str(item.get("run_id", "") or "")
         run_url = item.get("run_url", "")
         if run_id and run_url:
             repo = _web_base_to_repo(run_url)
             jobs_for_run = jobs_cache.get((repo, run_id))
-            job = _match_job_for_case(item.get("yaml_name", ""), jobs_for_run)
+            job = _match_job_for_case_with_suite(item.get("yaml_name", ""), jobs_for_run, case_suite_map)
             if job:
                 item["job_url"] = f"{run_url}/job/{job['job_id']}"
                 # job 状态/结论用于前端区分「已执行但失败」与「尚未执行」
@@ -839,15 +867,18 @@ def compute_topology_info(yaml_name):
             card_count = f"{total}卡"
 
     # 序列长度: extract in/out
+    # 多模态用例（如 in1024x1024、in1080p）不显示序列长度，返回空 → 前端显示 "--"
     seq_length = ""
-    in_match = re.search(r'_in(\d+k?\d*|1024x1024|1080p)', yaml_name)
-    out_match = re.search(r'_out(\d+k?\d*)', yaml_name)
-    if in_match and out_match:
-        seq_length = f"in{in_match.group(1)}_out{out_match.group(1)}"
-    elif in_match:
-        seq_length = f"in{in_match.group(1)}"
-    elif out_match:
-        seq_length = f"out{out_match.group(1)}"
+    multimodal = bool(re.search(r'1024x1024|1080p', yaml_name))
+    if not multimodal:
+        in_match = re.search(r'_in(\d+k?\d*)', yaml_name)
+        out_match = re.search(r'_out(\d+k?\d*)', yaml_name)
+        if in_match and out_match:
+            seq_length = f"in{in_match.group(1)}_out{out_match.group(1)}"
+        elif in_match:
+            seq_length = f"in{in_match.group(1)}"
+        elif out_match:
+            seq_length = f"out{out_match.group(1)}"
 
     return topology, card_count, seq_length
 
@@ -877,34 +908,77 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .btn-reset:hover { background: #30363d; }
 .table-container { padding: 0 24px 20px; }
 .table-container h3 { font-size: 14px; color: #8b949e; margin-bottom: 12px; }
-table { width: 100%; border-collapse: collapse; background: #161b22; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; }
-th { background: #21262d; padding: 10px 12px; text-align: left; font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #30363d; cursor: pointer; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: table-cell; -webkit-line-clamp: 2; line-clamp: 2; }
+.table-wrap { overflow: auto; max-height: calc(100vh - 320px); min-height: 300px; border: 1px solid #30363d; border-radius: 8px; }
+/* 滚动条深色风格（贴合页面背景） */
+.table-wrap::-webkit-scrollbar { width: 10px; height: 10px; }
+.table-wrap::-webkit-scrollbar-track { background: #161b22; }
+.table-wrap::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid #161b22; }
+.table-wrap::-webkit-scrollbar-thumb:hover { background: #484f58; }
+.table-wrap::-webkit-scrollbar-corner { background: #161b22; }
+.table-wrap { scrollbar-width: thin; scrollbar-color: #30363d #161b22; }
+table { width: 2785px; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: #161b22; }
+th { background: #21262d; padding: 10px 4px; text-align: left; font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #30363d; cursor: pointer; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: table-cell; -webkit-line-clamp: 2; line-clamp: 2; }
 th:hover { color: #c9d1d9; }
-td { padding: 8px 12px; font-size: 13px; border-bottom: 1px solid #21262d; white-space: nowrap; }
+td { padding: 8px 4px; font-size: 13px; border-bottom: 1px solid #21262d; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
 tr:hover { background: #1c2128; }
 tr.selected { background: #1f3a5f !important; }
 tr.selected:hover { background: #254070 !important; }
 .no-data { text-align: center; padding: 40px; color: #8b949e; }
-.testcase-id { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; color: #58a6ff; max-width: 400px; overflow: hidden; text-overflow: ellipsis; }
-.script-link { color: #58a6ff; text-decoration: none; font-size: 12px; margin-right: 6px; white-space: nowrap; }
+.testcase-id { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; color: #58a6ff; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
+.script-link { color: #58a6ff; text-decoration: none; font-size: 12px; margin-right: 6px; white-space: normal; overflow-wrap: anywhere; word-break: break-all; display: inline-block; }
 .script-link:hover { text-decoration: underline; color: #79c0ff; }
 .status-pass { color: #7ee787; font-weight: 700; }
 .status-fail { color: #ff7b72; font-weight: 700; }
 .status-none { color: #ff7b72; font-weight: 700; }
 .baseline-val { font-size: 11px; color: #8b949e; }
 .metric-fail { color: #ff7b72; font-weight: 700; }
-.baseline-col { font-size: 11px; color: #8b949e; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.col-note { max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.note-text { color: #e6edf3; font-size: 12px; }
-.note-edit { cursor: pointer; color: #58a6ff; margin-left: 4px; font-size: 12px; }
+.baseline-col { font-size: 11px; color: #8b949e; display: block; width: 100%; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
+.col-note { white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
+.note-cell { display: flex; align-items: flex-start; }
+.note-text { color: #e6edf3; font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; max-height: 2.8em; flex: 1; min-width: 0; }
+.note-edit { cursor: pointer; color: #58a6ff; font-size: 12px; flex-shrink: 0; margin-right: 4px; line-height: 1.4; }
 .note-edit:hover { color: #79c0ff; }
-.chart-row td { padding: 0; }
+.chart-row td { padding: 0; background: #0d1117; }
 .tc-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; padding: 12px; background: #0d1117; }
 .tc-chart-box { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 8px; }
 .tc-chart-box h4 { font-size: 12px; color: #8b949e; margin: 0 0 4px 0; }
 .tc-chart-box canvas { max-height: 200px; }
 .expand-icon { display: inline-block; width: 14px; font-size: 10px; transition: transform 0.2s; }
-.col-uniform { width: 90px; }
+/* 测试结果列（精度列起）：等宽 + 居中，数字等宽；宽度容纳最长结果数字，数字不换行 */
+.col-uniform { width: 76px; min-width: 76px; text-align: center; white-space: normal; overflow-wrap: anywhere; word-break: break-all; font-variant-numeric: tabular-nums; }
+/* 配置列（组网/卡数/序列长度/prefix/数据集）：等宽 + 居中 */
+.col-config { width: 44px; text-align: center; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
+/* 组网列单独：比其它配置列稍宽（PD分离两行显示） */
+.col-topology { width: 64px; text-align: center; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
+/* 左侧元数据列宽度：尽量一致 */
+th.col-meta { width: 64px; }
+td.col-meta { width: 64px; }
+th.col-model { width: 104px; }
+td.col-model { width: 104px; }
+th.col-tc-id { width: 224px; }
+td.col-tc-id { width: 224px; }
+th.col-script { width: 74px; }
+td.col-script { width: 74px; }
+th.col-note, td.col-note { width: 179px; }
+th.col-baseline { width: 100px; }
+td.col-baseline { width: 100px; }
+/* 左侧元数据列锁定：横向滚动时固定不滚动（锁定到基线列，含基线） */
+.sticky-col, thead th.sticky-col { position: sticky; z-index: 3; background: #21262d; }
+tbody td.sticky-col { background: #161b22; }
+tbody tr:hover td.sticky-col { background: #1c2128; }
+tbody tr.selected td.sticky-col { background: #1f3a5f !important; }
+tbody tr.selected:hover td.sticky-col { background: #254070 !important; }
+.col-l0 { left: 0; }
+.col-l1 { left: 104px; }
+.col-l2 { left: 328px; }
+.col-l3 { left: 392px; }
+.col-l4 { left: 456px; }
+.col-l5 { left: 530px; }
+.col-l6 { left: 594px; }
+.col-l7 { left: 773px; }
+/* 表头 sticky（垂直滚动时表头固定） */
+thead th { position: sticky; top: 0; z-index: 4; }
+thead th.sticky-col { z-index: 5; }
 </style>
 </head>
 <body>
@@ -950,22 +1024,23 @@ tr.selected:hover { background: #254070 !important; }
 </div>
 <div class="table-container">
   <h3>详细数据 <span style="font-weight:normal;font-size:12px;color:#8b949e" id="tableCount"></span></h3>
+  <div class="table-wrap">
   <table id="dataTable">
     <thead>
       <tr>
-        <th>模型</th>
-        <th>测试用例ID</th>
-        <th>日期</th>
-        <th>状态</th>
-        <th>用例脚本</th>
-        <th>任务</th>
-        <th>备注</th>
-        <th>基线</th>
-        <th class="col-uniform">组网</th>
-        <th class="col-uniform">卡数</th>
-        <th class="col-uniform">序列长度</th>
-        <th class="col-uniform">prefix</th>
-        <th class="col-uniform">数据集</th>
+        <th class="col-model sticky-col col-l0">模型</th>
+        <th class="col-tc-id sticky-col col-l1">测试用例ID</th>
+        <th class="col-meta sticky-col col-l2">日期</th>
+        <th class="col-meta sticky-col col-l3">状态</th>
+        <th class="col-script sticky-col col-l4">用例脚本</th>
+        <th class="col-meta sticky-col col-l5">任务</th>
+        <th class="col-note sticky-col col-l6">备注</th>
+        <th class="col-baseline sticky-col col-l7">基线</th>
+        <th class="col-topology">组网</th>
+        <th class="col-config">卡数</th>
+        <th class="col-config">序列</th>
+        <th class="col-config">prefix</th>
+        <th class="col-config">数据集</th>
         <th class="col-uniform">精度</th>
         <th class="col-uniform">总请求数</th>
         <th class="col-uniform">最大并发数</th>
@@ -986,6 +1061,7 @@ tr.selected:hover { background: #254070 !important; }
     </thead>
     <tbody id="tableBody"></tbody>
   </table>
+  </div>
 </div>
 
 <!-- 备注编辑弹窗 -->
@@ -1435,7 +1511,7 @@ function updateTable(data) {
       if (b.output_token_throughput != null) parts.push(`输出吞吐≥${b.output_token_throughput}`);
       if (b.eval_score != null) parts.push(`精度≥${b.eval_score}`);
     }
-    return parts.length > 0 ? parts.join(', ') : '--';
+    return parts.length > 0 ? parts.join('<br>') : '--';
   }
 
   // Render metric value with red font if it fails baseline (with tolerance):
@@ -1482,9 +1558,10 @@ function updateTable(data) {
     const urls = d.script_urls || [];
     const src = d.source || '';
     if (urls.length > 0) {
+      // 多个来源链接（如 fulltest/nightly 同用例）换行显示，每个链接一行
       return urls.map(u =>
         `<a class="script-link" href="${u.url}" target="_blank" rel="noopener" title="${u.url}">${u.source}↗</a>`
-      ).join('');
+      ).join('<br>');
     }
     return src || '--';
   }
@@ -1508,10 +1585,28 @@ function updateTable(data) {
   }
   function fmtNote(d) {
     const note = d.note || '';
-    const display = note.length > 12 ? note.substring(0, 12) + '…' : note;
     const editBtn = `<span class="note-edit" onclick="openNoteEditor('${d._id.replace(/'/g, "\\'")}')" title="填写备注">✏️</span>`;
-    const text = note ? `<span class="note-text" title="${escHtml(note)}">${escHtml(display)}</span>` : '';
-    return `${text}${editBtn}`;
+    const text = note ? `<span class="note-text" title="${escHtml(note)}">${escHtml(note)}</span>` : '';
+    return `<span class="note-cell">${editBtn}${text}</span>`;
+  }
+
+  // 组网列显示：PD分离/1p1d → 拆成两行（PD分离 + 1p1d）；其他保持不变
+  function fmtTopology(t) {
+    if (!t) return '--';
+    if (t.indexOf('PD分离/') === 0) {
+      return `PD分离<br>${t.substring('PD分离/'.length)}`;
+    }
+    return t;
+  }
+
+  // 序列长度列显示：in3k5_out1k5 → 拆成两行（in3k5 + out1k5）；只有 in/out 单段时保持原样
+  function fmtSeqLength(s) {
+    if (!s) return '--';
+    const m = s.match(/^(.+)_out(.+)$/);
+    if (m) {
+      return `${m[1]}<br>out${m[2]}`;
+    }
+    return s;
   }
 
   let rows = '';
@@ -1540,19 +1635,19 @@ function updateTable(data) {
       if (isLatest) visibleCount++;
       const modelDisplay = isLatest && groupShowModel[gIdx] ? d.model : '';
       rows += `<tr class="data-row" data-tc="${safeId}" data-date="${d.date}" data-hasdata="${hasData(d) ? '1' : '0'}" ${rowStyle}>
-        <td>${modelDisplay}</td>
-        <td><span class="testcase-id" title="${tcId}">${expandIcon}${tcId}</span></td>
-        <td>${d.date}</td>
-        <td><span class="${statusCls}">${status}</span></td>
-        <td>${fmtScriptLinks(d)}</td>
-        <td>${fmtRunLink(d)}</td>
-        <td class="col-note">${fmtNote(d)}</td>
-        <td><span class="baseline-col" title="${fmtBaseline(b, d)}">${fmtBaseline(b, d)}</span></td>
-        <td class="col-uniform">${d.topology || '--'}</td>
-        <td class="col-uniform">${d.card_count || '--'}</td>
-        <td class="col-uniform">${d.seq_length || '--'}</td>
-        <td class="col-uniform">${(d.prefix || '').replace('prefix', '') || '0'}</td>
-        <td>${d.dataset || '--'}</td>
+        <td class="col-model sticky-col col-l0">${modelDisplay}</td>
+        <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" title="${tcId}">${expandIcon}${tcId}</span></td>
+        <td class="col-meta sticky-col col-l2">${d.date}</td>
+        <td class="col-meta sticky-col col-l3"><span class="${statusCls}">${status}</span></td>
+        <td class="col-script sticky-col col-l4">${fmtScriptLinks(d)}</td>
+        <td class="col-meta sticky-col col-l5">${fmtRunLink(d)}</td>
+        <td class="col-note sticky-col col-l6">${fmtNote(d)}</td>
+        <td class="col-baseline sticky-col col-l7"><span class="baseline-col" title="${fmtBaseline(b, d)}">${fmtBaseline(b, d)}</span></td>
+        <td class="col-topology">${fmtTopology(d.topology)}</td>
+        <td class="col-config">${d.card_count || '--'}</td>
+        <td class="col-config">${fmtSeqLength(d.seq_length)}</td>
+        <td class="col-config">${(d.prefix || '').replace('prefix', '') || '0'}</td>
+        <td class="col-config">${d.dataset || '--'}</td>
         <td class="col-uniform">${fmtMetric(d.eval_score, 4, b.eval_score, 'accuracy', d.dataset)}</td>
         <td class="col-uniform">${fmtInt(d.total_requests)}</td>
         <td class="col-uniform">${fmtInt(d.max_concurrency)}</td>
@@ -2493,6 +2588,162 @@ def sync_repos():
             _sync_managed_repo(src_name, repo_root, repo_url, branch)
         else:
             _sync_local_repo(src_name, repo_root)
+
+    # 同步 suite→用例 注册信息（聚合 job 匹配用）
+    sync_suite_registry()
+
+
+def sync_suite_registry():
+    """同步/构建 suite→用例 映射。
+
+    新测试框架的聚合 suite job（如 nightly-perf-2-npu-a3）运行多个用例，
+    job 名不含用例名。通过稀疏克隆 SUITE_REGISTRY_REPO_URL 分支的
+    test/registered/npu 用例文件，解析 register_npu_ci(suite="X", nightly=True)
+    注册信息，构建 {suite: [用例名]} / {用例名: suite} 映射。
+
+    克隆/解析失败时仅打印错误，不影响平台其它功能（任务链接回退 run 级）。
+    """
+    global _suite_case_map, _case_suite_map, _suite_map_ts
+    try:
+        repo_root = SUITE_REGISTRY_CACHE_DIR
+        if os.path.isdir(os.path.join(repo_root, ".git")):
+            if not _is_sparse_worktree(repo_root):
+                _remove_dir_force(repo_root)
+            else:
+                result = subprocess.run(
+                    ["git", "fetch", "origin", SUITE_REGISTRY_BRANCH, "--depth=1"],
+                    cwd=repo_root, capture_output=True, text=True, timeout=120,
+                )
+                if result.returncode != 0:
+                    print(f"[suite] fetch failed: {result.stderr.strip()}")
+                else:
+                    subprocess.run(
+                        ["git", "reset", "--hard", f"origin/{SUITE_REGISTRY_BRANCH}"],
+                        cwd=repo_root, capture_output=True, text=True, timeout=60,
+                    )
+        if not os.path.isdir(os.path.join(repo_root, ".git")):
+            # 首次：稀疏克隆仅 test/registered/npu
+            parent = os.path.dirname(repo_root)
+            os.makedirs(parent, exist_ok=True)
+            _remove_dir_force(repo_root)
+            result = subprocess.run(
+                ["git", "clone", "--depth=1", "--no-checkout", "--branch",
+                 SUITE_REGISTRY_BRANCH, SUITE_REGISTRY_REPO_URL, repo_root],
+                capture_output=True, text=True, timeout=180,
+            )
+            if result.returncode != 0:
+                print(f"[suite] clone failed: {result.stderr.strip()}")
+                return
+            subprocess.run(["git", "sparse-checkout", "init", "--cone"],
+                           cwd=repo_root, capture_output=True, text=True, timeout=30)
+            subprocess.run(["git", "sparse-checkout", "set", SUITE_REGISTRY_SUBDIR],
+                           cwd=repo_root, capture_output=True, text=True, timeout=30)
+            subprocess.run(["git", "checkout", SUITE_REGISTRY_BRANCH],
+                           cwd=repo_root, capture_output=True, text=True, timeout=60)
+
+        _suite_case_map, _case_suite_map = _build_suite_maps_from_registry(repo_root)
+        _suite_map_ts = time.time()
+        n_suites = len(_suite_case_map) if _suite_case_map else 0
+        print(f"[suite] 构建 suite→用例 映射完成: {n_suites} 个 suite")
+    except Exception as e:
+        print(f"[suite] sync error: {e}")
+
+
+def _build_suite_maps_from_registry(repo_root):
+    """扫描用例注册目录，解析 register_npu_ci 调用，返回 (suite_cases, case_suite)。
+
+    对每个 .py 文件解析所有 register_npu_ci(...) 调用参数，优先记录
+    nightly=True 且 suite 非空的 suite（聚合 suite job 命名规则）。
+    """
+    suite_cases = {}
+    case_suite = {}
+    scan_root = os.path.join(repo_root, SUITE_REGISTRY_SUBDIR)
+    if not os.path.isdir(scan_root):
+        return suite_cases, case_suite
+    for root, _, files in os.walk(scan_root):
+        for fname in sorted(files):
+            if not fname.endswith(".py"):
+                continue
+            filepath = os.path.join(root, fname)
+            try:
+                with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                    content = f.read()
+            except OSError:
+                continue
+            case_name = fname[:-3]  # 去掉 .py，如 test_npu_xxx
+            # 解析 register_npu_ci(...) 的 suite= 与 nightly= 参数
+            # 简化处理：提取所有 suite="X" 与 nightly=True 出现位置，
+            # 通过括号配对找到同一调用内的参数。
+            for m in re.finditer(r"register_npu_ci\s*\(", content):
+                depth = 0
+                start = m.end() - 1
+                end = start
+                for i in range(start, len(content)):
+                    if content[i] == "(":
+                        depth += 1
+                    elif content[i] == ")":
+                        depth -= 1
+                        if depth == 0:
+                            end = i + 1
+                            break
+                args_block = content[m.end() - 1:end]
+                suite_m = re.search(r"suite\s*=\s*['\"]([^'\"]+)['\"]", args_block)
+                nightly_m = re.search(r"nightly\s*=\s*True", args_block)
+                if suite_m and nightly_m:
+                    suite = suite_m.group(1).strip()
+                    if suite:
+                        suite_cases.setdefault(suite, [])
+                        if case_name not in suite_cases[suite]:
+                            suite_cases[suite].append(case_name)
+                        # 用例可能注册到多个 nightly suite（如 nightly-perf-2-npu-a3 与
+                        # full-16-npu-a3）。聚合 job 名与 nightly- 前缀 suite 对应，
+                        # 优先记录 nightly- 开头的 suite，保证匹配到正确的聚合 job。
+                        if case_name not in case_suite or \
+                           (suite.startswith("nightly-") and not case_suite[case_name].startswith("nightly-")):
+                            case_suite[case_name] = suite
+    return suite_cases, case_suite
+
+
+def get_case_suite_map():
+    """返回用例 → suite 映射（懒构建，未同步时尝试本地已缓存映射）。"""
+    global _suite_case_map, _case_suite_map, _suite_map_ts
+    if _case_suite_map is None:
+        # 尝试从本地缓存目录直接解析（无需网络）
+        try:
+            repo_root = SUITE_REGISTRY_CACHE_DIR
+            if os.path.isdir(os.path.join(repo_root, ".git")):
+                _suite_case_map, _case_suite_map = _build_suite_maps_from_registry(repo_root)
+                _suite_map_ts = time.time()
+        except Exception:
+            _case_suite_map = {}
+    return _case_suite_map or {}
+
+
+def _match_job_for_case_with_suite(case_key, jobs, case_suite_map):
+    """增强匹配：先按用例名匹配（matrix job），失败后按用例所属 suite
+    匹配聚合 job（新框架聚合 suite job 名 = suite 名）。
+    """
+    job = _match_job_for_case(case_key, jobs)
+    if job:
+        return job
+    # 用例名直接匹配失败 → 尝试 suite 聚合 job
+    if case_suite_map and jobs:
+        # case_suite_map 的 key 可能带/不带 test_npu_ 前缀，双向兼容
+        candidates = []
+        base = case_key
+        candidates.append(base)
+        if base.startswith("test_npu_"):
+            candidates.append(base[len("test_npu_"):])
+        else:
+            candidates.append("test_npu_" + base)
+        suite = None
+        for c in candidates:
+            if c in case_suite_map:
+                suite = case_suite_map[c]
+                break
+        if suite and suite in jobs:
+            return jobs[suite]
+    return None
 
 
 _sync_thread_started = False
