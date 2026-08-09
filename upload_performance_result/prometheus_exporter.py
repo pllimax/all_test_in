@@ -333,6 +333,14 @@ def parse_benchmark_file(filepath):
     return metrics
 
 
+# 性能指标字段：纯精度用例（accuracy）在输出时清空这些字段，只保留精度结果
+PERF_ONLY_FIELDS = [
+    "mean_ttft", "mean_tpot", "mean_e2e_latency", "output_token_throughput",
+    "p90_ttft", "p90_tpot", "total_token_throughput", "total_requests",
+    "max_concurrency", "system_concurrency", "request_throughput",
+]
+
+
 def parse_eval_log(filepath):
     """Parse an eval log file and extract the accuracy score.
     Handles both MMMU (multi-subset with OVERALL row) and non-MMMU (single row) formats.
@@ -381,6 +389,36 @@ def parse_eval_log(filepath):
     return None
 
 
+def _parse_eval_log_filename(base):
+    """统一解析 eval 日志文件名（不含 .log 后缀），返回干净的用例名；无法解析时返回 None。
+
+    支持的命名格式：
+      简化格式: {tc_name}__{date}.log
+      新格式:   {test_type}__{tc_name}__{date}.log  (test_type = perf/accuracy)
+      历史格式: {tc_name}__{eval_ts}.log            (eval_ts = 20260717_204110)
+      历史格式: {tc_name}-{ci_ts}__{eval_ts}__{date}.log
+      历史格式: {date}__{tc_name}__{source_date}.log
+      变体后缀: __{eval_ts}-perf.log / __{eval_ts}-output.log
+    最后一段可能为: 20260726 | 20260717_204110 | 20260718_103021-perf |
+                    20260725_210147-output | 20260806-1
+    """
+    if "__" not in base:
+        return None
+    parts = base.split("__")
+    if len(parts) < 2 or not re.match(r"^\d{8}(?:_\d{6})?(?:-(?:\d+|perf|output))?$", parts[-1]):
+        return None
+    test_case_name = parts[0]
+    # 兼容带前缀格式: {test_type}__{tc}__{date} / {date}__{tc}__{source_date}
+    if len(parts) >= 3 and (
+        test_case_name in ("perf", "accuracy")
+        or re.match(r"^\d{8}$", test_case_name)
+    ):
+        test_case_name = parts[1]
+    # 剥离 CI 时间戳后缀（-HHMMSS），如 test_npu_x-205203 → test_npu_x
+    test_case_name = re.sub(r"-\d{6}$", "", test_case_name)
+    return test_case_name or None
+
+
 def collect_eval_data():
     """Scan all date folders' eval/ subdirectories and collect accuracy scores.
     For the same test case on the same date, keep only the highest score.
@@ -394,35 +432,10 @@ def collect_eval_data():
 
     for date_folder, filepath in _iter_metrics_files(metrics_dir, ".log", "eval"):
         filename = os.path.basename(filepath)
-
         # Filename format (new): test_type__test_case_name__YYYYmmdd.log
         # Filename format (old): test_case_name__YYYYMMDD_HHMMSS.log
         #                                or test_case_name__YYYYMMDD_HHMMSS__YYYYmmdd.log
-        base = filename[:-4]  # strip .log
-        if "__" not in base:
-            continue
-
-        # 统一命名解析：
-        #   简化格式: {tc_name}__{date}.log
-        #   新格式:   {test_type}__{tc_name}__{date}.log  (test_type = perf/accuracy)
-        #   历史格式: {tc_name}__{eval_ts}.log            (eval_ts = 20260717_204110)
-        #   历史格式: {tc_name}-{ci_ts}__{eval_ts}__{date}.log
-        #   历史格式: {date}__{tc_name}__{source_date}.log
-        #   变体后缀: __{eval_ts}-perf.log / __{eval_ts}-output.log
-        # 最后一段可能为: 20260726 | 20260717_204110 | 20260718_103021-perf |
-        #                 20260725_210147-output | 20260806-1
-        parts = base.split("__")
-        if len(parts) < 2 or not re.match(r"^\d{8}(?:_\d{6})?(?:-(?:\d+|perf|output))?$", parts[-1]):
-            continue
-        test_case_name = parts[0]
-        # 兼容带前缀格式: {test_type}__{tc}__{date} / {date}__{tc}__{source_date}
-        if len(parts) >= 3 and (
-            test_case_name in ("perf", "accuracy")
-            or re.match(r"^\d{8}$", test_case_name)
-        ):
-            test_case_name = parts[1]
-        # 剥离 CI 时间戳后缀（-HHMMSS），如 test_npu_x-205203 → test_npu_x
-        test_case_name = re.sub(r"-\d{6}$", "", test_case_name)
+        test_case_name = _parse_eval_log_filename(filename[:-4])  # strip .log
         if not test_case_name:
             continue
         score = parse_eval_log(filepath)
@@ -451,30 +464,7 @@ def collect_accuracy_only_data():
 
     for date_folder, filepath in _iter_metrics_files(metrics_dir, ".log", "accuracy"):
         filename = os.path.basename(filepath)
-
-        base = filename[:-4]
-        if "__" not in base:
-            continue
-
-        # 统一命名解析：
-        #   简化格式: {tc_name}__{date}.log
-        #   新格式:   {test_type}__{tc_name}__{date}.log  (test_type = perf/accuracy)
-        #   历史格式: {tc_name}__{eval_ts}.log            (eval_ts = 20260717_204110)
-        #   历史格式: {tc_name}-{ci_ts}__{eval_ts}__{date}.log
-        #   历史格式: {date}__{tc_name}__{source_date}.log
-        #   变体后缀: __{eval_ts}-perf.log / __{eval_ts}-output.log
-        parts = base.split("__")
-        if len(parts) < 2 or not re.match(r"^\d{8}(?:_\d{6})?(?:-(?:\d+|perf|output))?$", parts[-1]):
-            continue
-        test_case_name = parts[0]
-        # 兼容带前缀格式: {test_type}__{tc}__{date} / {date}__{tc}__{source_date}
-        if len(parts) >= 3 and (
-            test_case_name in ("perf", "accuracy")
-            or re.match(r"^\d{8}$", test_case_name)
-        ):
-            test_case_name = parts[1]
-        # 剥离 CI 时间戳后缀（-HHMMSS），如 test_npu_x-205203 → test_npu_x
-        test_case_name = re.sub(r"-\d{6}$", "", test_case_name)
+        test_case_name = _parse_eval_log_filename(filename[:-4])
         if not test_case_name:
             continue
         score = parse_eval_log(filepath)
@@ -494,18 +484,8 @@ def collect_accuracy_only_data():
         if yaml_name.startswith("test_npu_"):
             yaml_name = yaml_name[len("test_npu_"):]
         labels["yaml_name"] = yaml_name
-        # No performance metrics
-        labels["mean_ttft"] = None
-        labels["mean_tpot"] = None
-        labels["mean_e2e_latency"] = None
-        labels["output_token_throughput"] = None
-        labels["p90_ttft"] = None
-        labels["p90_tpot"] = None
-        labels["total_token_throughput"] = None
-        labels["total_requests"] = None
-        labels["max_concurrency"] = None
-        labels["system_concurrency"] = None
-        labels["request_throughput"] = None
+        # No performance metrics（纯精度用例，清空性能字段）
+        labels.update({k: None for k in PERF_ONLY_FIELDS})
         results.append(labels)
 
     return results
@@ -670,8 +650,6 @@ def update_loop(interval=300):
 
 
 if __name__ == "__main__":
-    import threading
-
     # Initial Git pull + collection
     git_pull()
     collect_metrics()

@@ -21,7 +21,9 @@ set -e
 # 配置项：优先使用环境变量，提供默认值
 # ============================================================
 SRC_BASE="${SRC_BASE:-/data/ascend-ci-share-pkking-sglang/tests/output}"
-GIT_REPO="${GIT_REPO:-git@github.com-pllimax:pllimax/all_test_in.git}"
+# 默认使用 HTTPS（与 prometheus_exporter.py 默认一致，公开仓可直接 clone）；
+# 私有仓推送请通过 GIT_REPO 环境变量或 --git-repo 指定带凭据地址（如 git@github.com:org/repo.git）
+GIT_REPO="${GIT_REPO:-https://github.com/pllimax/all_test_in.git}"
 GIT_TARGET_PATH="${GIT_TARGET_PATH:-upload_performance_result/metrics/sglang}"
 GIT_LOCAL_DIR="${GIT_LOCAL_DIR:-}"
 BRANCH="${BRANCH:-}"

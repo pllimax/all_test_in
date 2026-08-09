@@ -16,7 +16,7 @@ import socketserver
 import subprocess
 import sys
 import shutil
-from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, METRICS_DIR, GIT_PULL_ENABLED, get_metrics_dir, _iter_metrics_files
+from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, GIT_PULL_ENABLED, GIT_METRICS_DIR, get_metrics_dir, _iter_metrics_files, PERF_ONLY_FIELDS
 
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
 
@@ -406,6 +406,15 @@ _script_urls_cache = {}
 _script_urls_cache_ts = 0.0
 
 
+def _normalize_web_url(url):
+    """将 git 仓库地址归一化为网页基地址（去掉 .git 后缀，ssh 形式转 https）。"""
+    url = re.sub(r"\.git$", "", (url or "").strip())
+    m = re.match(r"^git@([^:]+):(.+)$", url)
+    if m:
+        url = "https://" + m.group(1) + "/" + m.group(2)
+    return url.rstrip("/")
+
+
 def _get_git_web_url(repo_root, repo_url):
     """获取仓库在 Git 平台上的网页访问基地址（不含 .git 后缀）。
     优先使用配置的 repo_url，为空时回退到本地 git remote origin。
@@ -426,11 +435,7 @@ def _get_git_web_url(repo_root, repo_url):
             pass
     if not url:
         return ""
-    url = re.sub(r"\.git$", "", url)
-    m = re.match(r"^git@([^:]+):(.+)$", url)
-    if m:
-        url = "https://" + m.group(1) + "/" + m.group(2)
-    return url.rstrip("/")
+    return _normalize_web_url(url)
 
 
 def _get_git_branch(repo_root):
@@ -513,11 +518,7 @@ def _match_script_urls(yaml_name, sources, script_urls):
 
 def _resolve_repo_web_url(url):
     """将 repo_url 归一化为网页基地址（去掉 .git 后缀，ssh 形式转 https）。"""
-    url = re.sub(r"\.git$", "", (url or "").strip())
-    m = re.match(r"^git@([^:]+):(.+)$", url)
-    if m:
-        url = "https://" + m.group(1) + "/" + m.group(2)
-    return url.rstrip("/")
+    return _normalize_web_url(url)
 
 
 def _get_repo_web_base_for_run(branch, source, run_workflow=""):
@@ -2089,14 +2090,6 @@ def split_date_label(date_label):
     return date_label, "", "", ""
 
 
-# 性能指标字段：纯精度用例（accuracy）在输出时清空这些字段，只保留精度结果
-PERF_ONLY_FIELDS = [
-    "mean_ttft", "mean_tpot", "mean_e2e_latency", "output_token_throughput",
-    "p90_ttft", "p90_tpot", "total_token_throughput", "total_requests",
-    "max_concurrency", "system_concurrency", "request_throughput",
-]
-
-
 def collect_all_data():
     """Collect all benchmark data into a list of dicts.
     Only includes test cases defined in YAML workflow configs.
@@ -2182,17 +2175,7 @@ def collect_all_data():
                 if alt in expected_tc_ids:
                     labels["yaml_name"] = alt
             labels["eval_score"] = score
-            labels["mean_ttft"] = None
-            labels["mean_tpot"] = None
-            labels["mean_e2e_latency"] = None
-            labels["output_token_throughput"] = None
-            labels["p90_ttft"] = None
-            labels["p90_tpot"] = None
-            labels["total_token_throughput"] = None
-            labels["total_requests"] = None
-            labels["max_concurrency"] = None
-            labels["system_concurrency"] = None
-            labels["request_throughput"] = None
+            labels.update({k: None for k in PERF_ONLY_FIELDS})
             _match_baselines_for_item(labels, baselines)
             results.append(labels)
 
@@ -2288,21 +2271,12 @@ def collect_all_data():
                     "run_workflow": rwf,
                     "yaml_name": yaml_name,
                     "case_type": info.get("type", "unknown"),
-                    "mean_ttft": None,
-                    "mean_tpot": None,
-                    "mean_e2e_latency": None,
-                    "output_token_throughput": None,
-                    "p90_ttft": None,
-                    "p90_tpot": None,
-                    "total_token_throughput": None,
-                    "total_requests": None,
-                    "max_concurrency": None,
-                    "system_concurrency": None,
-                    "request_throughput": None,
                     "eval_score": None,
                     "baselines": placeholder_baselines,
                     "source": info["source"],
                 }
+                # 占位符无性能数据，清空全部性能字段
+                placeholder.update({k: None for k in PERF_ONLY_FIELDS})
                 filtered.append(placeholder)
 
     # Attach topology info to all items
@@ -2356,7 +2330,8 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             data = _get_data()
             self._send_json(data)
         elif self.path == "/api/status":
-            source = "本地文件"
+            # 根据实际生效的指标目录判断数据来源（git 克隆 / 本地文件）
+            source = "git克隆" if GIT_PULL_ENABLED and get_metrics_dir() == GIT_METRICS_DIR else "本地文件"
             self._send_json({"source": source, "git_enabled": GIT_PULL_ENABLED})
         else:
             self.send_response(404)
@@ -2366,6 +2341,12 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         """保存用例备注。请求体: {"yaml_name": "...", "note": "..."}"""
         if self.path == "/api/note":
             try:
+                # 可选鉴权：配置 NOTE_API_TOKEN 环境变量后，请求需在头 X-API-Token
+                # 携带匹配 token；未配置时保持向后兼容（不校验）
+                expected_token = os.environ.get("NOTE_API_TOKEN", "")
+                if expected_token and self.headers.get("X-API-Token") != expected_token:
+                    self._send_json({"ok": False, "error": "unauthorized"}, status=401)
+                    return
                 length = int(self.headers.get("Content-Length", 0) or 0)
                 body = self.rfile.read(length).decode("utf-8") if length else "{}"
                 data = json.loads(body)
@@ -2634,12 +2615,20 @@ def sync_suite_registry():
             if result.returncode != 0:
                 print(f"[suite] clone failed: {result.stderr.strip()}")
                 return
-            subprocess.run(["git", "sparse-checkout", "init", "--cone"],
-                           cwd=repo_root, capture_output=True, text=True, timeout=30)
-            subprocess.run(["git", "sparse-checkout", "set", SUITE_REGISTRY_SUBDIR],
-                           cwd=repo_root, capture_output=True, text=True, timeout=30)
-            subprocess.run(["git", "checkout", SUITE_REGISTRY_BRANCH],
-                           cwd=repo_root, capture_output=True, text=True, timeout=60)
+            # 与 _clone_managed_repo 保持一致：逐命令检查，任一失败则删除半初始化目录，
+            # 下次同步重新克隆（避免留下只有 .git 而无检出文件的损坏目录）
+            for cmd, step in [
+                (["git", "sparse-checkout", "init", "--cone"], "sparse-checkout init"),
+                (["git", "sparse-checkout", "set", SUITE_REGISTRY_SUBDIR], "sparse-checkout set"),
+                (["git", "checkout", SUITE_REGISTRY_BRANCH], "checkout"),
+            ]:
+                result = subprocess.run(
+                    cmd, cwd=repo_root, capture_output=True, text=True, timeout=60,
+                )
+                if result.returncode != 0:
+                    print(f"[suite] {step} failed: {result.stderr.strip()}")
+                    _remove_dir_force(repo_root)
+                    return
 
         _suite_case_map, _case_suite_map = _build_suite_maps_from_registry(repo_root)
         _suite_map_ts = time.time()
