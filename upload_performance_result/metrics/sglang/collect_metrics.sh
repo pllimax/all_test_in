@@ -513,8 +513,13 @@ mkdir -p "${GIT_LOCAL_DIR}/${GIT_TARGET_PATH}"
 # 1) 未在本次收集的旧文件不会推送，避免把 CI 机器上旧内容回退到 git 仓库的新提交上
 # 2) 不使用 --delete，避免删除 Git 仓库中已存在但本地 SCRIPT_DIR 缺失的历史数据
 #    （如换机器收集、或本地手动清理过某日期目录）
-echo "拷贝本次收集的文件到仓库..."
-if [ -s "${UPLOAD_LIST}" ]; then
+# 将本次收集文件清单拷贝到 git 工作目录（内部函数，正常与回退路径复用）。
+# 清单 UPLOAD_LIST 保留到脚本退出（trap 清理），以便推送失败回退时重放。
+_copy_upload_files() {
+    if [ ! -s "${UPLOAD_LIST}" ]; then
+        echo "警告: 本次未收集到任何文件，跳过拷贝。"
+        return 0
+    fi
     while IFS= read -r f; do
         [ -f "${f}" ] || continue
         rel="${f#${SCRIPT_DIR}/}"
@@ -525,12 +530,17 @@ if [ -s "${UPLOAD_LIST}" ]; then
         mkdir -p "$(dirname "${dst}")"
         cp -a "${f}" "${dst}"
     done < "${UPLOAD_LIST}"
-    rm -f "${UPLOAD_LIST}"
-else
-    echo "警告: 本次未收集到任何文件，跳过拷贝。"
-fi
+}
 
-# 提交并推送
+echo "拷贝本次收集的文件到仓库..."
+_copy_upload_files
+
+# 提交并推送（并发安全）：
+# 1) 提交基于最新远端（前面已 fetch + reset --hard origin/main）
+# 2) 提交后推送前再次 fetch：若期间远端前进（他人并发推送），先 rebase 到最新，
+#    避免推送被拒或覆盖；rebase 冲突时重新克隆并仅重放本次收集文件
+# 3) 推送使用 --force-with-lease：仅当远端仍是本次 fetch 到的提交时才推送，
+#    绝不 force 覆盖他人新提交（覆盖风险即在此被杜绝）
 cd "${GIT_LOCAL_DIR}"
 git add "${GIT_TARGET_PATH}/"
 
@@ -538,8 +548,29 @@ if git diff --cached --quiet; then
     echo "无变更，跳过提交。"
 else
     git commit -m "update metrics data - ${DATES[0]}~${DATES[-1]}"
-    git push origin HEAD
-    echo "上传成功!"
+
+    # 推送前重取远端，检测并发推送；本地提交已是最新则 rebase 为 no-op
+    if git fetch origin --depth=1 2>/dev/null; then
+        git rebase origin/main 2>/dev/null || {
+            # rebase 冲突（他人改动了本批次文件）：重新克隆，仅重放本次收集的文件
+            echo "警告: rebase 冲突（远端存在并发更新），重新克隆后重放本次收集文件..."
+            cd /
+            rm -rf "${GIT_LOCAL_DIR}"
+            git clone --depth=1 "${GIT_REPO}" "${GIT_LOCAL_DIR}" || exit 1
+            cd "${GIT_LOCAL_DIR}"
+            _copy_upload_files
+            git add "${GIT_TARGET_PATH}/"
+            git commit -m "update metrics data - ${DATES[0]}~${DATES[-1]}" || true
+        }
+    fi
+
+    # 并发安全推送：fetch 之后他人若有新提交，--force-with-lease 会拒绝而非覆盖
+    if git push --force-with-lease origin HEAD; then
+        echo "上传成功!"
+    else
+        echo "错误: 推送失败（远端可能被并发更新）。本次数据保留在本地目录: ${GIT_LOCAL_DIR}"
+        echo "      请稍后重试，或手动进入该目录执行: git pull --rebase && git push"
+    fi
 fi
 
 echo "========== 上传完成 =========="
