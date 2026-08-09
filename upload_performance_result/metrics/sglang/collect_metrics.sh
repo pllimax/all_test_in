@@ -7,7 +7,13 @@
 #   自定义配置: SRC_BASE=/custom/path GIT_REPO=git@github.com:user/repo.git ./collect_metrics.sh 20260716
 #   使用配置文件: ./collect_metrics.sh 20260716 --config /path/to/config.conf
 #   命令行覆盖: ./collect_metrics.sh --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716
-# 从指定目录下各子目录中收集 bench_serving_metrics.txt 文件
+#   分支模式:   ./collect_metrics.sh --branch pllimax            (按 CI 目录名 {branch}-{date}-{run_id}-{attempt} 归类)
+# 从指定目录下各子目录中收集 bench_serving_metrics.txt（性能）与 eval_log.log（精度）文件。
+
+# 新 CI 目录结构:
+#   SRC_BASE/{branch}-{date}-{run_id}-{attempt}/{workflow}/{type}/{suite}-{timestamp}/{tc_name}/bench_serving_metrics.txt
+#   SRC_BASE/{branch}-{date}-{run_id}-{attempt}/{workflow}/{type}/{suite}-{timestamp}/{tc_name}/[eval_ts]/logs/eval_log.log
+# 同时兼容旧结构（按日期目录存放，{tc_name}-{timestamp}）。
 
 set -e
 
@@ -54,6 +60,7 @@ while [[ $# -gt 0 ]]; do
             echo "  日期...               收集数据的日期，格式如 20260716"
             echo "                        可指定多个日期，按先后顺序轮流执行"
             echo "                        不指定时自动收集今天及前3天数据"
+            echo "                        （分支模式下不指定日期则只收集一次，避免重复）"
             echo ""
             echo "选项:"
             echo "  --config FILE         配置文件路径"
@@ -65,6 +72,11 @@ while [[ $# -gt 0 ]]; do
             echo "                        (即 pllimax 仓下所有分支的 CI 任务)"
             echo "                        分支模式下结果按 CI 目录名({branch}-{date}-{run_id}-{attempt})/workflow目录 存放，不使用日期"
             echo "  --help, -h            显示此帮助信息"
+            echo ""
+            echo "收集内容:"
+            echo "  1) 性能结果: bench_serving_metrics.txt（存为 {用例名}__{日期}.txt）"
+            echo "  2) 精度结果: eval_log.log（存为 {用例名}__{日期}.log，目录加 /eval）"
+            echo "  兼容新旧 CI 目录结构（新结构含 suite/timestamp，旧结构按日期目录）"
             echo ""
             echo "环境变量:"
             echo "  SRC_BASE              源目录基础路径"
@@ -213,6 +225,64 @@ echo ""
 TOTAL_PERF_COUNT=0
 TOTAL_EVAL_COUNT=0
 
+# ============================================================
+# 公共工具函数
+# ============================================================
+
+# 获取文件实际修改时间（秒级时间戳），兼容 Linux/macOS。
+# 失败时输出空字符串，调用方据此跳过。
+_file_mtime() {
+    stat -c '%Y' "$1" 2>/dev/null || stat -f '%m' "$1" 2>/dev/null
+}
+
+# 将秒级时间戳格式化为 YYYYmmdd（日期模式归类用）。
+# 失败时输出空字符串。
+_mtime_date() {
+    date -d "@$1" +%Y%m%d 2>/dev/null || date -r "$1" +%Y%m%d 2>/dev/null
+}
+
+# 将秒级时间戳格式化为 'YYYY-MM-DD HH:MM:SS'（文件末尾元信息用）。
+_mtime_human() {
+    date -d "@$1" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r "$1" '+%Y-%m-%d %H:%M:%S' 2>/dev/null
+}
+
+# 剥离可能的 CI 时间戳后缀（兼容旧结构 {tc_name}-{timestamp}），保留干净的用例名。
+_strip_ci_ts() {
+    echo "$1" | sed 's/-[0-9]\{6\}$//'
+}
+
+# 从源文件绝对路径中提取 CI 顶层目录名与 workflow 目录名。
+# 新 CI 结构: SRC_BASE/{branch}-{date}-{run_id}-{attempt}/{workflow}/{type}/...
+# 输出格式: "{ci_dir_name}|{wf_type}"
+_ci_top_level() {
+    local file="$1"
+    local rel="${file#${SRC_BASE}/}"
+    local ci_dir_name="${rel%%/*}"
+    local tmp="${rel#*/}"
+    local wf_type="${tmp%%/*}"
+    echo "${ci_dir_name}|${wf_type}"
+}
+
+# 计算目标存放目录：
+#   分支模式（--branch）→ 按 CI 顶层目录名（{branch}-{date}-{run_id}-{attempt}）保存，
+#                         并在其中按 workflow 目录（如 Full_Test_NPU）区分
+#   否则 → 按文件实际修改日期保存
+# 参数: $1=源文件绝对路径  $2=mtime 秒级时间戳  $3=子目录（如 eval/，可空）
+# 输出: 目标目录绝对路径；日期模式无法转换日期时输出空字符串
+_collect_target_dir() {
+    local file="$1" mtime="$2" subdir="$3"
+    if [ -n "${BRANCH:-}" ]; then
+        local top
+        top=$(_ci_top_level "${file}")
+        echo "${SCRIPT_DIR}/${top%%|*}/${top#*|}/${subdir}"
+    else
+        local actual_date
+        actual_date=$(_mtime_date "${mtime}")
+        [ -z "${actual_date}" ] && echo "" && return 1
+        echo "${SCRIPT_DIR}/${actual_date}/${subdir}"
+    fi
+}
+
 # 遍历每个日期进行收集
 for CURRENT_DATE in "${DATES[@]}"; do
     echo ""
@@ -235,34 +305,23 @@ for CURRENT_DATE in "${DATES[@]}"; do
         subdir=$(dirname "${src_file}")
         subdir_name=$(basename "${subdir}")
         # 剥离可能的 CI 时间戳后缀（兼容旧结构 {tc_name}-{timestamp}），保留干净的用例名
-        subdir_name_clean=$(echo "${subdir_name}" | sed 's/-[0-9]\{6\}$//')
+        subdir_name_clean=$(_strip_ci_ts "${subdir_name}")
         # 新结构: 父目录为 {suite}-{timestamp}，用于日志展示与来源追溯
         suite_dir=$(dirname "${subdir}")
         suite_name=$(basename "${suite_dir}")
 
-        # 获取文件实际修改时间（秒级时间戳），兼容 Linux/macOS
-        mtime_epoch=$(stat -c '%Y' "${src_file}" 2>/dev/null || stat -f '%m' "${src_file}" 2>/dev/null)
+        # 获取文件实际修改时间（秒级时间戳），失败则跳过
+        mtime_epoch=$(_file_mtime "${src_file}")
         if [ -z "${mtime_epoch}" ]; then
             echo "[WARN] ${subdir_name}: 无法获取文件修改时间，跳过"
             continue
         fi
 
-        # 目标存放目录：
-        # 分支模式（--branch）→ 按 CI 顶层目录名（{branch}-{date}-{run_id}-{attempt}）保存，并在其中按 workflow 目录（如 Full_Test_NPU）区分
-        # 否则 → 按文件实际修改日期保存
-        if [ -n "${BRANCH:-}" ]; then
-            rel="${src_file#${SRC_BASE}/}"
-            ci_dir_name="${rel%%/*}"
-            tmp="${rel#*/}"
-            wf_type="${tmp%%/*}"
-            PERF_TARGET_DIR="${SCRIPT_DIR}/${ci_dir_name}/${wf_type}"
-        else
-            actual_date=$(date -d "@${mtime_epoch}" +%Y%m%d 2>/dev/null || date -r "${mtime_epoch}" +%Y%m%d 2>/dev/null)
-            if [ -z "${actual_date}" ]; then
-                echo "[WARN] ${subdir_name}: 无法转换修改时间，跳过"
-                continue
-            fi
-            PERF_TARGET_DIR="${SCRIPT_DIR}/${actual_date}"
+        # 计算目标目录（分支模式按 CI 目录，否则按实际修改日期）
+        PERF_TARGET_DIR=$(_collect_target_dir "${src_file}" "${mtime_epoch}" "")
+        if [ -z "${PERF_TARGET_DIR}" ]; then
+            echo "[WARN] ${subdir_name}: 无法转换修改时间，跳过"
+            continue
         fi
         mkdir -p "${PERF_TARGET_DIR}"
 
@@ -270,7 +329,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         cp "${src_file}" "${dst_file}"
 
         # 在文件末尾追加原始修改时间描述
-        mtime_human=$(date -d "@${mtime_epoch}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r "${mtime_epoch}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null)
+        mtime_human=$(_mtime_human "${mtime_epoch}")
         {
             echo ""
             echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
@@ -282,9 +341,10 @@ for CURRENT_DATE in "${DATES[@]}"; do
         echo "${dst_file}" >> "${UPLOAD_LIST}"
 
         if [ -n "${BRANCH:-}" ]; then
-            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
+            top_info=$(_ci_top_level "${src_file}")
+            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录: ${top_info%%|*}/${top_info#*|}, 源目录日期: ${CURRENT_DATE})"
         else
-            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
+            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录日期: ${CURRENT_DATE}, 实际修改日期: $(_mtime_date "${mtime_epoch}"))"
         fi
         count=$((count + 1))
     done < <(find "${SEARCH_ROOTS[@]}" -type f -name 'bench_serving_metrics.txt' -path '*/perf/*')
@@ -320,7 +380,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
             ts_name=$(basename "${ts_dir}")
         fi
         # 剥离可能的 CI 时间戳后缀（兼容旧结构 {tc_name}-{ci_ts}），保留干净的用例名
-        ts_name_clean=$(echo "${ts_name}" | sed 's/-[0-9]\{6\}$//')
+        ts_name_clean=$(_strip_ci_ts "${ts_name}")
         # 确定 test_type（perf / accuracy）：
         # 新结构: ts_dir 父目录为 {suite}-{timestamp}（带时间戳），再上一级才是 {type}
         # 旧结构: ts_dir 父目录即为 {test_type}
@@ -333,29 +393,18 @@ for CURRENT_DATE in "${DATES[@]}"; do
             test_type_name="${suite_name}"
         fi
 
-        # 获取文件实际修改时间（秒级时间戳），兼容 Linux/macOS
-        mtime_epoch=$(stat -c '%Y' "${eval_src}" 2>/dev/null || stat -f '%m' "${eval_src}" 2>/dev/null)
+        # 获取文件实际修改时间（秒级时间戳），失败则跳过
+        mtime_epoch=$(_file_mtime "${eval_src}")
         if [ -z "${mtime_epoch}" ]; then
             echo "[WARN-EVAL] ${test_type_name}__${ts_name}: 无法获取文件修改时间，跳过"
             continue
         fi
 
-        # 目标存放目录：
-        # 分支模式（--branch）→ 按 CI 顶层目录名（{branch}-{date}-{run_id}-{attempt}）保存，并在其中按 workflow 目录（如 Full_Test_NPU）区分
-        # 否则 → 按文件实际修改日期保存
-        if [ -n "${BRANCH:-}" ]; then
-            rel="${eval_src#${SRC_BASE}/}"
-            ci_dir_name="${rel%%/*}"
-            tmp="${rel#*/}"
-            wf_type="${tmp%%/*}"
-            EVAL_TARGET_DIR="${SCRIPT_DIR}/${ci_dir_name}/${wf_type}/eval"
-        else
-            actual_date=$(date -d "@${mtime_epoch}" +%Y%m%d 2>/dev/null || date -r "${mtime_epoch}" +%Y%m%d 2>/dev/null)
-            if [ -z "${actual_date}" ]; then
-                echo "[WARN-EVAL] ${test_type_name}__${ts_name}: 无法转换修改时间，跳过"
-                continue
-            fi
-            EVAL_TARGET_DIR="${SCRIPT_DIR}/${actual_date}/eval"
+        # 计算目标目录（分支模式按 CI 目录 + /eval，否则按实际修改日期 + /eval）
+        EVAL_TARGET_DIR=$(_collect_target_dir "${eval_src}" "${mtime_epoch}" "eval")
+        if [ -z "${EVAL_TARGET_DIR}" ]; then
+            echo "[WARN-EVAL] ${test_type_name}__${ts_name}: 无法转换修改时间，跳过"
+            continue
         fi
         mkdir -p "${EVAL_TARGET_DIR}"
 
@@ -372,7 +421,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         cp "${eval_src}" "${eval_dst}"
 
         # 在文件末尾追加原始修改时间描述
-        mtime_human=$(date -d "@${mtime_epoch}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null || date -r "${mtime_epoch}" '+%Y-%m-%d %H:%M:%S' 2>/dev/null)
+        mtime_human=$(_mtime_human "${mtime_epoch}")
         {
             echo ""
             echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
@@ -382,9 +431,10 @@ for CURRENT_DATE in "${DATES[@]}"; do
         echo "${eval_dst}" >> "${UPLOAD_LIST}"
 
         if [ -n "${BRANCH:-}" ]; then
-            echo "[EVAL] ${ts_name_clean} (源目录: ${ci_dir_name}/${wf_type}, 源目录日期: ${CURRENT_DATE})"
+            top_info=$(_ci_top_level "${eval_src}")
+            echo "[EVAL] ${ts_name_clean} (源目录: ${top_info%%|*}/${top_info#*|}, 源目录日期: ${CURRENT_DATE})"
         else
-            echo "[EVAL] ${ts_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: ${actual_date})"
+            echo "[EVAL] ${ts_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: $(_mtime_date "${mtime_epoch}"))"
         fi
         eval_count=$((eval_count + 1))
     done < <(find "${SEARCH_ROOTS[@]}" -type f -name 'eval_log.log' -path '*/logs/eval_log.log')
