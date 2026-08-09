@@ -1,0 +1,160 @@
+2026-08-08 13:08:58 - evalscope - INFO: Running with native backend
+2026-08-08 13:08:58 - evalscope - INFO: Dump task config to /root/.cache/tests/output/accuracy/20260808/test_npu_glm5_top64_pruned_bf16_8p_gsm8k/20260808_130858/configs/task_config.yaml
+2026-08-08 13:08:58 - evalscope - INFO: {
+    "model": "GLM-5-top64-pruned-gsm8k",
+    "model_id": "GLM-5-top64-pruned-gsm8k",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gsm8k"
+    ],
+    "dataset_args": {
+        "gsm8k": {
+            "name": "gsm8k",
+            "dataset_id": "AI-ModelScope/gsm8k",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "main"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 4,
+            "few_shot_random": false,
+            "train_split": "train",
+            "eval_split": "test",
+            "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+            "few_shot_prompt_template": "Here are some examples of how to solve similar problems:\n\n{fewshot}\n\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "GSM8K",
+            "description": "\n## Overview\n\nGSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically diverse grade school math word problems created by human problem writers. The dataset is specifically designed to evaluate and improve the multi-step mathematical reasoning capabilities of language models.\n\n## Task Description\n\n- **Task Type**: Mathematical Word Problem Solving\n- **Input**: Natural language math word problem\n- **Output**: Numerical answer derived through step-by-step reasoning\n- **Difficulty**: Grade school level (2-8 reasoning steps required)\n\n## Key Features\n\n- Problems require basic arithmetic operations (addition, subtraction, multiplication, division)\n- Solutions involve 2 to 8 sequential reasoning steps\n- High linguistic diversity in problem formulations\n- Human-written problems ensuring natural language quality\n- Clear numerical answers for objective evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **4-shot** examples with Chain-of-Thought (CoT) prompting\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- The metric extracts numerical values for accuracy comparison\n- Supports both zero-shot and few-shot evaluation modes\n",
+            "paper_url": "https://arxiv.org/abs/2110.14168",
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 16,
+        "stream": true,
+        "max_tokens": 2048,
+        "temperature": 0.01
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100,
+    "eval_batch_size": 16,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/accuracy/20260808/test_npu_glm5_top64_pruned_bf16_8p_gsm8k/20260808_130858",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20466/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-08-08 13:08:58 - evalscope - INFO: Start loading benchmark dataset: gsm8k
+2026-08-08 13:08:58 - evalscope - INFO: Start evaluating 1 subsets of gsm8k: ['main']
+2026-08-08 13:08:58 - evalscope - INFO: Unified pool: 100 items to process, 0 already fully cached (100 total across all subsets).
+2026-08-08 13:08:58 - evalscope - INFO: Loading model for prediction...
+2026-08-08 13:08:58 - evalscope - INFO: Creating model GLM-5-top64-pruned-gsm8k with eval_type=openai_api base_url=http://127.0.0.1:20466/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 16, 'stream': True, 'max_tokens': 2048, 'temperature': 0.01}, model_args={}
+2026-08-08 13:08:58 - evalscope - INFO: Model loaded successfully.
+2026-08-08 13:09:58 - evalscope - INFO: Evaluating[gsm8k]   7%| 7/100 [Elapsed: 01:00 < Remaining: 10:45,  6.94s/it]
+2026-08-08 13:10:59 - evalscope - INFO: Evaluating[gsm8k]  14%| 14/100 [Elapsed: 02:00 < Remaining: 08:52,  6.20s/it]
+2026-08-08 13:11:59 - evalscope - INFO: Evaluating[gsm8k]  23%| 23/100 [Elapsed: 03:00 < Remaining: 22:29, 17.53s/it]
+2026-08-08 13:12:59 - evalscope - INFO: Evaluating[gsm8k]  35%| 35/100 [Elapsed: 04:00 < Remaining: 04:53,  4.52s/it]
+2026-08-08 13:13:59 - evalscope - INFO: Evaluating[gsm8k]  43%| 43/100 [Elapsed: 05:00 < Remaining: 04:55,  5.19s/it]
+2026-08-08 13:14:59 - evalscope - INFO: Evaluating[gsm8k]  49%| 49/100 [Elapsed: 06:00 < Remaining: 08:53, 10.45s/it]
+2026-08-08 13:15:59 - evalscope - INFO: Evaluating[gsm8k]  58%| 58/100 [Elapsed: 07:01 < Remaining: 04:07,  5.89s/it]
+2026-08-08 13:17:00 - evalscope - INFO: Evaluating[gsm8k]  70%| 70/100 [Elapsed: 08:01 < Remaining: 01:49,  3.63s/it]
+2026-08-08 13:18:00 - evalscope - INFO: Evaluating[gsm8k]  81%| 81/100 [Elapsed: 09:01 < Remaining: 01:06,  3.52s/it]
+2026-08-08 13:19:00 - evalscope - INFO: Evaluating[gsm8k]  89%| 89/100 [Elapsed: 10:01 < Remaining: 01:05,  5.98s/it]
+2026-08-08 13:20:00 - evalscope - INFO: Evaluating[gsm8k]  96%| 96/100 [Elapsed: 11:01 < Remaining: 00:27,  6.89s/it]
+2026-08-08 13:20:55 - evalscope - INFO: Evaluating[gsm8k] 100%| 100/100 [Elapsed: 11:57 < Remaining: 00:00,  9.58s/it]
+2026-08-08 13:20:55 - evalscope - INFO: Unified pool finished for gsm8k.
+2026-08-08 13:20:55 - evalscope - INFO: Aggregating scores for subset: main
+2026-08-08 13:20:55 - evalscope - INFO: Generating report...
+2026-08-08 13:20:55 - evalscope - INFO: 
+gsm8k report table:
+┌──────────────────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model                    │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├──────────────────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ GLM-5-top64-pruned-gsm8k │ gsm8k     │ mean_acc │ main     │   100 │    0.48 │ default │
+└──────────────────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-08-08 13:20:55 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-08-08 13:20:55 - evalscope - INFO: Dump report to: /root/.cache/tests/output/accuracy/20260808/test_npu_glm5_top64_pruned_bf16_8p_gsm8k/20260808_130858/reports/GLM-5-top64-pruned-gsm8k/gsm8k.json 
+
+2026-08-08 13:20:55 - evalscope - INFO: 
+gsm8k perf table:
+Model                     Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                                  (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+------------------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+GLM-5-top64-pruned-gsm8k  gsm8k        100    101.582      973.82       84.16       11.82    580.82    1200.59
+
+2026-08-08 13:20:55 - evalscope - INFO: Benchmark gsm8k evaluation finished.
+2026-08-08 13:20:55 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 11:57 < Remaining: 00:00, 717.53s/benchmark]
+2026-08-08 13:20:55 - evalscope - INFO: Overall report table: 
+┌──────────────────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model                    │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├──────────────────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ GLM-5-top64-pruned-gsm8k │ gsm8k     │ mean_acc │ main     │   100 │    0.48 │ default │
+└──────────────────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-08-08 13:20:55 - evalscope - INFO: Overall perf table: 
+Model                     Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                                  (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+------------------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+GLM-5-top64-pruned-gsm8k  gsm8k        100    101.582      973.82       84.16       11.82    580.82    1200.59 
+
+2026-08-08 13:20:56 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/accuracy/20260808/test_npu_glm5_top64_pruned_bf16_8p_gsm8k/20260808_130858/reports/report.html
+2026-08-08 13:20:56 - evalscope - INFO: Finished evaluation for GLM-5-top64-pruned-gsm8k on ['gsm8k']
+2026-08-08 13:20:56 - evalscope - INFO: Output directory: /root/.cache/tests/output/accuracy/20260808/test_npu_glm5_top64_pruned_bf16_8p_gsm8k/20260808_130858
+
+# [collect_metrics] 文件原始修改时间: 2026-08-08 21:20:56
