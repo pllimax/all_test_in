@@ -319,6 +319,16 @@ for CURRENT_DATE in "${DATES[@]}"; do
             continue
         fi
 
+        # 非分支模式：仅收集实际修改日期与请求日期一致的文件。
+        # 否则 find 会命中全树所有历史文件，导致指定单日收集偏多、
+        # 自动模式同一文件被多个日期重复收集。
+        if [ -z "${BRANCH:-}" ]; then
+            actual_date=$(_mtime_date "${mtime_epoch}")
+            if [ "${actual_date}" != "${CURRENT_DATE}" ]; then
+                continue
+            fi
+        fi
+
         # 计算目标目录（分支模式按 CI 目录，否则按实际修改日期）
         PERF_TARGET_DIR=$(_collect_target_dir "${src_file}" "${mtime_epoch}" "")
         if [ -z "${PERF_TARGET_DIR}" ]; then
@@ -400,6 +410,14 @@ for CURRENT_DATE in "${DATES[@]}"; do
         if [ -z "${mtime_epoch}" ]; then
             echo "[WARN-EVAL] ${test_type_name}__${ts_name}: 无法获取文件修改时间，跳过"
             continue
+        fi
+
+        # 非分支模式：仅收集实际修改日期与请求日期一致的文件（与性能收集保持一致）
+        if [ -z "${BRANCH:-}" ]; then
+            actual_date=$(_mtime_date "${mtime_epoch}")
+            if [ "${actual_date}" != "${CURRENT_DATE}" ]; then
+                continue
+            fi
         fi
 
         # 计算目标目录（分支模式按 CI 目录 + /eval，否则按实际修改日期 + /eval）
