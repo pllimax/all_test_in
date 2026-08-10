@@ -1097,15 +1097,12 @@ thead th.sticky-col { z-index: 5; }
 
 <!-- 备注编辑弹窗 -->
 <div id="noteModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;width:560px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;width:480px;max-width:92vw;">
     <h4 style="margin:0 0 6px;color:#e6edf3;">填写执行结果备注</h4>
     <div style="font-size:12px;color:#8b949e;margin-bottom:4px;word-break:break-all;" id="noteModalTc"></div>
     <div style="font-size:12px;color:#8b949e;margin-bottom:10px;" id="noteModalExec"></div>
-    <!-- 历史执行记录列表 -->
-    <div style="font-size:12px;color:#8b949e;margin-bottom:4px;">历史执行记录（点击切换要备注的执行结果）</div>
-    <div id="noteModalHistory" style="max-height:180px;overflow:auto;border:1px solid #30363d;border-radius:6px;background:#0d1117;margin-bottom:10px;"></div>
-    <textarea id="noteInput" rows="4" placeholder="输入该执行结果的备注..." style="width:100%;box-sizing:border-box;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:13px;flex-shrink:0;"></textarea>
-    <div style="margin-top:10px;text-align:right;flex-shrink:0;">
+    <textarea id="noteInput" rows="4" placeholder="输入该执行结果的备注..." style="width:100%;box-sizing:border-box;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:13px;"></textarea>
+    <div style="margin-top:10px;text-align:right;">
       <button class="btn btn-reset" onclick="closeNoteEditor()">取消</button>
       <button class="btn" onclick="saveNote()">保存</button>
     </div>
@@ -1266,48 +1263,9 @@ function openNoteEditor(d) {
   document.getElementById('noteModalExec').textContent =
     '执行结果: 日期=' + (d.date || '--') + '  分支=' + (d.branch || '--') + '  run_id=' + (d.run_id || '--');
   document.getElementById('noteInput').value = d.note || '';
-  renderNoteHistory(_noteEditingTc, _noteEditingKey);
   const modal = document.getElementById('noteModal');
   modal.style.display = 'flex';
   document.getElementById('noteInput').focus();
-}
-
-// 渲染同一用例的历史执行记录列表；点击某条可切换要备注的执行结果
-function renderNoteHistory(tcId, currentKey) {
-  const container = document.getElementById('noteModalHistory');
-  const execs = allData.filter(d => d._id === tcId);
-  // 按日期升序展示（与表格分组一致）
-  execs.sort((a, b) => a.date.localeCompare(b.date));
-  if (execs.length === 0) {
-    container.innerHTML = '<div style="padding:8px;color:#8b949e;">无历史执行记录</div>';
-    return;
-  }
-  let html = '';
-  execs.forEach(ex => {
-    const key = buildNoteKey(ex);
-    const isCur = key === currentKey;
-    const st = computeStatus(ex);
-    const stCls = st === 'PASS' ? '#7ee787' : (st.indexOf('成功无结果') === 0 ? '#7ee787' : '#ff7b72');
-    const noteTxt = ex.note ? `<span style="color:#e6edf3;"> ${escHtml(ex.note)}</span>` : '';
-    html += `<div onclick="switchNoteExec('${ex.date}','${ex.branch}','${ex.run_id}')"
-      style="padding:6px 8px;cursor:pointer;border-bottom:1px solid #30363d;${isCur ? 'background:#1f3a5f;' : ''}">
-      <span style="color:#8b949e;">${ex.date} | ${ex.branch || '--'} | run:${ex.run_id || '--'}</span>
-      <span style="color:${stCls};"> [${st}]</span>${noteTxt}
-    </div>`;
-  });
-  container.innerHTML = html;
-}
-
-// 点击历史记录切换当前编辑的执行结果
-function switchNoteExec(date, branch, runId) {
-  const item = allData.find(d =>
-    d._id === _noteEditingTc && d.date === date && (d.branch || '') === branch && (d.run_id || '') === runId);
-  if (!item) return;
-  _noteEditingKey = buildNoteKey(item);
-  document.getElementById('noteModalExec').textContent =
-    '执行结果: 日期=' + (item.date || '--') + '  分支=' + (item.branch || '--') + '  run_id=' + (item.run_id || '--');
-  document.getElementById('noteInput').value = item.note || '';
-  renderNoteHistory(_noteEditingTc, _noteEditingKey);
 }
 
 function closeNoteEditor() {
@@ -1421,7 +1379,7 @@ function getAccuracyThreshold(baseline, dataset) {
 // 结合 run_id 关联的 GitHub Actions job 状态，推断「无结果」的成因。
 // 仅当存在 run_id（分支模式数据）且已抓到 job 信息时才能区分：
 //   completed + conclusion ∈ {failure, timed_out, action_required, cancelled} → 已执行但失败
-//   completed + conclusion == success                                        → 执行成功但指标未上传
+//   completed + conclusion == success                                        → 执行成功但指标未上传（状态显示「成功(无结果)」，按 PASS 筛选）
 //   completed + conclusion ∈ {skipped, stale, neutral}（未实际运行）          → 未执行
 //   queued / in_progress / waiting / requested / pending                     → 执行中
 //   匹配到 job 列表但未命中本用例（no_job）                                  → 未执行
@@ -1436,7 +1394,7 @@ function jobRunLabel(d) {
   if (!s && !c) return ''; // job 信息尚未抓取到
   if (s === 'completed') {
     if (FAIL_JOB_CONCLUSIONS.includes(c)) return '已执行失败';
-    if (c === 'success') return '成功无结果';
+    if (c === 'success') return '成功';
     if (SKIP_JOB_CONCLUSIONS.includes(c)) return '未执行';
     return ''; // completed 但结论未知（异常），保持原「无结果」显示
   }
@@ -1496,6 +1454,17 @@ function getTestCaseStatus(items) {
   return computeStatus(latest);
 }
 
+// 判断是否为「成功(无结果)」状态：CI job 执行成功但无指标数据。
+// 该状态视为通过（按 PASS 筛选/统计），只是缺少结果数据。
+function isSuccessNoResult(d) {
+  const b = d.baselines || {};
+  const hasPerf = d.mean_ttft != null;
+  const hasEval = d.eval_score != null;
+  if (hasPerf || hasEval) return false;
+  const runLabel = jobRunLabel(d);
+  return runLabel === '成功';
+}
+
 function hasData(d) {
   return d.mean_ttft != null || d.eval_score != null;
 }
@@ -1528,12 +1497,14 @@ function onFilterChange() {
       groups[d._id].push(d);
     });
     const keepIds = new Set();
-    Object.entries(groups).forEach(([id, items]) => {
-      items.sort((a, b) => a.date.localeCompare(b.date));
-      const status = getTestCaseStatus(items);
-      if (statusFilter.includes('PASS') && status === 'PASS') keepIds.add(id);
-      if (statusFilter.includes('FAILED') && (status === 'FAILED' || status.endsWith('(无结果)'))) keepIds.add(id);
-    });
+      Object.entries(groups).forEach(([id, items]) => {
+        items.sort((a, b) => a.date.localeCompare(b.date));
+        const status = getTestCaseStatus(items);
+        const hasSuccessNoResult = items.some(d => isSuccessNoResult(d));
+        // 成功(无结果) 视为通过：勾选 PASS 时保留
+        if (statusFilter.includes('PASS') && (status === 'PASS' || hasSuccessNoResult)) keepIds.add(id);
+        if (statusFilter.includes('FAILED') && (status === 'FAILED' || status.endsWith('(无结果)'))) keepIds.add(id);
+      });
     filtered = filtered.filter(d => keepIds.has(d._id));
   }
 
@@ -1721,8 +1692,8 @@ function updateTable(data) {
     items.forEach((d, i) => {
       const isLatest = i === items.length - 1;
       const status = computeStatus(d);
-      // 状态样式：PASS/成功无结果 → 绿；无基线(空) → 红；其余(FAILED等) → 红
-      const statusCls = status === 'PASS' || status.indexOf('成功无结果') === 0
+      // 状态样式：PASS/成功(无结果) → 绿；无基线(空) → 红；其余(FAILED等) → 红
+      const statusCls = status === 'PASS' || status.indexOf('成功') === 0
         ? (status === 'PASS' ? 'status-pass' : 'status-success-nr')
         : (status === '' ? 'status-none' : 'status-fail');
       const b = d.baselines || {};
@@ -1800,12 +1771,24 @@ function applyHistoryFilter() {
   });
 }
 
-// Click row to expand/collapse history and charts
+// 点击测试用例ID列 → 展开/收起历史直接结果与图表；
+// 点击行其它位置 → 仅高亮该条结果（选中），不展开；
+// 点击链接/按钮（脚本/任务/备注等交互元素）不触发以上行为。
 document.getElementById('tableBody').addEventListener('click', function(e) {
   const tr = e.target.closest('tr');
   if (!tr || tr.querySelector('.no-data') || tr.classList.contains('chart-row')) return;
+  // 交互元素（链接、备注按钮、展开图标）点击不触发行选中/展开
+  if (e.target.closest('a') || e.target.closest('.note-edit') || e.target.closest('.expand-icon')) return;
   const tcId = tr.getAttribute('data-tc');
   if (!tcId) return;
+
+  const isTcIdClick = !!e.target.closest('.col-tc-id');
+
+  if (!isTcIdClick) {
+    // 非用例ID列：仅切换该行选中高亮
+    tr.classList.toggle('selected');
+    return;
+  }
 
   const chartRow = document.getElementById('chart_' + tcId);
   const allRows = this.querySelectorAll(`tr[data-tc="${tcId}"].data-row`);
@@ -1901,7 +1884,8 @@ function exportToExcel() {
       items.sort((a, b) => (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
       if (statusVals !== null) {
         const status = getTestCaseStatus(items);
-        const keep = (statusVals.includes('PASS') && status === 'PASS') ||
+        const hasSuccessNoResult = items.some(d => isSuccessNoResult(d));
+        const keep = (statusVals.includes('PASS') && (status === 'PASS' || hasSuccessNoResult)) ||
                      (statusVals.includes('FAILED') && (status === 'FAILED' || status.endsWith('(无结果)')));
         if (!keep) return;
       }
@@ -1993,7 +1977,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initCharts();
   loadData();
   // 轮询间隔 60s：与后端 DATA_CACHE_TTL(30s) + jobs 后台刷新配合，
-  // 保证「执行中/已执行失败/成功无结果」等 job 状态与任务链接及时更新
+  // 保证「执行中/已执行失败/成功(无结果)」等 job 状态与任务链接及时更新
   setInterval(loadData, 60000);
 });
 </script>
