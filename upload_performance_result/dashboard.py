@@ -241,8 +241,10 @@ BRANCH_REPO_MAP = _config["branch_repo_map"]
 
 # ============================================================
 # 用例备注（notes）
-# 每个用例（yaml_name）可填写一条备注，本地持久化到 notes.json，
-# 并可选定期 commit/push 到 git 仓（与 collect_metrics.sh 的 git 上传模式一致）。
+# 每条备注针对「某一条执行结果」保存，而不是整个用例（yaml_name）共享一条。
+# 执行结果由复合键标识：{yaml_name}|{date}|{branch}|{run_id}，
+# 保证同一用例在不同日期/分支/run 下的执行结果可分别备注。
+# 备注本地持久化到 notes.json，并可选定期 commit/push 到 git 仓（与 collect_metrics.sh 的 git 上传模式一致）。
 # ============================================================
 NOTES_FILE = os.environ.get(
     "NOTES_FILE",
@@ -253,7 +255,9 @@ NOTES_GIT_INTERVAL = int(os.environ.get("NOTES_GIT_INTERVAL", "14400"))
 # 是否启用 git 持久化（配置 repo 与 git 可用时才有意义）
 NOTES_GIT_PUSH_ENABLED = os.environ.get("NOTES_GIT_PUSH", "1") != "0"
 
-_notes = {}          # {yaml_name: note_text}
+NOTES_KEY_SEP = "|"
+
+_notes = {}          # {复合键: note_text}
 _notes_loaded = False
 _notes_dirty = False  # 本地已有变更但尚未提交到 git
 _notes_lock = threading.RLock()  # RLock：save_note 内调用 load_notes 需可重入
@@ -261,6 +265,23 @@ _notes_lock = threading.RLock()  # RLock：save_note 内调用 load_notes 需可
 
 def _notes_path():
     return NOTES_FILE
+
+
+def note_key_for(yaml_name, date="", branch="", run_id=""):
+    """构造某条执行结果的备注复合键。"""
+    return NOTES_KEY_SEP.join(
+        [str(yaml_name or ""), str(date or ""), str(branch or ""), str(run_id or "")]
+    )
+
+
+def note_key_for_item(item):
+    """从数据条目构造备注复合键。"""
+    return note_key_for(
+        item.get("yaml_name", ""),
+        item.get("date", ""),
+        item.get("branch", ""),
+        item.get("run_id", ""),
+    )
 
 
 def load_notes():
@@ -284,16 +305,16 @@ def load_notes():
         return _notes
 
 
-def save_note(yaml_name, note_text):
-    """保存单条用例备注，立即写盘。返回 True 表示成功。"""
+def save_note(key, note_text):
+    """保存一条执行结果的备注（复合键），立即写盘。返回 True 表示成功。"""
     global _notes, _notes_dirty
     with _notes_lock:
         load_notes()
         note_text = (note_text or "").strip()
         if note_text:
-            _notes[yaml_name] = note_text
+            _notes[key] = note_text
         else:
-            _notes.pop(yaml_name, None)
+            _notes.pop(key, None)
         try:
             with open(_notes_path(), "w", encoding="utf-8") as f:
                 json.dump(_notes, f, ensure_ascii=False, indent=2)
@@ -305,10 +326,17 @@ def save_note(yaml_name, note_text):
 
 
 def attach_notes(items):
-    """为每条数据附加 note 字段（按 yaml_name 匹配）。"""
+    """为每条数据附加 note 字段（按执行结果复合键匹配）。
+    兼容旧格式：历史 notes.json 以纯 yaml_name 为键（备注针对整个用例），
+    复合键未命中时回退到纯 yaml_name 键，避免历史备注丢失。
+    """
     notes = load_notes()
     for item in items:
-        item["note"] = notes.get(str(item.get("yaml_name", "") or ""), "")
+        key = note_key_for_item(item)
+        note = notes.get(key)
+        if note is None:
+            note = notes.get(str(item.get("yaml_name", "") or ""), "")
+        item["note"] = note or ""
     return items
 
 # Test cases to exclude from the dashboard
@@ -931,6 +959,8 @@ tr.selected:hover { background: #254070 !important; }
 .status-pass { color: #7ee787; font-weight: 700; }
 .status-fail { color: #ff7b72; font-weight: 700; }
 .status-none { color: #ff7b72; font-weight: 700; }
+/* 已执行成功但无结果数据（CI job conclusion=success 但无指标）→ 绿色，区别于失败/未执行 */
+.status-success-nr { color: #7ee787; font-weight: 700; }
 .baseline-val { font-size: 11px; color: #8b949e; }
 .metric-fail { color: #ff7b72; font-weight: 700; }
 .baseline-col { font-size: 11px; color: #8b949e; display: block; width: 100%; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
@@ -1067,11 +1097,15 @@ thead th.sticky-col { z-index: 5; }
 
 <!-- 备注编辑弹窗 -->
 <div id="noteModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;width:480px;max-width:92vw;">
-    <h4 style="margin:0 0 6px;color:#e6edf3;">填写用例备注</h4>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:8px;word-break:break-all;" id="noteModalTc"></div>
-    <textarea id="noteInput" rows="4" placeholder="输入该用例的备注..." style="width:100%;box-sizing:border-box;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:13px;"></textarea>
-    <div style="margin-top:10px;text-align:right;">
+  <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;width:560px;max-width:94vw;max-height:90vh;display:flex;flex-direction:column;">
+    <h4 style="margin:0 0 6px;color:#e6edf3;">填写执行结果备注</h4>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:4px;word-break:break-all;" id="noteModalTc"></div>
+    <div style="font-size:12px;color:#8b949e;margin-bottom:10px;" id="noteModalExec"></div>
+    <!-- 历史执行记录列表 -->
+    <div style="font-size:12px;color:#8b949e;margin-bottom:4px;">历史执行记录（点击切换要备注的执行结果）</div>
+    <div id="noteModalHistory" style="max-height:180px;overflow:auto;border:1px solid #30363d;border-radius:6px;background:#0d1117;margin-bottom:10px;"></div>
+    <textarea id="noteInput" rows="4" placeholder="输入该执行结果的备注..." style="width:100%;box-sizing:border-box;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:13px;flex-shrink:0;"></textarea>
+    <div style="margin-top:10px;text-align:right;flex-shrink:0;">
       <button class="btn btn-reset" onclick="closeNoteEditor()">取消</button>
       <button class="btn" onclick="saveNote()">保存</button>
     </div>
@@ -1201,37 +1235,103 @@ function destroyCharts(tcId) {
   }
 }
 
-// ===== 用例备注编辑 =====
-let _noteEditingTc = null;
+// ===== 执行结果备注编辑 =====
+let _noteEditingKey = null;   // 当前编辑的执行结果复合键
+let _noteEditingTc = null;    // 当前编辑的用例 yaml_name
 
-function openNoteEditor(tcId) {
-  _noteEditingTc = tcId;
-  const item = allData.find(d => d._id === tcId) || {};
-  document.getElementById('noteModalTc').textContent = tcId;
-  document.getElementById('noteInput').value = item.note || '';
+// HTML 转义（备注文本/历史记录渲染通用）
+function escHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+// 构造执行结果复合键（与后端 note_key_for 一致）
+function buildNoteKey(d) {
+  return [d.yaml_name || '', d.date || '', d.branch || '', d.run_id || ''].join('|');
+}
+
+// 从表格行打开备注编辑（按 yaml_name+date+branch+run_id 定位执行结果）
+function openNoteEditorFromRow(tcId, date, branch, runId) {
+  const item = allData.find(d =>
+    d._id === tcId && d.date === date && (d.branch || '') === branch && (d.run_id || '') === runId);
+  if (!item) return;
+  openNoteEditor(item);
+}
+
+function openNoteEditor(d) {
+  _noteEditingTc = d.yaml_name || '';
+  _noteEditingKey = buildNoteKey(d);
+  document.getElementById('noteModalTc').textContent = '用例: ' + _noteEditingTc;
+  document.getElementById('noteModalExec').textContent =
+    '执行结果: 日期=' + (d.date || '--') + '  分支=' + (d.branch || '--') + '  run_id=' + (d.run_id || '--');
+  document.getElementById('noteInput').value = d.note || '';
+  renderNoteHistory(_noteEditingTc, _noteEditingKey);
   const modal = document.getElementById('noteModal');
   modal.style.display = 'flex';
   document.getElementById('noteInput').focus();
 }
 
+// 渲染同一用例的历史执行记录列表；点击某条可切换要备注的执行结果
+function renderNoteHistory(tcId, currentKey) {
+  const container = document.getElementById('noteModalHistory');
+  const execs = allData.filter(d => d._id === tcId);
+  // 按日期升序展示（与表格分组一致）
+  execs.sort((a, b) => a.date.localeCompare(b.date));
+  if (execs.length === 0) {
+    container.innerHTML = '<div style="padding:8px;color:#8b949e;">无历史执行记录</div>';
+    return;
+  }
+  let html = '';
+  execs.forEach(ex => {
+    const key = buildNoteKey(ex);
+    const isCur = key === currentKey;
+    const st = computeStatus(ex);
+    const stCls = st === 'PASS' ? '#7ee787' : (st.indexOf('成功无结果') === 0 ? '#7ee787' : '#ff7b72');
+    const noteTxt = ex.note ? `<span style="color:#e6edf3;"> ${escHtml(ex.note)}</span>` : '';
+    html += `<div onclick="switchNoteExec('${ex.date}','${ex.branch}','${ex.run_id}')"
+      style="padding:6px 8px;cursor:pointer;border-bottom:1px solid #30363d;${isCur ? 'background:#1f3a5f;' : ''}">
+      <span style="color:#8b949e;">${ex.date} | ${ex.branch || '--'} | run:${ex.run_id || '--'}</span>
+      <span style="color:${stCls};"> [${st}]</span>${noteTxt}
+    </div>`;
+  });
+  container.innerHTML = html;
+}
+
+// 点击历史记录切换当前编辑的执行结果
+function switchNoteExec(date, branch, runId) {
+  const item = allData.find(d =>
+    d._id === _noteEditingTc && d.date === date && (d.branch || '') === branch && (d.run_id || '') === runId);
+  if (!item) return;
+  _noteEditingKey = buildNoteKey(item);
+  document.getElementById('noteModalExec').textContent =
+    '执行结果: 日期=' + (item.date || '--') + '  分支=' + (item.branch || '--') + '  run_id=' + (item.run_id || '--');
+  document.getElementById('noteInput').value = item.note || '';
+  renderNoteHistory(_noteEditingTc, _noteEditingKey);
+}
+
 function closeNoteEditor() {
   document.getElementById('noteModal').style.display = 'none';
+  _noteEditingKey = null;
   _noteEditingTc = null;
 }
 
 async function saveNote() {
-  if (!_noteEditingTc) return;
+  if (!_noteEditingTc || !_noteEditingKey) return;
   const note = document.getElementById('noteInput').value || '';
+  const parts = _noteEditingKey.split('|');
   try {
     const resp = await fetch('/api/note', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({yaml_name: _noteEditingTc, note: note})
+      body: JSON.stringify({
+        yaml_name: parts[0], date: parts[1], branch: parts[2], run_id: parts[3], note: note
+      })
     });
     const res = await resp.json();
     if (res.ok) {
-      // 更新本地数据，重新渲染表格
-      allData.forEach(d => { if (d._id === _noteEditingTc) d.note = note; });
+      // 更新本地对应执行结果的数据，重新渲染表格
+      allData.forEach(d => { if (buildNoteKey(d) === _noteEditingKey) d.note = note; });
       closeNoteEditor();
       onFilterChange();
     } else {
@@ -1578,15 +1678,10 @@ function updateTable(data) {
     return '--';
   }
 
-  // 渲染用例备注：显示文本 + 编辑按钮（点击弹窗编辑，备注按 yaml_name 对应用例）
-  function escHtml(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  // 渲染执行结果备注：显示文本 + 编辑按钮（点击弹窗编辑，备注按执行结果复合键对应该条记录）
   function fmtNote(d) {
     const note = d.note || '';
-    const editBtn = `<span class="note-edit" onclick="openNoteEditor('${d._id.replace(/'/g, "\\'")}')" title="填写备注">✏️</span>`;
+    const editBtn = `<span class="note-edit" onclick="openNoteEditorFromRow('${d._id.replace(/'/g, "\\'")}','${d.date}','${d.branch || ''}','${d.run_id || ''}')" title="填写备注">✏️</span>`;
     const text = note ? `<span class="note-text" title="${escHtml(note)}">${escHtml(note)}</span>` : '';
     return `<span class="note-cell">${editBtn}${text}</span>`;
   }
@@ -1626,7 +1721,10 @@ function updateTable(data) {
     items.forEach((d, i) => {
       const isLatest = i === items.length - 1;
       const status = computeStatus(d);
-      const statusCls = status === 'PASS' ? 'status-pass' : (status === '' ? 'status-none' : 'status-fail');
+      // 状态样式：PASS/成功无结果 → 绿；无基线(空) → 红；其余(FAILED等) → 红
+      const statusCls = status === 'PASS' || status.indexOf('成功无结果') === 0
+        ? (status === 'PASS' ? 'status-pass' : 'status-success-nr')
+        : (status === '' ? 'status-none' : 'status-fail');
       const b = d.baselines || {};
       const bl = (key, sym) => b[key] != null ? `<br><span class="baseline-val">${sym}${b[key]}</span>` : '';
       const expandIcon = isLatest && items.length > 1
@@ -2225,10 +2323,13 @@ def collect_all_data():
         branch_dates = {"": {""}}
 
     # 同一 (用例, 分支, 日期) 可能来自多个数据源（.txt / accuracy 子目录 / eval 兜底），
-    # 合并去重：保留所有非 None 字段（字段级合并）
+    # 合并去重：保留所有非 None 字段（字段级合并）。
+    # key 必须包含 run_id / run_workflow：同一分支同一天可能有多个 CI run（不同 run_id），
+    # 若只用 (yaml_name, branch, date) 合并，后遍历的 run 会被先遍历的 run 覆盖而完全丢失。
     merged = {}
     for r in filtered:
-        key = (r.get("yaml_name", ""), r.get("branch", ""), r.get("date", ""))
+        key = (r.get("yaml_name", ""), r.get("branch", ""), r.get("date", ""),
+               r.get("run_id", ""), r.get("run_workflow", ""))
         if key in merged:
             for k, v in r.items():
                 if v is not None and merged[key].get(k) is None:
@@ -2338,7 +2439,9 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        """保存用例备注。请求体: {"yaml_name": "...", "note": "..."}"""
+        """保存某条执行结果的备注。
+        请求体: {"yaml_name": "...", "date": "...", "branch": "...", "run_id": "...", "note": "..."}
+        """
         if self.path == "/api/note":
             try:
                 # 可选鉴权：配置 NOTE_API_TOKEN 环境变量后，请求需在头 X-API-Token
@@ -2352,11 +2455,15 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                 data = json.loads(body)
                 yaml_name = str(data.get("yaml_name", "") or "").strip()
                 note = str(data.get("note", "") or "")
+                date = str(data.get("date", "") or "").strip()
+                branch = str(data.get("branch", "") or "").strip()
+                run_id = str(data.get("run_id", "") or "").strip()
                 if not yaml_name:
                     self._send_json({"ok": False, "error": "yaml_name is required"}, status=400)
                     return
-                ok = save_note(yaml_name, note)
-                self._send_json({"ok": ok, "yaml_name": yaml_name})
+                key = note_key_for(yaml_name, date, branch, run_id)
+                ok = save_note(key, note)
+                self._send_json({"ok": ok, "key": key})
             except Exception as e:
                 self._send_json({"ok": False, "error": str(e)}, status=400)
         else:
