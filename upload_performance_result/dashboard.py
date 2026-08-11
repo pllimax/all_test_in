@@ -332,18 +332,62 @@ def save_note(key, note_text):
             return False
 
 
+def clear_notes_for_case(yaml_name):
+    """删除某用例（yaml_name）的所有历史备注条目（纯键 + 复合键）。返回删除条数。"""
+    global _notes, _notes_dirty
+    with _notes_lock:
+        load_notes()
+        prefix = str(yaml_name or "").strip()
+        if not prefix:
+            return 0
+        removed = [k for k in _notes
+                   if k == prefix or k.startswith(prefix + NOTES_KEY_SEP)]
+        for k in removed:
+            _notes.pop(k, None)
+        try:
+            with open(_notes_path(), "w", encoding="utf-8") as f:
+                json.dump(_notes, f, ensure_ascii=False, indent=2)
+            _notes_dirty = True
+            return len(removed)
+        except Exception as e:
+            print(f"[notes] clear notes failed: {e}")
+            return 0
+
+
 def attach_notes(items):
-    """为每条数据附加 note 字段（按执行结果复合键匹配）。
-    兼容旧格式：历史 notes.json 以纯 yaml_name 为键（备注针对整个用例），
-    复合键未命中时回退到纯 yaml_name 键，避免历史备注丢失。
+    """为每条数据附加 note / note_date 字段（按执行结果复合键匹配）。
+
+    优先级：
+      1) 精确复合键命中 → 该执行结果自己的备注，note_date 为空（即当日备注）。
+      2) 未命中 → 回退到该用例（同 yaml_name）最新的历史备注：从所有复合键中
+         取日期（date）最大的一条作为默认备注，并附加其日期 note_date；
+         若该用例只有纯 yaml_name 历史键（无日期）则回退到该键且 note_date 为空。
     """
     notes = load_notes()
+    # 预构建 yaml_name → (date, note) 的最新历史备注映射（复合键，date 最大者）
+    latest_hist = {}
+    for k, v in notes.items():
+        parts = k.split(NOTES_KEY_SEP)
+        if len(parts) >= 2:
+            yaml_name = parts[0]
+            date = parts[1]
+            cur = latest_hist.get(yaml_name)
+            if cur is None or date > cur[0]:
+                latest_hist[yaml_name] = (date, v)
     for item in items:
         key = note_key_for_item(item)
         note = notes.get(key)
+        note_date = None
         if note is None:
-            note = notes.get(str(item.get("yaml_name", "") or ""), "")
+            yaml_name = str(item.get("yaml_name", "") or "")
+            hist = latest_hist.get(yaml_name)
+            if hist is not None:
+                note, note_date = hist[1], hist[0]
+            else:
+                note = notes.get(yaml_name, "")
         item["note"] = note or ""
+        if note_date:
+            item["note_date"] = note_date
     return items
 
 # Test cases to exclude from the dashboard
@@ -977,6 +1021,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .btn:hover { background: #2ea043; }
 .btn-reset { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
 .btn-reset:hover { background: #30363d; }
+.btn-danger { background: #21262d; color: #f85149; border: 1px solid #f85149; }
+.btn-danger:hover { background: #da3633; color: #fff; border-color: #da3633; }
 .table-container { padding: 0 24px 20px; }
 .table-container h3 { font-size: 14px; color: #8b949e; margin-bottom: 12px; }
 .table-wrap { overflow: auto; max-height: calc(100vh - 320px); min-height: 300px; border: 1px solid #30363d; border-radius: 8px; }
@@ -1009,6 +1055,7 @@ tr.selected:hover { background: #254070 !important; }
 .col-note { white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
 .note-cell { display: flex; align-items: flex-start; }
 .note-text { color: #e6edf3; font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; max-height: 2.8em; flex: 1; min-width: 0; }
+.note-date { color: #8b949e; font-size: 11px; flex-shrink: 0; margin-left: 4px; line-height: 1.4; white-space: nowrap; }
 .note-edit { cursor: pointer; color: #58a6ff; font-size: 12px; flex-shrink: 0; margin-right: 4px; line-height: 1.4; }
 .note-edit:hover { color: #79c0ff; }
 .chart-row td { padding: 0; background: #0d1117; }
@@ -1032,7 +1079,7 @@ th.col-tc-id { width: 224px; }
 td.col-tc-id { width: 224px; }
 th.col-script { width: 74px; }
 td.col-script { width: 74px; }
-th.col-note, td.col-note { width: 179px; }
+th.col-note, td.col-note { width: 220px; }
 th.col-baseline { width: 100px; }
 td.col-baseline { width: 100px; }
 /* 左侧元数据列锁定：横向滚动时固定不滚动（锁定到基线列，含基线） */
@@ -1144,9 +1191,12 @@ thead th.sticky-col { z-index: 5; }
     <div style="font-size:12px;color:#8b949e;margin-bottom:4px;word-break:break-all;" id="noteModalTc"></div>
     <div style="font-size:12px;color:#8b949e;margin-bottom:10px;" id="noteModalExec"></div>
     <textarea id="noteInput" rows="4" placeholder="输入该执行结果的备注..." style="width:100%;box-sizing:border-box;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:13px;"></textarea>
-    <div style="margin-top:10px;text-align:right;">
-      <button class="btn btn-reset" onclick="closeNoteEditor()">取消</button>
-      <button class="btn" onclick="saveNote()">保存</button>
+    <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
+      <button class="btn btn-danger" onclick="clearCaseNotes()">清理该用例所有历史备注</button>
+      <span>
+        <button class="btn btn-reset" onclick="closeNoteEditor()">取消</button>
+        <button class="btn" onclick="saveNote()">保存</button>
+      </span>
     </div>
   </div>
 </div>
@@ -1339,6 +1389,28 @@ async function saveNote() {
     }
   } catch (e) {
     alert('保存失败: ' + e);
+  }
+}
+
+// 一键清理该用例的所有历史备注（含纯键 + 所有复合键）
+async function clearCaseNotes() {
+  if (!_noteEditingTc) return;
+  if (!confirm(`确定清理用例「${_noteEditingTc}」的所有历史备注吗？此操作不可恢复。`)) return;
+  try {
+    const resp = await fetch('/api/notes/clear', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ yaml_name: _noteEditingTc })
+    });
+    const res = await resp.json();
+    if (res.ok) {
+      closeNoteEditor();
+      loadData(); // 重新拉取数据并刷新表格
+    } else {
+      alert('清理失败: ' + (res.error || '未知错误'));
+    }
+  } catch (e) {
+    alert('清理失败: ' + e);
   }
 }
 
@@ -1692,10 +1764,17 @@ function updateTable(data) {
   }
 
   // 渲染执行结果备注：显示文本 + 编辑按钮（点击弹窗编辑，备注按执行结果复合键对应该条记录）
+  // note_date 存在时表示该备注为回填的历史备注，额外显示其对应日期
   function fmtNote(d) {
     const note = d.note || '';
+    const noteDate = d.note_date || '';
     const editBtn = `<span class="note-edit" onclick="openNoteEditorFromRow('${d._id.replace(/'/g, "\\'")}','${d.date}','${d.branch || ''}','${d.run_id || ''}')" title="填写备注">✏️</span>`;
-    const text = note ? `<span class="note-text" title="${escHtml(note)}">${escHtml(note)}</span>` : '';
+    let text = '';
+    if (note) {
+      const tip = noteDate ? `${note}（${noteDate}）` : note;
+      const dateTag = noteDate ? `<span class="note-date">（${noteDate}）</span>` : '';
+      text = `<span class="note-text" title="${escHtml(tip)}">${escHtml(note)}</span>${dateTag}`;
+    }
     return `<span class="note-cell">${editBtn}${text}</span>`;
   }
 
@@ -2520,17 +2599,20 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
 
     def do_POST(self):
-        """保存某条执行结果的备注。
-        请求体: {"yaml_name": "...", "date": "...", "branch": "...", "run_id": "...", "note": "..."}
+        """保存/清理执行结果备注。
+        支持:
+          POST /api/note            保存一条备注 {"yaml_name","date","branch","run_id","note"}
+          POST /api/notes/clear     清理某用例的所有历史备注 {"yaml_name"}
         """
+        # 可选鉴权：配置 NOTE_API_TOKEN 环境变量后，请求需在头 X-API-Token
+        # 携带匹配 token；未配置时保持向后兼容（不校验）
+        if self.path in ("/api/note", "/api/notes/clear"):
+            expected_token = os.environ.get("NOTE_API_TOKEN", "")
+            if expected_token and self.headers.get("X-API-Token") != expected_token:
+                self._send_json({"ok": False, "error": "unauthorized"}, status=401)
+                return
         if self.path == "/api/note":
             try:
-                # 可选鉴权：配置 NOTE_API_TOKEN 环境变量后，请求需在头 X-API-Token
-                # 携带匹配 token；未配置时保持向后兼容（不校验）
-                expected_token = os.environ.get("NOTE_API_TOKEN", "")
-                if expected_token and self.headers.get("X-API-Token") != expected_token:
-                    self._send_json({"ok": False, "error": "unauthorized"}, status=401)
-                    return
                 length = int(self.headers.get("Content-Length", 0) or 0)
                 body = self.rfile.read(length).decode("utf-8") if length else "{}"
                 data = json.loads(body)
@@ -2545,6 +2627,19 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                 key = note_key_for(yaml_name, date, branch, run_id)
                 ok = save_note(key, note)
                 self._send_json({"ok": ok, "key": key})
+            except Exception as e:
+                self._send_json({"ok": False, "error": str(e)}, status=400)
+        elif self.path == "/api/notes/clear":
+            try:
+                length = int(self.headers.get("Content-Length", 0) or 0)
+                body = self.rfile.read(length).decode("utf-8") if length else "{}"
+                data = json.loads(body)
+                yaml_name = str(data.get("yaml_name", "") or "").strip()
+                if not yaml_name:
+                    self._send_json({"ok": False, "error": "yaml_name is required"}, status=400)
+                    return
+                removed = clear_notes_for_case(yaml_name)
+                self._send_json({"ok": True, "removed": removed})
             except Exception as e:
                 self._send_json({"ok": False, "error": str(e)}, status=400)
         else:
@@ -2997,6 +3092,14 @@ def _push_notes_to_git():
         )
         if r.returncode != 0 and "nothing to commit" not in r.stdout + r.stderr:
             print(f"[notes-git] commit failed: {r.stderr.strip()[:200]}")
+            return False
+        # 推送前先追平远端（同事的备注提交），避免 push 因远端已推进被拒绝
+        r = subprocess.run(
+            ["git", "pull", "--rebase", "--autostash", "origin", "main"],
+            cwd=repo_root, capture_output=True, text=True, timeout=120,
+        )
+        if r.returncode != 0:
+            print(f"[notes-git] pull --rebase failed: {r.stderr.strip()[:200]}")
             return False
         r = subprocess.run(
             ["git", "push", "origin", "HEAD"], cwd=repo_root,
