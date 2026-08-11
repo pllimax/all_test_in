@@ -27,6 +27,11 @@ GIT_REPO="${GIT_REPO:-https://github.com/pllimax/all_test_in.git}"
 GIT_TARGET_PATH="${GIT_TARGET_PATH:-upload_performance_result/metrics/sglang}"
 GIT_LOCAL_DIR="${GIT_LOCAL_DIR:-}"
 BRANCH="${BRANCH:-}"
+# 提交身份：固定为 pllimax（数据仓 pllimax/all_test_in），
+# 避免 CI 机器全局 git 配置为其他账号导致提交作者不是 pllimax。
+# 可用环境变量覆盖，但默认值固化 pllimax。
+GIT_USER_NAME="${GIT_USER_NAME:-pllimax}"
+GIT_USER_EMAIL="${GIT_USER_EMAIL:-pllimax2556769@163.com}"
 
 # ============================================================
 # 参数解析
@@ -509,6 +514,14 @@ fi
 # 确保目标路径存在
 mkdir -p "${GIT_LOCAL_DIR}/${GIT_TARGET_PATH}"
 
+# 固化提交身份为 pllimax（仅作用于数据仓本地，不影响全局配置）。
+# 必须在提交前设置：clone 出来的仓库会继承 CI 机器全局 user.name/email，
+# 若不覆盖则提交作者可能是其他账号。
+cd "${GIT_LOCAL_DIR}"
+git config user.name "${GIT_USER_NAME}"
+git config user.email "${GIT_USER_EMAIL}"
+echo "提交身份: ${GIT_USER_NAME} <${GIT_USER_EMAIL}>"
+
 # 仅上传本次实际收集的文件（清单驱动）：
 # 1) 未在本次收集的旧文件不会推送，避免把 CI 机器上旧内容回退到 git 仓库的新提交上
 # 2) 不使用 --delete，避免删除 Git 仓库中已存在但本地 SCRIPT_DIR 缺失的历史数据
@@ -558,6 +571,9 @@ else
             rm -rf "${GIT_LOCAL_DIR}"
             git clone --depth=1 "${GIT_REPO}" "${GIT_LOCAL_DIR}" || exit 1
             cd "${GIT_LOCAL_DIR}"
+            # 重新克隆后需重新固化提交身份
+            git config user.name "${GIT_USER_NAME}"
+            git config user.email "${GIT_USER_EMAIL}"
             _copy_upload_files
             git add "${GIT_TARGET_PATH}/"
             git commit -m "update metrics data - ${DATES[0]}~${DATES[-1]}" || true
