@@ -140,7 +140,6 @@ if [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
     done
     # 升序排列
     IFS=$'\n' DATES=($(sort <<<"${DATES[*]}")); unset IFS
-    echo "自动模式: 收集 ${DATES[0]} ~ ${DATES[-1]} 共 ${#DATES[@]} 天数据"
 else
     DATES=("${SPECIFIED_DATES[@]}")
 fi
@@ -207,7 +206,19 @@ fi
 if [ -n "${BRANCH:-}" ] && [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
     AUTO_MODE=false
     DATES=("$(date +%Y%m%d)")
-    echo "分支模式: 取消自动日期循环，仅收集一次（文件名日期标记: ${DATES[0]}）"
+fi
+
+# 收集模式提示（统一在最终日期确定后打印，避免分支模式误显示"自动模式"）
+if [ -n "${BRANCH:-}" ]; then
+    if [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
+        echo "分支模式: 取消自动日期循环，仅收集一次（文件名日期标记: ${DATES[0]}）"
+    else
+        echo "分支模式: 指定日期收集（文件名日期标记: ${DATES[*]}）"
+    fi
+elif [ "$AUTO_MODE" = true ]; then
+    echo "自动模式: 收集 ${DATES[0]} ~ ${DATES[-1]} 共 ${#DATES[@]} 天数据"
+else
+    echo "指定日期: 收集 ${DATES[*]}"
 fi
 
 # ============================================================

@@ -19,6 +19,12 @@ import shutil
 from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, GIT_PULL_ENABLED, GIT_METRICS_DIR, get_metrics_dir, _iter_metrics_files, PERF_ONLY_FIELDS
 
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
+# 默认仅监听本机回环地址，避免在共享网络中意外暴露性能数据与备注接口；
+# 需要对外提供时显式设置 DASHBOARD_HOST=0.0.0.0（并建议配置 NOTE_API_TOKEN）。
+DASHBOARD_HOST = os.environ.get("DASHBOARD_HOST", "127.0.0.1")
+# API 响应 CORS 来源：默认空（不发送 CORS 头，同源访问不受影响）；
+# 需允许其它前端跨域访问时显式配置，例如 DASHBOARD_CORS_ORIGIN=https://example.com
+DASHBOARD_CORS_ORIGIN = os.environ.get("DASHBOARD_CORS_ORIGIN", "")
 
 # ============================================================
 # 受管源码仓缓存目录（方案A）
@@ -62,6 +68,7 @@ SUITE_REGISTRY_SUBDIR = "test/registered/npu"
 _suite_case_map = None       # {suite: [case_name, ...]}
 _case_suite_map = None       # {case_name: suite}
 _suite_map_ts = 0.0
+_suite_map_lock = threading.RLock()  # 保护 suite 映射缓存的并发读写
 
 
 def get_config_paths():
@@ -388,6 +395,7 @@ def parse_test_script_baselines(filepath):
 BASELINES_CACHE_TTL = 600  # 秒
 _baselines_cache = None
 _baselines_cache_ts = 0.0
+_baselines_lock = threading.RLock()  # 保护基线缓存的并发读写
 
 
 def collect_baselines(force=False):
@@ -397,8 +405,9 @@ def collect_baselines(force=False):
     """
     global _baselines_cache, _baselines_cache_ts
     now = time.time()
-    if not force and _baselines_cache is not None and (now - _baselines_cache_ts) < BASELINES_CACHE_TTL:
-        return _baselines_cache
+    with _baselines_lock:
+        if not force and _baselines_cache is not None and (now - _baselines_cache_ts) < BASELINES_CACHE_TTL:
+            return _baselines_cache
 
     results = {}
     for category in ["performance", "accuracy"]:
@@ -417,8 +426,9 @@ def collect_baselines(force=False):
                         if test_case_name not in results:
                             results[test_case_name] = {}
                         results[test_case_name].update(baselines)
-    _baselines_cache = results
-    _baselines_cache_ts = time.time()
+    with _baselines_lock:
+        _baselines_cache = results
+        _baselines_cache_ts = time.time()
     return results
 
 
@@ -432,6 +442,7 @@ def collect_baselines(force=False):
 SCRIPT_URLS_CACHE_TTL = 600  # 秒
 _script_urls_cache = {}
 _script_urls_cache_ts = 0.0
+_script_urls_lock = threading.RLock()  # 保护脚本链接缓存的并发读写
 
 
 def _normalize_web_url(url):
@@ -487,8 +498,9 @@ def collect_script_urls(force=False):
     """
     global _script_urls_cache, _script_urls_cache_ts
     now = time.time()
-    if not force and _script_urls_cache and (now - _script_urls_cache_ts) < SCRIPT_URLS_CACHE_TTL:
-        return _script_urls_cache
+    with _script_urls_lock:
+        if not force and _script_urls_cache and (now - _script_urls_cache_ts) < SCRIPT_URLS_CACHE_TTL:
+            return _script_urls_cache
 
     results = {}
     for src_name, src_cfg in SOURCES.items():
@@ -515,8 +527,9 @@ def collect_script_urls(force=False):
                     url = f"{web_base}/blob/{branch}/{rel_path}"
                     results.setdefault(script_name, {})[src_name] = url
 
-    _script_urls_cache = results
-    _script_urls_cache_ts = time.time()
+    with _script_urls_lock:
+        _script_urls_cache = results
+        _script_urls_cache_ts = time.time()
     return results
 
 
@@ -642,6 +655,7 @@ _jobs_failed_ts = {}   # {(repo, run_id): 最近一次失败时间（退避用�
 _jobs_pending = set()  # 待后台抓取的 (repo, run_id)
 _jobs_refresh_started = False
 _jobs_fetch_logged = {}
+_jobs_lock = threading.RLock()  # 保护 jobs 缓存系列变量的并发读写
 
 
 def _github_token():
@@ -671,32 +685,44 @@ def _fetch_run_jobs(repo, run_id):
     }
     if token:
         headers["Authorization"] = f"Bearer {token}"
-    url = f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=100"
+    result = {}
+    # GitHub API 单页上限 100 且默认返回第一页；run 的 job 数可能超过 100
+    # （大规模 nightly 全套测试），需按 page 循环抓取避免数据丢失。
+    per_page = 100
+    max_pages = 20  # 上限 2000 个 job，足够覆盖所有真实场景，防止异常死循环
     try:
-        req = urllib.request.Request(url, headers=headers)
-        with urllib.request.urlopen(req, timeout=JOBS_API_TIMEOUT) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
+        for page in range(1, max_pages + 1):
+            url = (
+                f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs"
+                f"?per_page={per_page}&page={page}"
+            )
+            req = urllib.request.Request(url, headers=headers)
+            with urllib.request.urlopen(req, timeout=JOBS_API_TIMEOUT) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+            jobs = data.get("jobs", [])
+            for job in jobs:
+                name = job.get("name", "")
+                job_id = job.get("id")
+                if not name or job_id is None:
+                    continue
+                # 保存 status/conclusion，用于区分「已执行但失败」与「尚未执行」
+                job_info = {
+                    "job_id": str(job_id),
+                    "name": name,
+                    "status": str(job.get("status", "") or ""),
+                    "conclusion": str(job.get("conclusion", "") or ""),
+                }
+                for case in _extract_case_names(name):
+                    result[case] = job_info
+            # 本页未满 100 个说明没有下一页，提前退出
+            if len(jobs) < per_page:
+                break
     except Exception as e:
         key = (repo, run_id)
         if _jobs_fetch_logged.get(key) != str(e):
             _jobs_fetch_logged[key] = str(e)
             print(f"[jobs] fetch failed for {repo}/{run_id}: {e}")
         return None
-    result = {}
-    for job in data.get("jobs", []):
-        name = job.get("name", "")
-        job_id = job.get("id")
-        if not name or job_id is None:
-            continue
-        # 保存 status/conclusion，用于区分「已执行但失败」与「尚未执行」
-        job_info = {
-            "job_id": str(job_id),
-            "name": name,
-            "status": str(job.get("status", "") or ""),
-            "conclusion": str(job.get("conclusion", "") or ""),
-        }
-        for case in _extract_case_names(name):
-            result[case] = job_info
     return result
 
 
@@ -768,23 +794,27 @@ def fetch_run_jobs_for_items(items):
         repo = _web_base_to_repo(run_url)
         if repo and run_id:
             pairs[(repo, run_id)] = True
-    for p in pairs:
-        cached = _jobs_cache.get(p)
-        if cached is None:
-            # 未缓存：失败退避后重试
-            last_fail = _jobs_failed_ts.get(p, 0)
-            if now - last_fail >= JOBS_RETRY_INTERVAL:
-                _jobs_pending.add(p)
-        elif _has_incomplete_jobs(cached):
-            # 存在执行中的 job：超过刷新间隔后重新抓取，保证状态更新
-            # 同时尊重失败退避，避免持续失败导致高频重试
-            last_ts = _jobs_cache_ts.get(p, 0)
-            last_fail = _jobs_failed_ts.get(p, 0)
-            if now - last_ts >= JOBS_REFRESH_INTERVAL and now - last_fail >= JOBS_RETRY_INTERVAL:
-                _jobs_pending.add(p)
-        # 全部终态：保持缓存，不重复请求
+    # 加锁保护缓存的读取与任务入队，避免与后台抓取线程产生竞态
+    with _jobs_lock:
+        for p in pairs:
+            cached = _jobs_cache.get(p)
+            if cached is None:
+                # 未缓存：失败退避后重试
+                last_fail = _jobs_failed_ts.get(p, 0)
+                if now - last_fail >= JOBS_RETRY_INTERVAL:
+                    _jobs_pending.add(p)
+            elif _has_incomplete_jobs(cached):
+                # 存在执行中的 job：超过刷新间隔后重新抓取，保证状态更新
+                # 同时尊重失败退避，避免持续失败导致高频重试
+                last_ts = _jobs_cache_ts.get(p, 0)
+                last_fail = _jobs_failed_ts.get(p, 0)
+                if now - last_ts >= JOBS_REFRESH_INTERVAL and now - last_fail >= JOBS_RETRY_INTERVAL:
+                    _jobs_pending.add(p)
+            # 全部终态：保持缓存，不重复请求
     _ensure_jobs_thread()
-    return _jobs_cache
+    # 返回快照，避免外部调用方在后台线程更新缓存时遍历被修改的字典
+    with _jobs_lock:
+        return {k: dict(v) for k, v in _jobs_cache.items()}
 
 
 def _has_incomplete_jobs(jobs):
@@ -799,9 +829,10 @@ def _has_incomplete_jobs(jobs):
 def _ensure_jobs_thread():
     """确保后台 jobs 刷新线程已启动（单次）。"""
     global _jobs_refresh_started
-    if _jobs_refresh_started:
-        return
-    _jobs_refresh_started = True
+    with _jobs_lock:
+        if _jobs_refresh_started:
+            return
+        _jobs_refresh_started = True
     t = threading.Thread(target=_jobs_refresh_worker, daemon=True)
     t.start()
 
@@ -813,15 +844,20 @@ def _jobs_refresh_worker():
     global _jobs_cache
     while True:
         try:
-            if _jobs_pending:
-                p = _jobs_pending.pop()
+            p = None
+            # 锁内取任务，锁外执行网络请求，避免长时间持锁
+            with _jobs_lock:
+                if _jobs_pending:
+                    p = _jobs_pending.pop()
+            if p is not None:
                 fetched = _fetch_run_jobs(p[0], p[1])
-                if fetched is not None:
-                    _jobs_cache[p] = fetched
-                    _jobs_cache_ts[p] = time.time()
-                    _jobs_failed_ts.pop(p, None)
-                else:
-                    _jobs_failed_ts[p] = time.time()
+                with _jobs_lock:
+                    if fetched is not None:
+                        _jobs_cache[p] = fetched
+                        _jobs_cache_ts[p] = time.time()
+                        _jobs_failed_ts.pop(p, None)
+                    else:
+                        _jobs_failed_ts[p] = time.time()
         except Exception as e:
             print(f"[jobs] worker error: {e}")
         time.sleep(2)
@@ -830,18 +866,22 @@ def _jobs_refresh_worker():
 def force_refresh_jobs():
     """启动时清空 jobs 缓存，让后台线程对当前数据重新抓取。"""
     global _jobs_cache
-    _jobs_cache = {}
-    _jobs_cache_ts.clear()
-    _jobs_failed_ts.clear()
+    with _jobs_lock:
+        _jobs_cache = {}
+        _jobs_cache_ts.clear()
+        _jobs_failed_ts.clear()
     return _jobs_cache
 
 _nnodes_cache = {}
+_nnodes_lock = threading.RLock()  # 保护 nnodes 缓存
+
 
 def _get_nnodes_from_script(yaml_name):
     """Read the test script for a given yaml_name and return the nnodes value.
     Returns 1 if not found or not configured."""
-    if yaml_name in _nnodes_cache:
-        return _nnodes_cache[yaml_name]
+    with _nnodes_lock:
+        if yaml_name in _nnodes_cache:
+            return _nnodes_cache[yaml_name]
     test_file = "test_npu_" + yaml_name + ".py"
     for test_scripts_root in TEST_SCRIPTS_ROOTS:
         for root, _, files in os.walk(test_scripts_root):
@@ -860,12 +900,14 @@ def _get_nnodes_from_script(yaml_name):
                         val = min(nnodes_vals)
                     else:
                         val = 1  # Not configured, default to 1
-                    _nnodes_cache[yaml_name] = val
+                    with _nnodes_lock:
+                        _nnodes_cache[yaml_name] = val
                     return val
                 except Exception:
                     pass
                 break
-    _nnodes_cache[yaml_name] = 1
+    with _nnodes_lock:
+        _nnodes_cache[yaml_name] = 1
     return 1
 
 def compute_topology_info(yaml_name):
@@ -917,8 +959,8 @@ HTML_TEMPLATE = r"""<!DOCTYPE html>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SGLang Benchmark 性能分析平台</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="__CHART_JS_SRC__"></script>
+<script src="__XLSX_SRC__"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; }
@@ -2382,17 +2424,42 @@ def collect_all_data():
 # 加 TTL 缓存避免每次请求全量重扫 metrics 目录与解析 YAML。
 DATA_CACHE_TTL = 30  # 秒
 _data_cache = {"ts": 0, "payload": None}
+_data_lock = threading.RLock()  # 保护 /api/data 结果缓存的并发读写
 
 
 def _get_data():
-    now = time.time()
-    if _data_cache["payload"] is None or now - _data_cache["ts"] >= DATA_CACHE_TTL:
-        _data_cache["payload"] = collect_all_data()
-        _data_cache["ts"] = now
-    payload = _data_cache["payload"]
-    # 附加用例备注（每次请求都刷新，保证保存后立即可见）
-    attach_notes(payload)
-    return payload
+    # 加锁保证并发请求下缓存只被构建一次，且 attach_notes 对共享
+    # payload 的修改串行化，避免多个线程同时写 item["note"] 的竞态
+    with _data_lock:
+        now = time.time()
+        if _data_cache["payload"] is None or now - _data_cache["ts"] >= DATA_CACHE_TTL:
+            _data_cache["payload"] = collect_all_data()
+            _data_cache["ts"] = now
+        payload = _data_cache["payload"]
+        # 附加用例备注（每次请求都刷新，保证保存后立即可见）
+        attach_notes(payload)
+        return payload
+
+
+# ============================================================
+# 前端静态资源：优先本地 vendored 文件（内网可用），缺失时回退 CDN。
+# vendor 文件位于本文件同目录的 static/ 下（chart.js / xlsx）。
+# ============================================================
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+CDN_CHART_JS = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+CDN_XLSX = "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"
+# 允许通过静态服务提供的白名单文件（防路径穿越）
+STATIC_ALLOWLIST = {
+    "chart.umd.min.js",
+    "xlsx.full.min.js",
+}
+
+
+def _asset_url(filename, cdn_url):
+    """返回资源 URL：本地 static/ 存在则用相对路径，否则回退到 CDN。"""
+    if filename in STATIC_ALLOWLIST and os.path.isfile(os.path.join(STATIC_DIR, filename)):
+        return f"/static/{filename}"
+    return cdn_url
 
 
 class DashboardHandler(http.server.BaseHTTPRequestHandler):
@@ -2401,7 +2468,30 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
+        if DASHBOARD_CORS_ORIGIN:
+            self.send_header("Access-Control-Allow-Origin", DASHBOARD_CORS_ORIGIN)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _serve_static(self, filename):
+        """安全地提供 static/ 下的白名单静态资源（防目录穿越）。"""
+        filename = os.path.basename(filename or "")
+        if filename not in STATIC_ALLOWLIST:
+            self.send_response(404)
+            self.end_headers()
+            return
+        path = os.path.join(STATIC_DIR, filename)
+        if not os.path.isfile(path):
+            self.send_response(404)
+            self.end_headers()
+            return
+        content_type = "application/javascript; charset=utf-8"
+        with open(path, "rb") as f:
+            body = f.read()
+        self.send_response(200)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Cache-Control", "public, max-age=3600")
         self.end_headers()
         self.wfile.write(body)
 
@@ -2410,7 +2500,14 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
+            html = HTML_TEMPLATE.replace(
+                "__CHART_JS_SRC__", _asset_url("chart.umd.min.js", CDN_CHART_JS)
+            ).replace(
+                "__XLSX_SRC__", _asset_url("xlsx.full.min.js", CDN_XLSX)
+            )
+            self.wfile.write(html.encode("utf-8"))
+        elif self.path.startswith("/static/"):
+            self._serve_static(self.path[len("/static/"):])
         elif self.path == "/api/data":
             data = _get_data()
             self._send_json(data)
@@ -2721,8 +2818,9 @@ def sync_suite_registry():
                     _remove_dir_force(repo_root)
                     return
 
-        _suite_case_map, _case_suite_map = _build_suite_maps_from_registry(repo_root)
-        _suite_map_ts = time.time()
+        with _suite_map_lock:
+            _suite_case_map, _case_suite_map = _build_suite_maps_from_registry(repo_root)
+            _suite_map_ts = time.time()
         n_suites = len(_suite_case_map) if _suite_case_map else 0
         print(f"[suite] 构建 suite→用例 映射完成: {n_suites} 个 suite")
     except Exception as e:
@@ -2787,16 +2885,17 @@ def _build_suite_maps_from_registry(repo_root):
 def get_case_suite_map():
     """返回用例 → suite 映射（懒构建，未同步时尝试本地已缓存映射）。"""
     global _suite_case_map, _case_suite_map, _suite_map_ts
-    if _case_suite_map is None:
-        # 尝试从本地缓存目录直接解析（无需网络）
-        try:
-            repo_root = SUITE_REGISTRY_CACHE_DIR
-            if os.path.isdir(os.path.join(repo_root, ".git")):
-                _suite_case_map, _case_suite_map = _build_suite_maps_from_registry(repo_root)
-                _suite_map_ts = time.time()
-        except Exception:
-            _case_suite_map = {}
-    return _case_suite_map or {}
+    with _suite_map_lock:
+        if _case_suite_map is None:
+            # 尝试从本地缓存目录直接解析（无需网络）
+            try:
+                repo_root = SUITE_REGISTRY_CACHE_DIR
+                if os.path.isdir(os.path.join(repo_root, ".git")):
+                    _suite_case_map, _case_suite_map = _build_suite_maps_from_registry(repo_root)
+                    _suite_map_ts = time.time()
+            except Exception:
+                _case_suite_map = {}
+        return _case_suite_map or {}
 
 
 def _match_job_for_case_with_suite(case_key, jobs, case_suite_map):
@@ -2827,14 +2926,16 @@ def _match_job_for_case_with_suite(case_key, jobs, case_suite_map):
 
 
 _sync_thread_started = False
+_sync_thread_lock = threading.RLock()  # 保护 sync 线程启动标志
 
 
 def _ensure_sync_thread():
     """确保后台周期同步线程已启动（单次）。"""
     global _sync_thread_started
-    if _sync_thread_started:
-        return
-    _sync_thread_started = True
+    with _sync_thread_lock:
+        if _sync_thread_started:
+            return
+        _sync_thread_started = True
     t = threading.Thread(target=_sync_worker, daemon=True)
     t.start()
 
@@ -2859,6 +2960,7 @@ def _sync_worker():
 # 未配置 git / push 失败时静默跳过（本地 notes.json 始终已持久化）。
 # ============================================================
 _notes_git_thread_started = False
+_notes_git_thread_lock = threading.RLock()  # 保护 notes git 线程启动标志
 
 
 def _git_repo_root():
@@ -2923,9 +3025,10 @@ def _notes_git_worker():
 def _ensure_notes_git_thread():
     """确保备注 git 持久化线程已启动（单次）。"""
     global _notes_git_thread_started
-    if _notes_git_thread_started:
-        return
-    _notes_git_thread_started = True
+    with _notes_git_thread_lock:
+        if _notes_git_thread_started:
+            return
+        _notes_git_thread_started = True
     t = threading.Thread(target=_notes_git_worker, daemon=True)
     t.start()
 
@@ -2950,8 +3053,8 @@ def start_dashboard():
         print(f"[startup] Notes git persistence enabled (every {NOTES_GIT_INTERVAL}s)")
         _ensure_notes_git_thread()
     print("=" * 60)
-    server = socketserver.ThreadingTCPServer(("0.0.0.0", DASHBOARD_PORT), DashboardHandler)
-    print(f"Dashboard running at http://localhost:{DASHBOARD_PORT}")
+    server = socketserver.ThreadingTCPServer((DASHBOARD_HOST, DASHBOARD_PORT), DashboardHandler)
+    print(f"Dashboard running at http://{DASHBOARD_HOST}:{DASHBOARD_PORT}")
     server.serve_forever()
 
 
