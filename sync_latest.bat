@@ -1,6 +1,5 @@
 @echo off
-rem 一键同步最新代码 - 双击运行
-chcp 65001 >nul
+rem One-click sync latest code. Double-click to run.
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0sync_latest.ps1"
 echo.
 pause
