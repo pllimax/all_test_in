@@ -1,0 +1,19 @@
+# 本地覆盖配置模板（git-ignored，勿提交）
+#
+# 用法:
+#   1. 复制本文件为同目录下的 collect_metrics.local.conf
+#   2. 在 collect_metrics.local.conf 中填入真实 GIT_TOKEN
+#   3. collect_metrics.sh 启动时会自动加载 collect_metrics.local.conf
+#
+# 说明:
+#   - collect_metrics.local.conf 已被 .gitignore 忽略，不会被提交到仓库，
+#     因此可安全存放 token 等敏感信息。
+#   - 未配置 GIT_TOKEN 时，脚本按 GIT_REPO（默认 https）直连，公开仓可直接 clone。
+#   - 命令行/环境变量仍可覆盖此处设置。
+
+# 本地 git 提交身份（可选，默认 pllimax）
+#GIT_USER_NAME="pllimax"
+#GIT_USER_EMAIL="pllimax2556769@163.com"
+
+# 推送认证 token（填入真实 GitHub PAT；git-ignored，勿提交）
+#GIT_TOKEN="ghp_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

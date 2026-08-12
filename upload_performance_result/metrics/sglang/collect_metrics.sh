@@ -40,6 +40,17 @@ GIT_USER_NAME="${GIT_USER_NAME:-pllimax}"
 GIT_USER_EMAIL="${GIT_USER_EMAIL:-pllimax2556769@163.com}"
 
 # ============================================================
+# 本地覆盖配置（git-ignored，不入库）
+# 可在此文件设置 GIT_TOKEN 等敏感信息，避免在公开仓库提交 token。
+# 在此设置的值覆盖内置默认；命令行/环境变量仍可覆盖。
+# ============================================================
+_LOCAL_CFG="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/collect_metrics.local.conf"
+if [ -f "${_LOCAL_CFG}" ]; then
+    source "${_LOCAL_CFG}"
+    echo "已加载本地覆盖配置: ${_LOCAL_CFG}"
+fi
+
+# ============================================================
 # 参数解析
 # ============================================================
 SPECIFIED_DATES=()
@@ -568,6 +579,17 @@ echo "=============================="
 echo ""
 echo "========== 开始上传到 Git =========="
 
+# 构造带认证的克隆地址：配置了 GIT_TOKEN 时内嵌到 HTTPS URL（不回显 token）。
+# 未配置 token 时 GIT_CLONE_URL 与 GIT_REPO 相同（公开仓可直接 clone）。
+if [ -n "${GIT_TOKEN:-}" ]; then
+    case "${GIT_REPO}" in
+        https://*) GIT_CLONE_URL="https://oauth2:${GIT_TOKEN}@${GIT_REPO#https://}" ;;
+        *)         GIT_CLONE_URL="${GIT_REPO}" ;;
+    esac
+else
+    GIT_CLONE_URL="${GIT_REPO}"
+fi
+
 # 克隆或更新仓库
 if [ -d "${GIT_LOCAL_DIR}/.git" ]; then
     echo "更新已有仓库..."
@@ -581,13 +603,13 @@ if [ -d "${GIT_LOCAL_DIR}/.git" ]; then
         echo "增量更新失败，正在重新克隆仓库..."
         cd /
         rm -rf "${GIT_LOCAL_DIR}"
-        git clone --depth=1 "${GIT_REPO}" "${GIT_LOCAL_DIR}"
+        git clone --depth=1 "${GIT_CLONE_URL}" "${GIT_LOCAL_DIR}"
         echo "重新克隆完成"
     fi
 else
     echo "克隆仓库..."
     rm -rf "${GIT_LOCAL_DIR}"
-    git clone --depth=1 "${GIT_REPO}" "${GIT_LOCAL_DIR}"
+    git clone --depth=1 "${GIT_CLONE_URL}" "${GIT_LOCAL_DIR}"
 fi
 
 # 确保目标路径存在
@@ -648,7 +670,7 @@ else
             echo "警告: rebase 冲突（远端存在并发更新），重新克隆后重放本次收集文件..."
             cd /
             rm -rf "${GIT_LOCAL_DIR}"
-            git clone --depth=1 "${GIT_REPO}" "${GIT_LOCAL_DIR}" || exit 1
+            git clone --depth=1 "${GIT_CLONE_URL}" "${GIT_LOCAL_DIR}" || exit 1
             cd "${GIT_LOCAL_DIR}"
             # 重新克隆后需重新固化提交身份
             git config user.name "${GIT_USER_NAME}"
