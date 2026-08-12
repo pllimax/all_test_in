@@ -639,6 +639,11 @@ else
     git clone --depth=1 "${GIT_CLONE_URL}" "${GIT_LOCAL_DIR}"
 fi
 
+# 确保 origin 指向带认证地址（token 内嵌），使后续 fetch/push 不再要求输入账号。
+# 兼容旧克隆：旧版本克隆/更新出来的 origin 可能是无 token 的 https 地址。
+cd "${GIT_LOCAL_DIR}"
+git remote set-url origin "${GIT_CLONE_URL}"
+
 # 确保目标路径存在
 mkdir -p "${GIT_LOCAL_DIR}/${GIT_TARGET_PATH}"
 
