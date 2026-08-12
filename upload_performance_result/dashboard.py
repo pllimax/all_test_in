@@ -1617,7 +1617,8 @@ function onFilterChange() {
         const hasSuccessNoResult = items.some(d => isSuccessNoResult(d));
         // 成功(无结果) 视为通过：勾选 PASS 时保留
         if (statusFilter.includes('PASS') && (status === 'PASS' || hasSuccessNoResult)) keepIds.add(id);
-        if (statusFilter.includes('FAILED') && (status === 'FAILED' || status.endsWith('(无结果)'))) keepIds.add(id);
+        // FAILED 过滤：排除「成功(无结果)」（其以"(无结果)"结尾，但仍属通过），仅保留真正失败/执行失败/执行中/未执行/缺省
+        if (statusFilter.includes('FAILED') && (status === 'FAILED' || (status.endsWith('(无结果)') && !status.startsWith('成功')))) keepIds.add(id);
       });
     filtered = filtered.filter(d => keepIds.has(d._id));
   }
@@ -2007,7 +2008,7 @@ function exportToExcel() {
         const status = getTestCaseStatus(items);
         const hasSuccessNoResult = items.some(d => isSuccessNoResult(d));
         const keep = (statusVals.includes('PASS') && (status === 'PASS' || hasSuccessNoResult)) ||
-                     (statusVals.includes('FAILED') && (status === 'FAILED' || status.endsWith('(无结果)')));
+                     (statusVals.includes('FAILED') && (status === 'FAILED' || (status.endsWith('(无结果)') && !status.startsWith('成功')))));
         if (!keep) return;
       }
       rows.push(items[items.length - 1]);
