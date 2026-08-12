@@ -27,6 +27,10 @@ SRC_BASE="${SRC_BASE:-/data/ascend-ci-share-pkking-sglang/tests/output}"
 #   logs:   LOG_BASE/{branch}-{date}-{run_id}-{attempt}/{workflow}/test_npu_*/
 # 仅当指定 --branch 时拉取其中 test_npu_* 多机用例的完整日志
 LOG_BASE="${LOG_BASE:-/data/ascend-ci-share-pkking-sglang/tests/logs/log}"
+# 是否拉取多机用例完整日志（仅 --branch 时生效）。
+# 多机日志量大、拷贝耗时长，CI 机器上易超时；可设 false 或 --no-collect-logs 关闭。
+# 可用环境变量/本地配置(collect_metrics.local.conf)覆盖。
+COLLECT_LOGS="${COLLECT_LOGS:-true}"
 # 默认使用 HTTPS（与 prometheus_exporter.py 默认一致，公开仓可直接 clone）；
 # 私有仓推送请通过 GIT_REPO 环境变量或 --git-repo 指定带凭据地址（如 git@github.com:org/repo.git）
 GIT_REPO="${GIT_REPO:-https://github.com/pllimax/all_test_in.git}"
@@ -81,6 +85,14 @@ while [[ $# -gt 0 ]]; do
             BRANCH="$2"
             shift 2
             ;;
+        --collect-logs)
+            COLLECT_LOGS=true
+            shift
+            ;;
+        --no-collect-logs)
+            COLLECT_LOGS=false
+            shift
+            ;;
         --help|-h)
             echo "用法: $0 [选项] [日期...]"
             echo ""
@@ -100,6 +112,8 @@ while [[ $# -gt 0 ]]; do
             echo "                        如 --branch pllimax 匹配所有以 pllimax 开头的目录"
             echo "                        (即 pllimax 仓下所有分支的 CI 任务)"
             echo "                        分支模式下结果按 CI 目录名({branch}-{date}-{run_id}-{attempt})/workflow目录 存放，不使用日期"
+            echo "  --collect-logs        拉取多机用例完整日志（默认开启，仅 --branch 时生效）"
+            echo "  --no-collect-logs     不拉取多机用例完整日志（多机日志量大、拷贝耗时长，易超时）"
             echo "  --help, -h            显示此帮助信息"
             echo ""
             echo "收集内容:"
@@ -107,6 +121,7 @@ while [[ $# -gt 0 ]]; do
             echo "  2) 精度结果: eval_log.log（存为 {用例名}__{日期}.log，目录加 /eval）"
             echo "  3) 多机用例日志: 仅 --branch 模式下从 LOG_BASE 拉取 test_npu_* 完整日志目录"
             echo "     （目录加 /logs，按 {LOG_BASE}/{目录名}/{workflow}/test_npu_*/ 源目录结构存放）"
+            echo "     可用 --no-collect-logs 或 COLLECT_LOGS=false 关闭（日志量大易超时）"
             echo "  兼容新旧 CI 目录结构（新结构含 suite/timestamp，旧结构按日期目录）"
             echo ""
             echo "环境变量:"
@@ -116,6 +131,7 @@ while [[ $# -gt 0 ]]; do
             echo "  GIT_TARGET_PATH       Git仓库中的目标路径"
             echo "  GIT_LOCAL_DIR         Git本地临时目录"
             echo "  BRANCH                仅收集指定分支"
+            echo "  COLLECT_LOGS          是否拉取多机用例完整日志 (true/false，默认 true)"
             echo ""
             echo "示例:"
             echo "  $0                        # 自动收集今天及前3天"
@@ -123,6 +139,7 @@ while [[ $# -gt 0 ]]; do
             echo "  $0 20260716 20260717 20260718   # 多个日期轮流执行"
             echo "  $0 --branch pllimax                      # 前缀匹配，收集 pllimax 仓所有分支任务"
             echo "  $0 --branch pllimax 20260727             # 前缀匹配 + 日期过滤"
+            echo "  $0 --branch pllimax --no-collect-logs    # 分支模式但不拉取多机日志（防超时）"
             echo "  SRC_BASE=/custom/path $0 20260716"
             echo "  $0 --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716"
             echo "  $0 --log-base /custom/logs --branch pllimax   # 分支模式并指定多机日志目录"
@@ -255,6 +272,11 @@ echo "源目录基础路径: ${SRC_BASE}"
 if [ -n "${BRANCH:-}" ]; then
     echo "分支筛选:       ${BRANCH} (${#SEARCH_ROOTS[@]} 个任务目录)"
     echo "多机日志基础:   ${LOG_BASE} (仅拉取 test_npu_* 完整日志)"
+    if [ "${COLLECT_LOGS}" = true ]; then
+        echo "多机日志收集:   开启"
+    else
+        echo "多机日志收集:   关闭 (--no-collect-logs 或 COLLECT_LOGS=false)"
+    fi
 fi
 echo "Git仓库:        ${GIT_REPO}"
 echo "Git目标路径:    ${GIT_TARGET_PATH}"
@@ -522,7 +544,7 @@ done
 # ============================================================
 TOTAL_LOG_COUNT=0
 
-if [ -n "${BRANCH:-}" ]; then
+if [ -n "${BRANCH:-}" ] && [ "${COLLECT_LOGS}" = true ]; then
     echo ""
     echo "========== 拉取多机用例完整日志 (test_npu_*) =========="
     for ci_root in "${SEARCH_ROOTS[@]}"; do
