@@ -2008,7 +2008,7 @@ function exportToExcel() {
         const status = getTestCaseStatus(items);
         const hasSuccessNoResult = items.some(d => isSuccessNoResult(d));
         const keep = (statusVals.includes('PASS') && (status === 'PASS' || hasSuccessNoResult)) ||
-                     (statusVals.includes('FAILED') && (status === 'FAILED' || (status.endsWith('(无结果)') && !status.startsWith('成功')))));
+                     (statusVals.includes('FAILED') && (status === 'FAILED' || (status.endsWith('(无结果)') && !status.startsWith('成功'))));
         if (!keep) return;
       }
       rows.push(items[items.length - 1]);
