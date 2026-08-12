@@ -8,6 +8,7 @@
 #   使用配置文件: ./collect_metrics.sh 20260716 --config /path/to/config.conf
 #   命令行覆盖: ./collect_metrics.sh --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716
 #   分支模式:   ./collect_metrics.sh --branch pllimax            (按 CI 目录名 {branch}-{date}-{run_id}-{attempt} 归类)
+#               分支模式下还会从 LOG_BASE 拉取 test_npu_* 多机用例的完整日志
 # 从指定目录下各子目录中收集 bench_serving_metrics.txt（性能）与 eval_log.log（精度）文件。
 
 # 新 CI 目录结构:
@@ -21,6 +22,11 @@ set -e
 # 配置项：优先使用环境变量，提供默认值
 # ============================================================
 SRC_BASE="${SRC_BASE:-/data/ascend-ci-share-pkking-sglang/tests/output}"
+# 多机用例完整日志目录基础路径（与 output 目录结构对应）：
+#   output: SRC_BASE/{branch}-{date}-{run_id}-{attempt}/{workflow}/{type}/...
+#   logs:   LOG_BASE/{branch}-{date}-{run_id}-{attempt}/{workflow}/test_npu_*/
+# 仅当指定 --branch 时拉取其中 test_npu_* 多机用例的完整日志
+LOG_BASE="${LOG_BASE:-/data/ascend-ci-share-pkking-sglang/tests/logs/log}"
 # 默认使用 HTTPS（与 prometheus_exporter.py 默认一致，公开仓可直接 clone）；
 # 私有仓推送请通过 GIT_REPO 环境变量或 --git-repo 指定带凭据地址（如 git@github.com:org/repo.git）
 GIT_REPO="${GIT_REPO:-https://github.com/pllimax/all_test_in.git}"
@@ -48,6 +54,10 @@ while [[ $# -gt 0 ]]; do
             SRC_BASE="$2"
             shift 2
             ;;
+        --log-base)
+            LOG_BASE="$2"
+            shift 2
+            ;;
         --git-repo)
             GIT_REPO="$2"
             shift 2
@@ -72,6 +82,7 @@ while [[ $# -gt 0 ]]; do
             echo "选项:"
             echo "  --config FILE         配置文件路径"
             echo "  --src-base PATH       源目录基础路径（不包含日期部分）"
+            echo "  --log-base PATH       多机用例日志源目录基础路径（仅 --branch 时拉取 test_npu_* 完整日志）"
             echo "  --git-repo REPO       Git仓库地址"
             echo "  --git-target-path PATH Git仓库中的目标路径"
             echo "  --branch NAME         按前缀筛选收集任务结果"
@@ -83,10 +94,13 @@ while [[ $# -gt 0 ]]; do
             echo "收集内容:"
             echo "  1) 性能结果: bench_serving_metrics.txt（存为 {用例名}__{日期}.txt）"
             echo "  2) 精度结果: eval_log.log（存为 {用例名}__{日期}.log，目录加 /eval）"
+            echo "  3) 多机用例日志: 仅 --branch 模式下从 LOG_BASE 拉取 test_npu_* 完整日志目录"
+            echo "     （目录加 /logs，按 {LOG_BASE}/{目录名}/{workflow}/test_npu_*/ 源目录结构存放）"
             echo "  兼容新旧 CI 目录结构（新结构含 suite/timestamp，旧结构按日期目录）"
             echo ""
             echo "环境变量:"
             echo "  SRC_BASE              源目录基础路径"
+            echo "  LOG_BASE              多机用例日志源目录基础路径"
             echo "  GIT_REPO              Git仓库地址"
             echo "  GIT_TARGET_PATH       Git仓库中的目标路径"
             echo "  GIT_LOCAL_DIR         Git本地临时目录"
@@ -100,6 +114,7 @@ while [[ $# -gt 0 ]]; do
             echo "  $0 --branch pllimax 20260727             # 前缀匹配 + 日期过滤"
             echo "  SRC_BASE=/custom/path $0 20260716"
             echo "  $0 --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716"
+            echo "  $0 --log-base /custom/logs --branch pllimax   # 分支模式并指定多机日志目录"
             echo "  $0 --config my_config.conf 20260716"
             exit 0
             ;;
@@ -228,6 +243,7 @@ echo "========== 配置信息 =========="
 echo "源目录基础路径: ${SRC_BASE}"
 if [ -n "${BRANCH:-}" ]; then
     echo "分支筛选:       ${BRANCH} (${#SEARCH_ROOTS[@]} 个任务目录)"
+    echo "多机日志基础:   ${LOG_BASE} (仅拉取 test_npu_* 完整日志)"
 fi
 echo "Git仓库:        ${GIT_REPO}"
 echo "Git目标路径:    ${GIT_TARGET_PATH}"
@@ -486,11 +502,63 @@ for CURRENT_DATE in "${DATES[@]}"; do
     TOTAL_EVAL_COUNT=$((TOTAL_EVAL_COUNT + eval_count))
 done
 
+# ============================================================
+# 拉取多机用例完整日志（仅分支模式 --branch）
+# 日志目录结构: LOG_BASE/{branch}-{date}-{run_id}-{attempt}/{workflow}/test_npu_*/
+# 参考: /data/ascend-ci-share-pkking-sglang/tests/logs/log/pllimax-xxx-1/Nightly_Test_NPU
+# 只拉取其中以 test_npu_ 开头的多机用例完整日志目录（含全部日志文件），
+# 存储到: SCRIPT_DIR/{目录名}/{workflow}/logs/{test_npu_*}/（目录加 /logs 区分）
+# ============================================================
+TOTAL_LOG_COUNT=0
+
+if [ -n "${BRANCH:-}" ]; then
+    echo ""
+    echo "========== 拉取多机用例完整日志 (test_npu_*) =========="
+    for ci_root in "${SEARCH_ROOTS[@]}"; do
+        ci_dir_name=$(basename "${ci_root}")
+        log_ci_dir="${LOG_BASE}/${ci_dir_name}"
+        if [ ! -d "${log_ci_dir}" ]; then
+            echo "[LOG] 跳过: 日志目录不存在 ${log_ci_dir}"
+            continue
+        fi
+        # 遍历该 CI 目录下的 workflow 目录
+        for wf_dir in "${log_ci_dir}"/*; do
+            [ -d "${wf_dir}" ] || continue
+            wf_name=$(basename "${wf_dir}")
+            # 只拉取 test_npu_ 开头的多机用例完整日志目录
+            for case_dir in "${wf_dir}"/test_npu_*; do
+                [ -d "${case_dir}" ] || continue
+                case_name=$(basename "${case_dir}")
+                # 目标目录: SCRIPT_DIR/{目录名}/{workflow}/logs/{test_npu_*}
+                target_dir="${SCRIPT_DIR}/${ci_dir_name}/${wf_name}/logs/${case_name}"
+                # 已存在同名日志目录时先清理，保证拉取的是最新完整日志
+                if [ -d "${target_dir}" ]; then
+                    rm -rf "${target_dir}"
+                fi
+                mkdir -p "$(dirname "${target_dir}")"
+                cp -a "${case_dir}" "${target_dir}"
+                # 记录本次拉取的所有日志文件（上传时仅推送清单内文件）
+                while IFS= read -r log_file; do
+                    echo "${log_file}" >> "${UPLOAD_LIST}"
+                done < <(find "${target_dir}" -type f)
+                TOTAL_LOG_COUNT=$((TOTAL_LOG_COUNT + 1))
+                echo "[LOG] ${ci_dir_name}/${wf_name}/logs/${case_name} 已拉取"
+            done
+        done
+    done
+    if [ ${TOTAL_LOG_COUNT} -gt 0 ]; then
+        echo "完成: 共拉取 ${TOTAL_LOG_COUNT} 个多机用例完整日志目录（按 ${SCRIPT_DIR}/{目录名}/{workflow}/logs/ 归类）"
+    else
+        echo "未找到 test_npu_* 多机用例日志目录 (${LOG_BASE}/${BRANCH}*)"
+    fi
+fi
+
 # 汇总
 echo ""
 echo "========== 收集汇总 =========="
 echo "性能测试文件: ${TOTAL_PERF_COUNT} 个"
 echo "精度测试文件: ${TOTAL_EVAL_COUNT} 个"
+echo "多机用例日志: ${TOTAL_LOG_COUNT} 个"
 echo "=============================="
 
 # ============================================================
