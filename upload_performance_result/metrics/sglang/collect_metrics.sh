@@ -31,6 +31,11 @@ LOG_BASE="${LOG_BASE:-/data/ascend-ci-share-pkking-sglang/tests/logs/log}"
 # 多机日志量大、拷贝耗时长，CI 机器上易超时；可设 false 或 --no-collect-logs 关闭。
 # 可用环境变量/本地配置(collect_metrics.local.conf)覆盖。
 COLLECT_LOGS="${COLLECT_LOGS:-true}"
+# 上传推送重试配置：git push 超时/失败时，等待 UPLOAD_RETRY_DELAY 秒后重试，最多重试 UPLOAD_RETRY 次。
+# 可用环境变量/本地配置(collect_metrics.local.conf)覆盖。
+UPLOAD_RETRY="${UPLOAD_RETRY:-5}"
+UPLOAD_RETRY_DELAY="${UPLOAD_RETRY_DELAY:-10}"
+UPLOAD_TIMEOUT="${UPLOAD_TIMEOUT:-300}"  # 单次推送超时（秒，需 coreutils timeout）
 # 默认使用 HTTPS（与 prometheus_exporter.py 默认一致，公开仓可直接 clone）；
 # 私有仓推送请通过 GIT_REPO 环境变量或 --git-repo 指定带凭据地址（如 git@github.com:org/repo.git）
 GIT_REPO="${GIT_REPO:-https://github.com/pllimax/all_test_in.git}"
@@ -668,6 +673,37 @@ _copy_upload_files() {
     done < "${UPLOAD_LIST}"
 }
 
+# 带超时重试的推送：git push 超时/失败时，等待 UPLOAD_RETRY_DELAY 秒后重试，最多重试 UPLOAD_RETRY 次。
+# 重试前会再次 fetch+rebase，处理重试期间远端并发更新（rebase 失败则中止，避免留下冲突状态）。
+_push_with_retry() {
+    local attempt=1
+    local max_attempts=$((UPLOAD_RETRY + 1))
+    while [ "${attempt}" -le "${max_attempts}" ]; do
+        local rc=0
+        if command -v timeout >/dev/null 2>&1; then
+            timeout "${UPLOAD_TIMEOUT}" git push --force-with-lease origin HEAD 2>&1 || rc=$?
+        else
+            git push --force-with-lease origin HEAD 2>&1 || rc=$?
+        fi
+        if [ "${rc}" -eq 0 ]; then
+            echo "上传成功!"
+            return 0
+        fi
+        if [ "${attempt}" -ge "${max_attempts}" ]; then
+            break
+        fi
+        echo "推送失败（第 ${attempt}/${max_attempts} 次），${UPLOAD_RETRY_DELAY} 秒后重试..."
+        sleep "${UPLOAD_RETRY_DELAY}"
+        if git fetch origin --depth=1 2>/dev/null; then
+            git rebase origin/main 2>/dev/null || git rebase --abort 2>/dev/null || true
+        fi
+        attempt=$((attempt + 1))
+    done
+    echo "错误: 推送失败（已重试 ${UPLOAD_RETRY} 次）。本次数据保留在本地目录: ${GIT_LOCAL_DIR}"
+    echo "      请稍后重试，或手动进入该目录执行: git pull --rebase && git push"
+    return 1
+}
+
 echo "拷贝本次收集的文件到仓库..."
 _copy_upload_files
 
@@ -703,13 +739,9 @@ else
         }
     fi
 
-    # 并发安全推送：fetch 之后他人若有新提交，--force-with-lease 会拒绝而非覆盖
-    if git push --force-with-lease origin HEAD; then
-        echo "上传成功!"
-    else
-        echo "错误: 推送失败（远端可能被并发更新）。本次数据保留在本地目录: ${GIT_LOCAL_DIR}"
-        echo "      请稍后重试，或手动进入该目录执行: git pull --rebase && git push"
-    fi
+    # 并发安全推送：fetch 之后他人若有新提交，--force-with-lease 会拒绝而非覆盖。
+    # 上传超时/失败时自动重试（见 _push_with_retry）。
+    _push_with_retry
 fi
 
 echo "========== 上传完成 =========="
