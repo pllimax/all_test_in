@@ -54,6 +54,28 @@ def _is_date_dir(name):
     return bool(re.match(r"^\d{8}$", name))
 
 
+def date_from_label(date_label):
+    """从目录标记中提取展示日期（以数据目录中的 create_date 为准）。
+
+    旧结构（日期目录 YYYYMMDD）→ 目录名本身；
+    新结构（分支模式 {branch}-{date}-{time}-{run_id}-{attempt}/{workflow}）
+    → 目录名中的日期段（CI 任务创建日期，同一任务的所有用例显示在同一天）。
+    无法解析时原样返回。
+    """
+    top = str(date_label).split("/", 1)[0]
+    if _is_date_dir(top):
+        return top
+    # 新格式：{branch}-{date}-{time}-{run_id}-{attempt}（time 段 2-4 位，run_id 至少 5 位）
+    m = re.search(r"-(\d{8})-(\d{2,4})-(\d{5,})", top)
+    if m:
+        return m.group(1)
+    # 旧格式（分支模式）：{branch}-{date}-{run_id}[-{attempt}]
+    m = re.search(r"-(\d{8})-(\d{5,})", top)
+    if m:
+        return m.group(1)
+    return top
+
+
 def _iter_metrics_files(metrics_dir, suffix, subdir=""):
     """遍历 metrics 目录下所有结果文件，兼容新旧两种目录结构。
 
@@ -615,7 +637,7 @@ def collect_metrics():
             continue
 
         labels = parse_filename(filename)
-        labels["date"] = date_folder
+        labels["date"] = date_from_label(date_folder)
 
         label_values = [labels[k] for k in LABELS]
 
