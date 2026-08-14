@@ -1,19 +1,28 @@
 #!/usr/bin/env bash
 # ============================================================
-# Gitee 数据仓 -> GitHub 数据仓 单向同步（合并式）
+# Gitee 数据仓 -> GitHub 数据仓 同步（文件级合并式，兼容无共同祖先）
 #
 # 背景:
 #   - CI 机器把测试指标 push 到 Gitee 数据仓 (pllimax/all_test_in)
 #   - 平台 dashboard 从 GitHub 数据仓读取指标，并把 notes.json 备注 push 到 GitHub
 #   - 因此两端会分叉：不能用 --force 覆盖（会丢 GitHub 上的备注提交）
-#   - 本脚本以 GitHub 为基准，把 Gitee 的更新 merge 进来再 push 回 GitHub
+#   - Gitee 侧历史可能被 CI 的 --force-with-lease / force push 重写，
+#     导致与 GitHub 无共同祖先（unrelated histories），git merge 会直接失败。
+#
+# 策略（自动降级）:
+#   1) 两端有共同祖先 → 常规 merge（增量，保留双方历史）
+#   2) merge 冲突 或 两端无共同祖先 → 文件级合并同步：
+#      以 GitHub 为基准，把 Gitee 的指标数据目录（默认 metrics/sglang）
+#      检出合并进来（只增/覆盖，不删除 GitHub 独有文件），再提交推送。
 #
 # 用法:
 #   ./sync_gitee_to_github.sh                       # 使用本地配置/默认值
 #   GITEE_TOKEN=xxx GITHUB_TOKEN=yyy ./sync_gitee_to_github.sh
 #   WORK_DIR=/自定义/路径 ./sync_gitee_to_github.sh
 #
-# 定时执行 (crontab -e):
+# 定期同步（推荐用 install_sync_cron.sh 在远端服务器一键注册）:
+#   cd /opt/all_test_in && bash install_sync_cron.sh      # 每 10 分钟同步一次
+# 手动 crontab (Linux):
 #   */10 * * * * /opt/all_test_in/sync_gitee_to_github.sh >> /var/log/sync_gitee_to_github.log 2>&1
 #
 # 依赖: bash + git；运行机器需能同时访问 Gitee 与 GitHub。
@@ -27,6 +36,8 @@ BRANCH="${BRANCH:-main}"
 WORK_DIR="${WORK_DIR:-/opt/sync-gitee2github}"
 GITEE_TOKEN="${GITEE_TOKEN:-}"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
+# 同步的数据路径（相对仓库根）。仅同步该路径，避免覆盖 GitHub 上平台维护的文件（notes.json 等）。
+SYNC_PATH="${SYNC_PATH:-upload_performance_result/metrics/sglang}"
 
 # 本地覆盖配置（git-ignored，可安全存放 token）
 _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,7 +61,11 @@ else
     GITHUB_AUTH="$GITHUB_REPO"
 fi
 
-mkdir -p "$WORK_DIR"
+# 工作副本目录：指定目录不可写（如 Windows 上 /opt 不存在）时回退到用户目录
+if ! mkdir -p "$WORK_DIR" 2>/dev/null; then
+    WORK_DIR="${HOME:-/tmp}/.sync-gitee2github"
+    mkdir -p "$WORK_DIR"
+fi
 cd "$WORK_DIR"
 
 # 首次初始化：克隆 GitHub（含历史）；否则复用已有工作副本
@@ -62,6 +77,23 @@ fi
 git remote set-url gitee "$GITEE_AUTH" 2>/dev/null || git remote add gitee "$GITEE_AUTH"
 git remote set-url github "$GITHUB_AUTH" 2>/dev/null || git remote add github "$GITHUB_AUTH"
 
+# 文件级合并同步：以当前 HEAD（GitHub 基准）为底，把 Gitee 的 SYNC_PATH
+# 检出覆盖/新增进来（git checkout <tree> -- <path> 只增与覆盖，不删除本地独有文件），
+# 再提交。该方式不依赖两端共同祖先，可处理 force push 导致的 unrelated histories。
+_file_level_sync() {
+    if ! git cat-file -e "gitee/$BRANCH:$SYNC_PATH" 2>/dev/null; then
+        echo "[sync] 警告: Gitee 上不存在路径 ${SYNC_PATH}，跳过文件级同步"
+        return 0
+    fi
+    git checkout "gitee/$BRANCH" -- "$SYNC_PATH"
+    git add -A
+    if git diff --cached --quiet; then
+        echo "[sync] ${SYNC_PATH} 无变更，跳过提交"
+    else
+        git commit -m "sync: 从 gitee 文件级合并 ${SYNC_PATH} - $(date +%Y%m%d)"
+    fi
+}
+
 echo "[sync] fetch gitee/$BRANCH"
 git fetch gitee "$BRANCH"
 echo "[sync] fetch github/$BRANCH"
@@ -69,9 +101,21 @@ git fetch github "$BRANCH"
 
 echo "[sync] 以 GitHub 为基准，合并 Gitee 更新"
 git checkout -B "$BRANCH" "github/$BRANCH"
-if ! git merge --no-edit "gitee/$BRANCH"; then
-    echo "[sync] 合并冲突，请手动处理: git -C $WORK_DIR status" >&2
-    exit 1
+
+# 判断两端是否有共同祖先（Gitee 可能被 force push 重写 → unrelated histories）
+if git merge-base "github/$BRANCH" "gitee/$BRANCH" >/dev/null 2>&1; then
+    echo "[sync] 两端有共同祖先，尝试常规 merge"
+    if git merge --no-edit "gitee/$BRANCH"; then
+        :
+    else
+        echo "[sync] merge 冲突，改用文件级合并同步 ${SYNC_PATH}..."
+        git merge --abort 2>/dev/null || true
+        git checkout -f "github/$BRANCH"
+        _file_level_sync
+    fi
+else
+    echo "[sync] 两端历史不相关（可能被 force push 重写），使用文件级合并同步 ${SYNC_PATH}"
+    _file_level_sync
 fi
 
 echo "[sync] push github/$BRANCH"

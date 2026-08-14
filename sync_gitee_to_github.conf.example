@@ -19,6 +19,11 @@ BRANCH="main"
 # 工作副本目录（首次运行时自动创建并克隆）
 WORK_DIR="/opt/sync-gitee2github"
 
+# 同步的数据路径（相对仓库根，多个用空格分隔）。
+# 仅同步该路径下的数据，避免覆盖 GitHub 上平台维护的文件（如 notes.json）。
+# 说明：远端服务器定期同步使用 install_sync_cron.sh 注册 crontab（默认每 10 分钟）。
+SYNC_PATH="upload_performance_result/metrics/sglang"
+
 # Gitee 个人访问令牌（oauth2:TOKEN@gitee.com）
 # 说明：example 会被提交到 GitHub，为避免触发密钥扫描，此处用占位符。
 #       真实 token 请填到 git-ignored 的 sync_gitee_to_github.conf 中。

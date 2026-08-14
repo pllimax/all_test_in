@@ -2277,20 +2277,30 @@ def _match_baselines_for_item(item, baselines):
 
 def split_date_label(date_label):
     """拆分 date_label 为 (date, branch, run_id, run_workflow)。
-    新格式: {branch_label}-{create_date}-{run_id}/{workflow}
-            → (create_date, branch_label, run_id, workflow)
-              # branch 仅取日期之前的字段，run_id 用于 GitHub Actions 链接，
-              # workflow（如 Nightly_Test_NPU）用于确定 run 实际所属来源仓。
-              # run_id 可能带本地去重后缀（如 31168435480-1），GitHub API 的
-              # run_id 为纯数字，故剥离 -N 后缀后再返回。
+
+    新格式（CI 目录新增时间/序号段）:
+            {branch}-{date}-{time}-{run_id}-{attempt}/{workflow}
+            例如 pllimax-pllimax-outputlogdirstructure-20260813-2002-31698149241-1/Nightly_Test_NPU
+            → (20260813, pllimax-pllimax-outputlogdirstructure, 31698149241, Nightly_Test_NPU)
+            # 中间 -2002- 为 CI 时间/序号段（2-4 位），跳过；run_id 剥离本地去重后缀 -N。
+    旧格式（分支模式）:
+            {branch}-{date}-{run_id}-{attempt}/{workflow}
+            例如 pllimax-...-20260809-31317079962-1/Nightly_Test_NPU
     旧格式: YYYYMMDD → (YYYYMMDD, "", "", "")
     """
     if not date_label:
         return date_label, "", "", ""
-    m = re.match(r"^(.+)-(\d{8})-([0-9]+(?:-[0-9]+)?)/(.+)$", date_label)
+    # 新格式：{branch}-{date}-{time}-{run_id}-{attempt}/{workflow}
+    # run_id 至少 5 位（GitHub Actions run_id 实际 9-11 位），time 段 2-4 位
+    m = re.match(r"^(.+)-(\d{8})-(\d{2,4})-(\d{5,})(?:-(\d+))?/(.+)$", date_label)
+    if m:
+        run_id = re.sub(r"-\d+$", "", m.group(4))
+        return m.group(2), m.group(1), run_id, m.group(6)
+    # 旧格式（分支模式）：{branch}-{date}-{run_id}-{attempt}/{workflow}
+    m = re.match(r"^(.+)-(\d{8})-(\d{5,})(?:-(\d+))?/(.+)$", date_label)
     if m:
         run_id = re.sub(r"-\d+$", "", m.group(3))
-        return m.group(2), m.group(1), run_id, m.group(4)
+        return m.group(2), m.group(1), run_id, m.group(5)
     return date_label, "", "", ""
 
 
