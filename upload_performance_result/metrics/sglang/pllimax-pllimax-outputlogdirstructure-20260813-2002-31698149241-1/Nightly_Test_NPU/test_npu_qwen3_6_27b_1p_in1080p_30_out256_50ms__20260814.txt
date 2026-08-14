@@ -1,0 +1,176 @@
+memfabric_hybrid          1.0.8
+sgl_kernel_npu            2026.6.1
+sglang                    0.5.18.dev437+g197832bcf       /sgl-workspace/sglang/python
+sglang-router             0.3.2
+torch                     2.10.0+cpu
+torch_npu                 2.10.0
+torchao                   0.9.0
+torchaudio                2.10.0+cpu
+torchvision               0.25.0+cpu
+CANN: 9.0.0
+transformers: 5.12.1
+/sgl-workspace/sglang/python/sglang/bench_serving.py:13: FutureWarning: `sglang.bench_serving` is deprecated and will be removed in a future release; use `sglang.benchmark.serving` instead (e.g. `python -m sglang.benchmark.serving`).
+  warnings.warn(
+/sgl-workspace/sglang/python/sglang/benchmark/datasets/image.py:58: UserWarning: High resolution (up to 1080x1920) with 152 total images may take a long time. Consider reducing resolution or image count.
+  return sample_image_requests(
+benchmark_args=Namespace(backend='sglang-oai-chat', base_url=None, host='127.0.0.1', port=20166, ready_check_timeout_sec=60, dataset_name='image', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Qwen/Qwen3.6-27B', served_model_name=None, tokenizer=None, num_prompts=152, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=30, random_output_len=256, random_range_ratio=1.0, image_count=1, image_resolution='1920x1080', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=42, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=38, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+Waiting up to 60s for http://127.0.0.1:20166/v1/models to become ready...
+Server ready in 0.0s.
+Namespace(backend='sglang-oai-chat', base_url=None, host='127.0.0.1', port=20166, ready_check_timeout_sec=60, dataset_name='image', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Qwen/Qwen3.6-27B', served_model_name=None, tokenizer=None, num_prompts=152, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=30, random_output_len=256, random_range_ratio=1.0, image_count=1, image_resolution='1920x1080', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=42, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=True, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=38, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+
+#Input tokens: 316735
+#Output tokens: 38912
+#Total images: 152
+#Images per request: 1 (fixed)
+
+=== Token Breakdown (per request avg / total) ===
+  Raw text prompt tokens (without overhead): avg=30.0, total=4560
+  Text prompt tokens (with chat template): avg=42.3, total=6426
+  Text prompt overhead: avg=12.3, total=1866
+  Vision tokens: avg=2041.5, total=310309
+
+Created 152 random jpeg images with average 2090340 bytes per request
+Starting warmup with 38 sequences...
+Warmup completed with 38 sequences. Starting main benchmark run...
+
+  0%|          | 0/152 [00:00<?, ?it/s]
+  1%|          | 1/152 [00:26<1:06:49, 26.55s/it]
+  1%|▏         | 2/152 [00:26<27:30, 11.00s/it]  
+  3%|▎         | 4/152 [00:26<10:18,  4.18s/it]
+  5%|▍         | 7/152 [00:27<04:24,  1.83s/it]
+  8%|▊         | 12/152 [00:27<01:51,  1.26it/s]
+ 11%|█         | 17/152 [00:27<01:01,  2.21it/s]
+ 13%|█▎        | 20/152 [00:27<00:45,  2.92it/s]
+ 16%|█▌        | 24/152 [00:34<01:49,  1.17it/s]
+ 17%|█▋        | 26/152 [00:35<01:29,  1.41it/s]
+ 18%|█▊        | 28/152 [00:35<01:11,  1.74it/s]
+ 20%|█▉        | 30/152 [00:35<00:55,  2.20it/s]
+ 21%|██        | 32/152 [00:35<00:45,  2.61it/s]
+ 22%|██▏       | 34/152 [00:36<00:39,  2.95it/s]
+ 23%|██▎       | 35/152 [00:36<00:35,  3.29it/s]
+ 24%|██▎       | 36/152 [00:36<00:30,  3.76it/s]
+ 24%|██▍       | 37/152 [00:46<04:26,  2.32s/it]
+ 25%|██▌       | 38/152 [00:46<03:26,  1.81s/it]
+ 26%|██▌       | 39/152 [00:52<05:05,  2.70s/it]
+ 26%|██▋       | 40/152 [00:52<03:56,  2.11s/it]
+ 28%|██▊       | 43/152 [00:53<01:57,  1.08s/it]
+ 29%|██▉       | 44/152 [00:53<01:36,  1.12it/s]
+ 32%|███▏      | 48/152 [00:53<00:45,  2.29it/s]
+ 33%|███▎      | 50/152 [00:53<00:34,  2.97it/s]
+ 34%|███▍      | 52/152 [00:53<00:31,  3.20it/s]
+ 36%|███▌      | 54/152 [00:54<00:23,  4.11it/s]
+ 37%|███▋      | 56/152 [00:54<00:23,  4.14it/s]
+ 38%|███▊      | 58/152 [01:02<01:58,  1.26s/it]
+ 39%|███▉      | 59/152 [01:02<01:41,  1.09s/it]
+ 40%|████      | 61/152 [01:02<01:10,  1.29it/s]
+ 41%|████▏     | 63/152 [01:02<00:49,  1.81it/s]
+ 42%|████▏     | 64/152 [01:02<00:42,  2.08it/s]
+ 43%|████▎     | 65/152 [01:03<00:34,  2.49it/s]
+ 44%|████▍     | 67/152 [01:03<00:24,  3.49it/s]
+ 45%|████▌     | 69/152 [01:03<00:20,  4.10it/s]
+ 47%|████▋     | 72/152 [01:03<00:14,  5.58it/s]
+ 48%|████▊     | 73/152 [01:11<01:54,  1.45s/it]
+ 49%|████▊     | 74/152 [01:12<01:40,  1.29s/it]
+ 49%|████▉     | 75/152 [01:13<01:35,  1.24s/it]
+ 50%|█████     | 76/152 [01:15<02:01,  1.60s/it]
+ 51%|█████     | 77/152 [01:17<02:07,  1.70s/it]
+ 51%|█████▏    | 78/152 [01:18<01:34,  1.27s/it]
+ 52%|█████▏    | 79/152 [01:18<01:10,  1.03it/s]
+ 53%|█████▎    | 81/152 [01:18<00:41,  1.70it/s]
+ 55%|█████▍    | 83/152 [01:18<00:29,  2.34it/s]
+ 56%|█████▌    | 85/152 [01:21<00:55,  1.21it/s]
+ 58%|█████▊    | 88/152 [01:22<00:32,  1.98it/s]
+ 59%|█████▊    | 89/152 [01:22<00:32,  1.92it/s]
+ 59%|█████▉    | 90/152 [01:23<00:31,  1.98it/s]
+ 61%|██████    | 92/152 [01:23<00:21,  2.85it/s]
+ 61%|██████    | 93/152 [01:23<00:18,  3.23it/s]
+ 63%|██████▎   | 96/152 [01:23<00:10,  5.15it/s]
+ 64%|██████▍   | 97/152 [01:29<01:11,  1.30s/it]
+ 64%|██████▍   | 98/152 [01:30<00:57,  1.07s/it]
+ 65%|██████▌   | 99/152 [01:30<00:47,  1.13it/s]
+ 67%|██████▋   | 102/152 [01:30<00:26,  1.89it/s]
+ 68%|██████▊   | 103/152 [01:31<00:23,  2.11it/s]
+ 68%|██████▊   | 104/152 [01:31<00:19,  2.47it/s]
+ 70%|██████▉   | 106/152 [01:31<00:13,  3.34it/s]
+ 70%|███████   | 107/152 [01:31<00:13,  3.31it/s]
+ 71%|███████   | 108/152 [01:31<00:11,  3.78it/s]
+ 72%|███████▏  | 109/152 [01:32<00:12,  3.47it/s]
+ 72%|███████▏  | 110/152 [01:38<01:12,  1.73s/it]
+ 73%|███████▎  | 111/152 [01:38<00:54,  1.33s/it]
+ 74%|███████▎  | 112/152 [01:39<00:52,  1.31s/it]
+ 74%|███████▍  | 113/152 [01:40<00:42,  1.08s/it]
+ 75%|███████▌  | 114/152 [01:42<00:56,  1.48s/it]
+ 76%|███████▌  | 115/152 [01:42<00:41,  1.11s/it]
+ 76%|███████▋  | 116/152 [01:43<00:33,  1.06it/s]
+ 77%|███████▋  | 117/152 [01:43<00:27,  1.26it/s]
+ 78%|███████▊  | 118/152 [01:44<00:25,  1.31it/s]
+ 78%|███████▊  | 119/152 [01:44<00:20,  1.63it/s]
+ 79%|███████▉  | 120/152 [01:44<00:15,  2.09it/s]
+ 81%|████████  | 123/152 [01:45<00:06,  4.22it/s]
+ 82%|████████▏ | 124/152 [01:45<00:08,  3.15it/s]
+ 84%|████████▎ | 127/152 [01:45<00:04,  5.21it/s]
+ 85%|████████▍ | 129/152 [01:45<00:03,  6.55it/s]
+ 86%|████████▌ | 131/152 [01:46<00:03,  6.85it/s]
+ 88%|████████▊ | 133/152 [01:47<00:04,  4.34it/s]
+ 88%|████████▊ | 134/152 [01:47<00:03,  4.50it/s]
+ 89%|████████▉ | 136/152 [01:47<00:03,  4.76it/s]
+ 91%|█████████ | 138/152 [01:47<00:02,  6.23it/s]
+ 91%|█████████▏| 139/152 [01:47<00:01,  6.56it/s]
+ 93%|█████████▎| 141/152 [01:48<00:01,  7.76it/s]
+ 95%|█████████▍| 144/152 [01:48<00:01,  6.11it/s]
+ 96%|█████████▌| 146/152 [01:48<00:00,  6.54it/s]
+ 97%|█████████▋| 147/152 [01:48<00:00,  6.95it/s]
+ 97%|█████████▋| 148/152 [01:49<00:00,  7.37it/s]
+ 99%|█████████▊| 150/152 [01:49<00:00,  8.93it/s]
+100%|██████████| 152/152 [01:50<00:00,  2.67it/s]
+100%|██████████| 152/152 [01:50<00:00,  1.37it/s]
+
+============ Serving Benchmark Result ============
+Backend:                                 sglang-oai-chat
+Traffic request rate:                    inf       
+Max request concurrency:                 42        
+Successful requests:                     152       
+Benchmark duration (s):                  111.03    
+Total input tokens:                      316735    
+Total input text tokens:                 6426      
+Total input vision tokens:               310309    
+Total generated tokens:                  38912     
+Total generated tokens (retokenized):    38596     
+Request throughput (req/s):              1.37      
+Input token throughput (tok/s):          2852.64   
+Output token throughput (tok/s):         350.46    
+Peak output token throughput (tok/s):    423.00    
+Peak concurrent requests:                60        
+Total token throughput (tok/s):          3203.09   
+Concurrency:                             40.13     
+Accept length:                           2.71      
+----------------End-to-End Latency----------------
+Mean E2E Latency (ms):                   29312.26  
+Median E2E Latency (ms):                 27385.19  
+P90 E2E Latency (ms):                    36849.49  
+P95 E2E Latency (ms):                    44037.61  
+P99 E2E Latency (ms):                    52987.37  
+---------------Time to First Token----------------
+Mean TTFT (ms):                          13724.24  
+Median TTFT (ms):                        11618.03  
+P90 TTFT (ms):                           19250.59  
+P95 TTFT (ms):                           19297.64  
+P99 TTFT (ms):                           34797.39  
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          61.13     
+Median TPOT (ms):                        64.17     
+P90 TPOT (ms):                           89.70     
+P95 TPOT (ms):                           105.40    
+P99 TPOT (ms):                           116.53    
+---------------Inter-Token Latency----------------
+Mean ITL (ms):                           61.48     
+Median ITL (ms):                         23.25     
+P90 ITL (ms):                            73.29     
+P95 ITL (ms):                            90.63     
+P99 ITL (ms):                            953.90    
+Max ITL (ms):                            9334.77   
+==================================================
+
+# [collect_metrics] 文件原始修改时间: 2026-08-13 20:23:04
+# [collect_metrics] 源目录日期: 20260814
+# [collect_metrics] CI运行目录: nightly-perf-2-npu-a3/test_npu_qwen3_6_27b_1p_in1080p_30_out256_50ms
