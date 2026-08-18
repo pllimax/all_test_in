@@ -1,0 +1,54 @@
+# collect_metrics_cron 配置模板
+# 复制为 collect_metrics_cron.conf 使用（真实配置可能含 token，勿提交，已在 .gitignore 忽略）
+#   cp collect_metrics_cron.conf.example collect_metrics_cron.conf
+# 此文件为 bash 语法：变量赋值即可，会被 collect_metrics_cron.sh 加载。
+# 未设置项使用 collect_metrics_cron.sh 内置默认。
+
+# ------------------------------------------------------------
+# 要收集的分支前缀（空格分隔，可多个，留空则跳过分支模式）
+# 每个前缀会以 collect_metrics.sh --branch <前缀> 模式收集其下所有 CI 运行目录结果
+# 例如: COLLECT_BRANCHES="pllimax ascendspeed"
+# ------------------------------------------------------------
+COLLECT_BRANCHES="pllimax"
+
+# ------------------------------------------------------------
+# 日期模式收集（可选，留空则跳过日期模式）
+#   auto        = 由 collect_metrics_cron.sh 计算"今天及前3天"并显式传入
+#                 （collect_metrics.sh 已取消内置自动模式）
+#   20260818    = 收集指定日期（可多个，空格分隔）
+# ------------------------------------------------------------
+COLLECT_DATES=""
+
+# 是否拉取多机用例完整日志（test_npu_*，量大耗时长易超时，定时任务建议 false）
+COLLECT_LOGS="false"
+
+# 每次执行前是否自动同步脚本代码（git fetch + reset --hard origin/main，含 stash 保护本地修改）
+SYNC_CODE="true"
+
+# 日志文件（时间戳日志与 collect_metrics.sh 输出均追加写入）
+# 默认 ${HOME:-/tmp}/collect_metrics_cron.log（cron 常以非 root 运行，/var/log 可能无写权限）
+# 如需固定路径可取消注释（注意确保该目录有写权限）：
+# LOG_FILE="/var/log/collect_metrics_cron.log"
+
+# 日志轮转阈值（字节，默认 20MB，超过后轮转为 ${LOG_FILE}.old）
+# LOG_MAX_SIZE="20971520"
+
+# 防重叠锁文件
+# LOCK_FILE="/tmp/collect_metrics_cron.lock"
+
+# ------------------------------------------------------------
+# 以下变量会由 collect_metrics_cron.sh export 透传给 collect_metrics.sh
+# （否则子进程会回落到脚本内置默认，如 GIT_REPO 默认 github 而非 gitee，导致推错仓库）
+# ------------------------------------------------------------
+# 源目录基础路径（CI 输出目录）
+SRC_BASE="/data/ascend-ci-share-pkking-sglang/tests/output"
+
+# 多机用例日志基础路径（仅 --branch 时拉取 test_npu_* 完整日志）
+LOG_BASE="/data/ascend-ci-share-pkking-sglang/tests/logs/log"
+
+# 数据仓地址（默认 gitee，公开仓可直接 clone；推送 token 见下方）
+GIT_REPO="https://gitee.com/pllimax/all_test_in.git"
+
+# GIT_TOKEN 建议放在 collect_metrics.local.conf（git-ignored，collect_metrics.sh 自动加载），
+# 此处无需重复配置；若放这里注意该 conf 不要提交。
+# GIT_TOKEN="..."

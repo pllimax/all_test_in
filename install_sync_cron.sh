@@ -21,6 +21,11 @@ CONF="$REPO_DIR/sync_gitee_to_github.conf"
 LOG="/var/log/sync_gitee_to_github.log"
 # 同步频率（分钟）
 INTERVAL_MIN="${INTERVAL_MIN:-10}"
+# 校验间隔为 1-59 的正整数，避免生成无效 cron（如 */0 或 */abc）
+if ! echo "$INTERVAL_MIN" | grep -qE '^[1-9][0-9]?$' || [ "$INTERVAL_MIN" -lt 1 ] || [ "$INTERVAL_MIN" -gt 59 ]; then
+    echo "[install] 错误: INTERVAL_MIN 必须为 1-59 的整数（当前: ${INTERVAL_MIN}）" >&2
+    exit 1
+fi
 
 # ---- 校验 ----
 if [ ! -f "$SCRIPT" ]; then

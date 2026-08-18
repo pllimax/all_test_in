@@ -9,8 +9,57 @@ import time
 import shutil
 import subprocess
 import threading
-from prometheus_client import start_http_server, Gauge, Info
-from prometheus_client.core import REGISTRY
+import urllib.parse
+from prometheus_client import start_http_server, Gauge
+
+
+def _run(cmd, **kw):
+    """subprocess.run 包装：默认捕获输出并以 UTF-8 解码（兼容 Windows 下 git 的
+    UTF-8 输出与本地 GBK 编码不一致导致 text=True 解码抛异常的问题）。"""
+    kw.setdefault("capture_output", True)
+    kw.setdefault("text", True)
+    kw.setdefault("encoding", "utf-8")
+    kw.setdefault("errors", "replace")
+    return subprocess.run(cmd, **kw)
+
+
+def _mask_repo_url(url):
+    """脱敏仓库地址：去掉 URL 中内嵌的凭据（userinfo），避免日志泄漏 token。"""
+    try:
+        parts = urllib.parse.urlsplit(url or "")
+        if parts.username or parts.password:
+            netloc = parts.hostname or ""
+            if parts.port:
+                netloc += f":{parts.port}"
+            parts = parts._replace(netloc=netloc)
+        return parts.geturl()
+    except Exception:
+        return url or ""
+
+
+def _reliable_rmtree(path):
+    """可靠删除目录：Windows 上 git 对象/索引文件常带只读属性，shutil.rmtree 会
+    半删除留下损坏目录，先递归解除只读再删除。删除后目录仍存在则返回 False。"""
+    if not os.path.isdir(path):
+        return True
+    try:
+        for root, dirs, files in os.walk(path, topdown=False):
+            for name in files:
+                p = os.path.join(root, name)
+                try:
+                    os.chmod(p, 0o777)
+                except OSError:
+                    pass
+            for name in dirs:
+                p = os.path.join(root, name)
+                try:
+                    os.chmod(p, 0o777)
+                except OSError:
+                    pass
+        shutil.rmtree(path, ignore_errors=True)
+    except Exception:
+        pass
+    return not os.path.exists(path)
 
 # Git repo config for syncing metrics data
 GIT_REPO_URL = os.environ.get("GIT_REPO_URL", "https://github.com/pllimax/all_test_in.git")
@@ -517,37 +566,37 @@ def _clone_repo():
     """Clone the Git repository with shallow + sparse checkout (metrics directory only).
     Returns True on success, False on failure.
     """
-    print(f"[git] Cloning metrics data from: {GIT_REPO_URL}")
+    print(f"[git] Cloning metrics data from: {_mask_repo_url(GIT_REPO_URL)}")
     os.makedirs(os.path.dirname(GIT_LOCAL_CLONE), exist_ok=True)
     # Step 1: shallow clone without checkout
-    result = subprocess.run(
+    result = _run(
         ["git", "clone", "--depth=1", "--no-checkout",
          "--branch", GIT_BRANCH, GIT_REPO_URL, GIT_LOCAL_CLONE],
-        capture_output=True, text=True, timeout=120
+        timeout=120
     )
     if result.returncode != 0:
         print(f"[git] clone failed: {result.stderr.strip()}")
         return False
     # Step 2: enable sparse checkout (cone mode)
-    result = subprocess.run(
+    result = _run(
         ["git", "sparse-checkout", "init", "--cone"],
-        cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=30
+        cwd=GIT_LOCAL_CLONE, timeout=30
     )
     if result.returncode != 0:
         print(f"[git] sparse-checkout init failed: {result.stderr.strip()}")
         return False
     # Step 3: set sparse path to metrics directory only
-    result = subprocess.run(
+    result = _run(
         ["git", "sparse-checkout", "set", GIT_SPARSE_PATH],
-        cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=30
+        cwd=GIT_LOCAL_CLONE, timeout=30
     )
     if result.returncode != 0:
         print(f"[git] sparse-checkout set failed: {result.stderr.strip()}")
         return False
     # Step 4: checkout only the sparse paths
-    result = subprocess.run(
+    result = _run(
         ["git", "checkout", GIT_BRANCH],
-        cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=60
+        cwd=GIT_LOCAL_CLONE, timeout=60
     )
     if result.returncode != 0:
         print(f"[git] checkout failed: {result.stderr.strip()}")
@@ -578,21 +627,21 @@ def git_pull():
     try:
         if os.path.isdir(os.path.join(GIT_LOCAL_CLONE, ".git")):
             # Update: fetch latest and checkout only the metrics directory
-            result = subprocess.run(
+            result = _run(
                 ["git", "fetch", "origin", GIT_BRANCH, "--depth=1"],
-                cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=60
+                cwd=GIT_LOCAL_CLONE, timeout=60
             )
             if result.returncode != 0:
                 # Fetch failed (e.g. remote force-push causing unrelated histories),
                 # fall back to re-cloning
                 print(f"[git] fetch failed ({result.stderr.strip()}), re-cloning...")
-                shutil.rmtree(GIT_LOCAL_CLONE, ignore_errors=True)
+                _reliable_rmtree(GIT_LOCAL_CLONE)
                 _clone_repo()
                 return
             # Only checkout metrics files, never reset code
-            result = subprocess.run(
+            result = _run(
                 ["git", "checkout", f"origin/{GIT_BRANCH}", "--", GIT_SPARSE_PATH.rstrip("/")],
-                cwd=GIT_LOCAL_CLONE, capture_output=True, text=True, timeout=60
+                cwd=GIT_LOCAL_CLONE, timeout=60
             )
             if result.returncode != 0:
                 print(f"[git] checkout failed: {result.stderr.strip()}")

@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # 用法:
-#   自动收集: ./collect_metrics.sh                              (收集今天及前3天数据)
 #   指定日期: ./collect_metrics.sh 20260716
 #   多个日期: ./collect_metrics.sh 20260716 20260717 20260718   (按先后顺序轮流执行)
+#   （已取消自动模式：必须显式指定日期，或使用 --branch 分支模式）
 #   自定义配置: SRC_BASE=/custom/path GIT_REPO=git@github.com:user/repo.git ./collect_metrics.sh 20260716
 #   使用配置文件: ./collect_metrics.sh 20260716 --config /path/to/config.conf
 #   命令行覆盖: ./collect_metrics.sh --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716
@@ -104,7 +104,7 @@ while [[ $# -gt 0 ]]; do
             echo "参数:"
             echo "  日期...               收集数据的日期，格式如 20260716"
             echo "                        可指定多个日期，按先后顺序轮流执行"
-            echo "                        不指定时自动收集今天及前3天数据"
+            echo "                        未指定日期时必须使用 --branch 分支模式"
             echo "                        （分支模式下不指定日期则只收集一次，避免重复）"
             echo ""
             echo "选项:"
@@ -139,7 +139,6 @@ while [[ $# -gt 0 ]]; do
             echo "  COLLECT_LOGS          是否拉取多机用例完整日志 (true/false，默认 true)"
             echo ""
             echo "示例:"
-            echo "  $0                        # 自动收集今天及前3天"
             echo "  $0 20260716               # 单个日期"
             echo "  $0 20260716 20260717 20260718   # 多个日期轮流执行"
             echo "  $0 --branch pllimax                      # 前缀匹配，收集 pllimax 仓所有分支任务"
@@ -174,20 +173,16 @@ if [ -n "${CONFIG_FILE:-}" ]; then
     fi
 fi
 
-# 自动模式：未指定日期时，收集今天及前3天数据
-AUTO_MODE=false
+# 已取消自动模式：必须显式指定日期，或使用 --branch 分支模式。
+# 分支模式下未指定日期时，DATES 仅作占位驱动一次循环（文件名日期标记取各 CI 运行目录中的 run 日期）。
+if [ ${#SPECIFIED_DATES[@]} -eq 0 ] && [ -z "${BRANCH:-}" ]; then
+    echo "错误: 未指定日期且未指定 --branch。"
+    echo "      日期模式: $0 20260818 [20260817 ...]"
+    echo "      分支模式: $0 --branch pllimax"
+    exit 1
+fi
 if [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
-    AUTO_MODE=true
-    TODAY=$(date +%Y%m%d)
-    DATES=()
-    for i in 0 1 2 3; do
-        d=$(date -d "$TODAY - $i days" +%Y%m%d 2>/dev/null)
-        if [ -n "$d" ]; then
-            DATES+=("$d")
-        fi
-    done
-    # 升序排列
-    IFS=$'\n' DATES=($(sort <<<"${DATES[*]}")); unset IFS
+    DATES=("$(date +%Y%m%d)")
 else
     DATES=("${SPECIFIED_DATES[@]}")
 fi
@@ -246,25 +241,20 @@ else
 fi
 
 # ============================================================
-# 分支模式：取消按日期循环收集
+# 分支模式：未显式指定日期时仅收集一次（不按日期循环）
 # 分支目录名已含任务创建日期（{branch}-{date}-{run_id}-{attempt}），
-# 自动日期循环（今天及前3天）会导致同一批结果被重复收集 4 次。
-# 未显式指定日期时，分支模式仅收集一次，文件名以今天日期作标记。
+# 文件名日期标记取各 CI 运行目录中的 run 日期（而非"今天"），
+# 保证同一运行结果多次定时收集时文件名不变（幂等）。
+# 日期模式必须显式指定日期（上方已校验）。
 # ============================================================
-if [ -n "${BRANCH:-}" ] && [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
-    AUTO_MODE=false
-    DATES=("$(date +%Y%m%d)")
-fi
 
-# 收集模式提示（统一在最终日期确定后打印，避免分支模式误显示"自动模式"）
+# 收集模式提示
 if [ -n "${BRANCH:-}" ]; then
     if [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
-        echo "分支模式: 取消自动日期循环，仅收集一次（文件名日期标记: ${DATES[0]}）"
+        echo "分支模式: 未指定日期，仅收集一次（文件名日期标记取各 CI 运行目录中的 run 日期）"
     else
         echo "分支模式: 指定日期收集（文件名日期标记: ${DATES[*]}）"
     fi
-elif [ "$AUTO_MODE" = true ]; then
-    echo "自动模式: 收集 ${DATES[0]} ~ ${DATES[-1]} 共 ${#DATES[@]} 天数据"
 else
     echo "指定日期: 收集 ${DATES[*]}"
 fi
@@ -285,8 +275,8 @@ if [ -n "${BRANCH:-}" ]; then
 fi
 echo "Git仓库:        ${GIT_REPO}"
 echo "Git目标路径:    ${GIT_TARGET_PATH}"
-if [ "$AUTO_MODE" = true ]; then
-    echo "日期范围:       ${DATES[0]} ~ ${DATES[-1]} (共 ${#DATES[@]} 天)"
+if [ -n "${BRANCH:-}" ]; then
+    echo "日期列表:       分支模式（未指定日期时文件名标记取 CI run 日期）"
 else
     echo "日期列表:       ${DATES[*]} (共 ${#DATES[@]} 个)"
 fi
@@ -333,6 +323,17 @@ _ci_top_level() {
     local tmp="${rel#*/}"
     local wf_type="${tmp%%/*}"
     echo "${ci_dir_name}|${wf_type}"
+}
+
+# 从 CI 顶层目录名中提取 run 日期（8 位数字），用于分支模式下文件名的日期标记。
+# 兼容新格式 {branch}-{date}-{time}-{run_id}-{attempt} 与旧格式 {branch}-{date}-{run_id}-{attempt}；
+# 优先匹配 "日期[-时间段]-run_id" 结构，避免误取分支名中的数字。
+# 提取失败时回退输出整个目录名（仍保持确定性，满足幂等）。
+_ci_run_date() {
+    local ci_dir="$1"
+    local d
+    d=$(echo "${ci_dir}" | grep -oE '[0-9]{8}(-[0-9]{2,4})?-[0-9]{5,}' | head -n1 | cut -d- -f1)
+    [ -n "${d}" ] && echo "${d}" || echo "${ci_dir}"
 }
 
 # 计算目标存放目录：
@@ -391,7 +392,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
 
         # 非分支模式：仅收集实际修改日期与请求日期一致的文件。
         # 否则 find 会命中全树所有历史文件，导致指定单日收集偏多、
-        # 自动模式同一文件被多个日期重复收集。
+        # 同一文件被多个日期重复收集。
         if [ -z "${BRANCH:-}" ]; then
             actual_date=$(_mtime_date "${mtime_epoch}")
             if [ "${actual_date}" != "${CURRENT_DATE}" ]; then
@@ -407,7 +408,16 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
         mkdir -p "${PERF_TARGET_DIR}"
 
-        dst_file="${PERF_TARGET_DIR}/${subdir_name_clean}__${CURRENT_DATE}.txt"
+        # 分支模式且未显式指定日期时，文件名日期标记取 CI 运行目录中的 run 日期，
+        # 而非"今天"，保证同一运行结果被多次定时收集时文件名不变（幂等，不产生重复文件）
+        top_info=$(_ci_top_level "${src_file}")
+        if [ -n "${BRANCH:-}" ] && [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
+            MARK_DATE=$(_ci_run_date "${top_info%%|*}")
+        else
+            MARK_DATE="${CURRENT_DATE}"
+        fi
+
+        dst_file="${PERF_TARGET_DIR}/${subdir_name_clean}__${MARK_DATE}.txt"
         cp "${src_file}" "${dst_file}"
 
         # 在文件末尾追加原始修改时间描述
@@ -415,7 +425,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
         {
             echo ""
             echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
-            echo "# [collect_metrics] 源目录日期: ${CURRENT_DATE}"
+            echo "# [collect_metrics] 源目录日期: ${MARK_DATE}"
             echo "# [collect_metrics] CI运行目录: ${suite_name}/${subdir_name}"
         } >> "${dst_file}"
 
@@ -423,10 +433,9 @@ for CURRENT_DATE in "${DATES[@]}"; do
         echo "${dst_file}" >> "${UPLOAD_LIST}"
 
         if [ -n "${BRANCH:-}" ]; then
-            top_info=$(_ci_top_level "${src_file}")
-            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录: ${top_info%%|*}/${top_info#*|}, 源目录日期: ${CURRENT_DATE})"
+            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录: ${top_info%%|*}/${top_info#*|}, 源目录日期: ${MARK_DATE})"
         else
-            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录日期: ${CURRENT_DATE}, 实际修改日期: $(_mtime_date "${mtime_epoch}"))"
+            echo "[OK] ${subdir_name_clean} (suite: ${suite_name}, 源目录日期: ${MARK_DATE}, 实际修改日期: $(_mtime_date "${mtime_epoch}"))"
         fi
         count=$((count + 1))
     done < <(find "${SEARCH_ROOTS[@]}" -type f -name 'bench_serving_metrics.txt' -path '*/perf/*')
@@ -498,20 +507,30 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
         mkdir -p "${EVAL_TARGET_DIR}"
 
+        # 分支模式且未显式指定日期时，文件名日期标记取 CI 运行目录中的 run 日期（幂等）
+        top_info=$(_ci_top_level "${eval_src}")
+        if [ -n "${BRANCH:-}" ] && [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
+            MARK_DATE=$(_ci_run_date "${top_info%%|*}")
+        else
+            MARK_DATE="${CURRENT_DATE}"
+        fi
+
         # 命名: {tc_name_clean}__{源目录日期}.log
-        eval_dst="${EVAL_TARGET_DIR}/${ts_name_clean}__${CURRENT_DATE}.log"
-        # 如果已存在同名文件（来自不同 workflow 目录等），追加序号后缀区分
-        if [ -f "${eval_dst}" ]; then
+        eval_dst="${EVAL_TARGET_DIR}/${ts_name_clean}__${MARK_DATE}.log"
+        # 若已存在同名文件：
+        #   - 同一源运行（原始修改时间一致）→ 直接覆盖，保证重复收集幂等
+        #   - 不同源运行（如不同 workflow 目录的同名用例）→ 追加序号后缀区分
+        mtime_human=$(_mtime_human "${mtime_epoch}")
+        if [ -f "${eval_dst}" ] && ! grep -qF "文件原始修改时间: ${mtime_human}" "${eval_dst}"; then
             suffix=1
-            while [ -f "${EVAL_TARGET_DIR}/${ts_name_clean}__${CURRENT_DATE}-${suffix}.log" ]; do
+            while [ -f "${EVAL_TARGET_DIR}/${ts_name_clean}__${MARK_DATE}-${suffix}.log" ]; do
                 suffix=$((suffix + 1))
             done
-            eval_dst="${EVAL_TARGET_DIR}/${ts_name_clean}__${CURRENT_DATE}-${suffix}.log"
+            eval_dst="${EVAL_TARGET_DIR}/${ts_name_clean}__${MARK_DATE}-${suffix}.log"
         fi
         cp "${eval_src}" "${eval_dst}"
 
         # 在文件末尾追加原始修改时间描述
-        mtime_human=$(_mtime_human "${mtime_epoch}")
         {
             echo ""
             echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
@@ -521,10 +540,9 @@ for CURRENT_DATE in "${DATES[@]}"; do
         echo "${eval_dst}" >> "${UPLOAD_LIST}"
 
         if [ -n "${BRANCH:-}" ]; then
-            top_info=$(_ci_top_level "${eval_src}")
-            echo "[EVAL] ${ts_name_clean} (源目录: ${top_info%%|*}/${top_info#*|}, 源目录日期: ${CURRENT_DATE})"
+            echo "[EVAL] ${ts_name_clean} (源目录: ${top_info%%|*}/${top_info#*|}, 源目录日期: ${MARK_DATE})"
         else
-            echo "[EVAL] ${ts_name_clean} (源目录日期: ${CURRENT_DATE}, 实际修改日期: $(_mtime_date "${mtime_epoch}"))"
+            echo "[EVAL] ${ts_name_clean} (源目录日期: ${MARK_DATE}, 实际修改日期: $(_mtime_date "${mtime_epoch}"))"
         fi
         eval_count=$((eval_count + 1))
     done < <(find "${SEARCH_ROOTS[@]}" -type f -name 'eval_log.log' -path '*/logs/eval_log.log')

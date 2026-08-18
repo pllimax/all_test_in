@@ -10,13 +10,22 @@ import json
 import time
 import threading
 import urllib.request
-import urllib.error
+import urllib.parse
 import http.server
 import socketserver
 import subprocess
-import sys
 import shutil
 from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, GIT_PULL_ENABLED, GIT_METRICS_DIR, get_metrics_dir, _iter_metrics_files, PERF_ONLY_FIELDS
+
+
+def _run(cmd, **kw):
+    """subprocess.run 包装：默认捕获输出并以 UTF-8 解码（兼容 Windows 下 git 的
+    UTF-8 输出与本地 GBK 编码不一致导致 text=True 解码抛异常的问题）。"""
+    kw.setdefault("capture_output", True)
+    kw.setdefault("text", True)
+    kw.setdefault("encoding", "utf-8")
+    kw.setdefault("errors", "replace")
+    return subprocess.run(cmd, **kw)
 
 DASHBOARD_PORT = int(os.environ.get("DASHBOARD_PORT", "8080"))
 # 默认仅监听本机回环地址，避免在共享网络中意外暴露性能数据与备注接口；
@@ -312,6 +321,14 @@ def load_notes():
         return _notes
 
 
+def _write_notes_atomic(notes):
+    """原子写 notes.json：先写临时文件再 os.replace，避免进程中断留下半写文件。"""
+    tmp_path = _notes_path() + ".tmp"
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(notes, f, ensure_ascii=False, indent=2)
+    os.replace(tmp_path, _notes_path())
+
+
 def save_note(key, note_text):
     """保存一条执行结果的备注（复合键），立即写盘。返回 True 表示成功。"""
     global _notes, _notes_dirty
@@ -323,8 +340,7 @@ def save_note(key, note_text):
         else:
             _notes.pop(key, None)
         try:
-            with open(_notes_path(), "w", encoding="utf-8") as f:
-                json.dump(_notes, f, ensure_ascii=False, indent=2)
+            _write_notes_atomic(_notes)
             _notes_dirty = True
             return True
         except Exception as e:
@@ -345,8 +361,7 @@ def clear_notes_for_case(yaml_name):
         for k in removed:
             _notes.pop(k, None)
         try:
-            with open(_notes_path(), "w", encoding="utf-8") as f:
-                json.dump(_notes, f, ensure_ascii=False, indent=2)
+            _write_notes_atomic(_notes)
             _notes_dirty = True
             return len(removed)
         except Exception as e:
@@ -366,14 +381,17 @@ def attach_notes(items):
     notes = load_notes()
     # 预构建 yaml_name → (date, note) 的最新历史备注映射（复合键，date 最大者）
     latest_hist = {}
-    for k, v in notes.items():
-        parts = k.split(NOTES_KEY_SEP)
-        if len(parts) >= 2:
-            yaml_name = parts[0]
-            date = parts[1]
-            cur = latest_hist.get(yaml_name)
-            if cur is None or date > cur[0]:
-                latest_hist[yaml_name] = (date, v)
+    # 加锁保护对共享 _notes 字典的迭代，避免与 save_note / clear_notes_for_case
+    # 的并发修改产生 RuntimeError: dictionary changed size during iteration
+    with _notes_lock:
+        for k, v in notes.items():
+            parts = k.split(NOTES_KEY_SEP)
+            if len(parts) >= 2:
+                yaml_name = parts[0]
+                date = parts[1]
+                cur = latest_hist.get(yaml_name)
+                if cur is None or date > cur[0]:
+                    latest_hist[yaml_name] = (date, v)
     for item in items:
         key = note_key_for_item(item)
         note = notes.get(key)
@@ -388,6 +406,9 @@ def attach_notes(items):
         item["note"] = note or ""
         if note_date:
             item["note_date"] = note_date
+        else:
+            # 清理陈旧残留：未命中历史备注时显式移除，避免复用旧数据里的 note_date
+            item.pop("note_date", None)
     return items
 
 # Test cases to exclude from the dashboard
@@ -507,7 +528,7 @@ def _get_git_web_url(repo_root, repo_url):
     url = (repo_url or "").strip()
     if not url:
         try:
-            result = subprocess.run(
+            result = _run(
                 ["git", "remote", "get-url", "origin"],
                 capture_output=True, text=True, timeout=15,
                 cwd=repo_root,
@@ -524,7 +545,7 @@ def _get_git_web_url(repo_root, repo_url):
 def _get_git_branch(repo_root):
     """获取仓库当前分支名，失败时返回空字符串。"""
     try:
-        result = subprocess.run(
+        result = _run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
             capture_output=True, text=True, timeout=15,
             cwd=repo_root,
@@ -884,6 +905,7 @@ def _ensure_jobs_thread():
 def _jobs_refresh_worker():
     """后台线程：逐个抓取待处理 (repo, run_id) 的 jobs 并写入缓存。
     记录成功/失败时间戳，供调度逻辑（刷新间隔 / 退避重试）使用。
+    周期性淘汰超过 TTL 且已终态的缓存条目，防止长期运行内存无限增长。
     """
     global _jobs_cache
     while True:
@@ -902,6 +924,19 @@ def _jobs_refresh_worker():
                         _jobs_failed_ts.pop(p, None)
                     else:
                         _jobs_failed_ts[p] = time.time()
+            # 淘汰过期缓存：仅淘汰超过 TTL 且全部为终态（completed）的条目，
+            # 避免淘汰仍在执行中、需要持续刷新的 job
+            with _jobs_lock:
+                now = time.time()
+                stale = [
+                    k for k, ts in _jobs_cache_ts.items()
+                    if now - ts > JOBS_CACHE_TTL and not _has_incomplete_jobs(_jobs_cache.get(k))
+                ]
+                for k in stale:
+                    _jobs_cache.pop(k, None)
+                    _jobs_cache_ts.pop(k, None)
+                    _jobs_failed_ts.pop(k, None)
+                    _jobs_pending.discard(k)
         except Exception as e:
             print(f"[jobs] worker error: {e}")
         time.sleep(2)
@@ -934,13 +969,13 @@ def _get_nnodes_from_script(yaml_name):
                 try:
                     with open(filepath, "r", encoding="utf-8") as f:
                         content = f.read()
-                    # Find all --nnodes occurrences and get the value on the next line
-                    # For PD separation, use the first nnodes (prefill) or max of all
+                    # 兼容实际脚本的多种写法："--nnodes",\n"1" / --nnodes 1 / --nnodes=1 /
+                    # --nnodes\n1（旧正则 `--nnodes\s*\n\s*(\d+)` 无法匹配带引号/逗号的格式）
                     nnodes_vals = []
-                    for m in re.finditer(r"--nnodes\s*\n\s*(\d+)", content):
+                    for m in re.finditer(r"--nnodes[^\d]*?(\d+)", content):
                         nnodes_vals.append(int(m.group(1)))
                     if nnodes_vals:
-                        # Use the minimum nnodes value (single node if any node is 1)
+                        # 取最小 nnodes：任一阶段为单节点即按单机处理（PD 分离常见 prefill 单节点）
                         val = min(nnodes_vals)
                     else:
                         val = 1  # Not configured, default to 1
@@ -1209,19 +1244,6 @@ function buildTestCaseId(d) {
   return d.yaml_name || '';
 }
 
-function buildShortLabel(d) {
-  const parts = [];
-  if (d.model) parts.push(d.model);
-  if (d.quantization) parts.push(d.quantization);
-  if (d.parallelism) parts.push(d.parallelism);
-  if (d.input_len) parts.push('in'+d.input_len);
-  if (d.output_len) parts.push('out'+d.output_len);
-  if (d.request_rate) parts.push(d.request_rate);
-  if (d.dataset) parts.push(d.dataset);
-  if (d.prefix) parts.push(d.prefix);
-  return parts.join('_');
-}
-
 function initCharts() {
   // Charts are created dynamically when a test case row is expanded
 }
@@ -1335,6 +1357,21 @@ function escHtml(s) {
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
+// JS 字符串转义（用于 HTML onclick 属性内的单引号字符串参数，如 openNoteEditorFromRow）。
+// 先转义反斜杠（防止后续转义符被二次转义），再转义单引号（JS 字符串边界），
+// 最后转义 HTML 属性特殊字符（双引号等），保证属性与 JS 两层解析都不越界。
+function escJsAttr(s) {
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\r/g, '\\r')
+    .replace(/\n/g, '\\n');
+}
+
 // 构造执行结果复合键（与后端 note_key_for 一致）
 function buildNoteKey(d) {
   return [d.yaml_name || '', d.date || '', d.branch || '', d.run_id || ''].join('|');
@@ -1426,7 +1463,7 @@ document.addEventListener('keydown', (e) => {
 async function loadData() {
   const resp = await fetch('/api/data');
   allData = await resp.json();
-  allData.forEach(d => { d._id = buildTestCaseId(d); d._label = buildShortLabel(d); });
+  allData.forEach(d => { d._id = buildTestCaseId(d); });
   populateFilters();
   onFilterChange();
   document.getElementById('updateTime').textContent = '更新: ' + new Date().toLocaleTimeString();
@@ -1747,19 +1784,19 @@ function updateTable(data) {
     if (urls.length > 0) {
       // 多个来源链接（如 fulltest/nightly 同用例）换行显示，每个链接一行
       return urls.map(u =>
-        `<a class="script-link" href="${u.url}" target="_blank" rel="noopener" title="${u.url}">${u.source}↗</a>`
+        `<a class="script-link" href="${escHtml(u.url)}" target="_blank" rel="noopener" title="${escHtml(u.url)}">${escHtml(u.source)}↗</a>`
       ).join('<br>');
     }
-    return src || '--';
+    return escHtml(src) || '--';
   }
 
   // 渲染 CI 运行/任务链接：有具体 job 链接时优先显示，否则回退到 run 链接
   function fmtRunLink(d) {
     if (d.job_url) {
-      return `<a class="script-link" href="${d.job_url}" target="_blank" rel="noopener" title="${d.job_url}">job↗</a>`;
+      return `<a class="script-link" href="${escHtml(d.job_url)}" target="_blank" rel="noopener" title="${escHtml(d.job_url)}">job↗</a>`;
     }
     if (d.run_url) {
-      return `<a class="script-link" href="${d.run_url}" target="_blank" rel="noopener" title="${d.run_url}">运行↗</a>`;
+      return `<a class="script-link" href="${escHtml(d.run_url)}" target="_blank" rel="noopener" title="${escHtml(d.run_url)}">运行↗</a>`;
     }
     return '--';
   }
@@ -1769,11 +1806,12 @@ function updateTable(data) {
   function fmtNote(d) {
     const note = d.note || '';
     const noteDate = d.note_date || '';
-    const editBtn = `<span class="note-edit" onclick="openNoteEditorFromRow('${d._id.replace(/'/g, "\\'")}','${d.date}','${d.branch || ''}','${d.run_id || ''}')" title="填写备注">✏️</span>`;
+    // 编辑按钮参数处于 HTML onclick 属性的 JS 单引号字符串中，需用 escJsAttr 双层转义
+    const editBtn = `<span class="note-edit" onclick="openNoteEditorFromRow('${escJsAttr(d._id)}','${escJsAttr(d.date)}','${escJsAttr(d.branch || '')}','${escJsAttr(d.run_id || '')}')" title="填写备注">✏️</span>`;
     let text = '';
     if (note) {
       const tip = noteDate ? `${note}（${noteDate}）` : note;
-      const dateTag = noteDate ? `<span class="note-date">（${noteDate}）</span>` : '';
+      const dateTag = noteDate ? `<span class="note-date">（${escHtml(noteDate)}）</span>` : '';
       text = `<span class="note-text" title="${escHtml(tip)}">${escHtml(note)}</span>${dateTag}`;
     }
     return `<span class="note-cell">${editBtn}${text}</span>`;
@@ -1783,9 +1821,9 @@ function updateTable(data) {
   function fmtTopology(t) {
     if (!t) return '--';
     if (t.indexOf('PD分离/') === 0) {
-      return `PD分离<br>${t.substring('PD分离/'.length)}`;
+      return `PD分离<br>${escHtml(t.substring('PD分离/'.length))}`;
     }
-    return t;
+    return escHtml(t);
   }
 
   // 序列长度列显示：in3k5_out1k5 → 拆成两行（in3k5 + out1k5）；只有 in/out 单段时保持原样
@@ -1793,9 +1831,9 @@ function updateTable(data) {
     if (!s) return '--';
     const m = s.match(/^(.+)_out(.+)$/);
     if (m) {
-      return `${m[1]}<br>out${m[2]}`;
+      return `${escHtml(m[1])}<br>out${escHtml(m[2])}`;
     }
-    return s;
+    return escHtml(s);
   }
 
   let rows = '';
@@ -1826,20 +1864,20 @@ function updateTable(data) {
       const rowStyle = isLatest ? '' : 'style="display:none"';
       if (isLatest) visibleCount++;
       const modelDisplay = isLatest && groupShowModel[gIdx] ? d.model : '';
-      rows += `<tr class="data-row" data-tc="${safeId}" data-date="${d.date}" data-hasdata="${hasData(d) ? '1' : '0'}" ${rowStyle}>
-        <td class="col-model sticky-col col-l0">${modelDisplay}</td>
-        <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" title="${tcId}">${expandIcon}${tcId}</span></td>
-        <td class="col-meta sticky-col col-l2">${d.date}</td>
-        <td class="col-meta sticky-col col-l3"><span class="${statusCls}">${status}</span></td>
+      rows += `<tr class="data-row" data-tc="${safeId}" data-date="${escHtml(d.date)}" data-hasdata="${hasData(d) ? '1' : '0'}" ${rowStyle}>
+        <td class="col-model sticky-col col-l0">${escHtml(modelDisplay)}</td>
+        <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" title="${escHtml(tcId)}">${expandIcon}${escHtml(tcId)}</span></td>
+        <td class="col-meta sticky-col col-l2">${escHtml(d.date)}</td>
+        <td class="col-meta sticky-col col-l3"><span class="${statusCls}">${escHtml(status)}</span></td>
         <td class="col-script sticky-col col-l4">${fmtScriptLinks(d)}</td>
         <td class="col-meta sticky-col col-l5">${fmtRunLink(d)}</td>
         <td class="col-note sticky-col col-l6">${fmtNote(d)}</td>
         <td class="col-baseline sticky-col col-l7"><span class="baseline-col" title="${fmtBaseline(b, d)}">${fmtBaseline(b, d)}</span></td>
         <td class="col-topology">${fmtTopology(d.topology)}</td>
-        <td class="col-config">${d.card_count || '--'}</td>
+        <td class="col-config">${escHtml(d.card_count || '--')}</td>
         <td class="col-config">${fmtSeqLength(d.seq_length)}</td>
-        <td class="col-config">${(d.prefix || '').replace('prefix', '') || '0'}</td>
-        <td class="col-config">${d.dataset || '--'}</td>
+        <td class="col-config">${escHtml((d.prefix || '').replace('prefix', '') || '0')}</td>
+        <td class="col-config">${escHtml(d.dataset || '--')}</td>
         <td class="col-uniform">${fmtMetric(d.eval_score, 4, b.eval_score, 'accuracy', d.dataset)}</td>
         <td class="col-uniform">${fmtInt(d.total_requests)}</td>
         <td class="col-uniform">${fmtInt(d.max_concurrency)}</td>
@@ -2586,7 +2624,9 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path == "/" or self.path == "/index.html":
+        # 剥离 query 串（如 /api/data?x=1），避免带参数请求被 404
+        path = urllib.parse.urlsplit(self.path).path
+        if path == "/" or path == "/index.html":
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
@@ -2596,12 +2636,12 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                 "__XLSX_SRC__", _asset_url("xlsx.full.min.js", CDN_XLSX)
             )
             self.wfile.write(html.encode("utf-8"))
-        elif self.path.startswith("/static/"):
-            self._serve_static(self.path[len("/static/"):])
-        elif self.path == "/api/data":
+        elif path.startswith("/static/"):
+            self._serve_static(path[len("/static/"):])
+        elif path == "/api/data":
             data = _get_data()
             self._send_json(data)
-        elif self.path == "/api/status":
+        elif path == "/api/status":
             # 根据实际生效的指标目录判断数据来源（git 克隆 / 本地文件）
             source = "git克隆" if GIT_PULL_ENABLED and get_metrics_dir() == GIT_METRICS_DIR else "本地文件"
             self._send_json({"source": source, "git_enabled": GIT_PULL_ENABLED})
@@ -2615,14 +2655,15 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
           POST /api/note            保存一条备注 {"yaml_name","date","branch","run_id","note"}
           POST /api/notes/clear     清理某用例的所有历史备注 {"yaml_name"}
         """
+        path = urllib.parse.urlsplit(self.path).path
         # 可选鉴权：配置 NOTE_API_TOKEN 环境变量后，请求需在头 X-API-Token
         # 携带匹配 token；未配置时保持向后兼容（不校验）
-        if self.path in ("/api/note", "/api/notes/clear"):
+        if path in ("/api/note", "/api/notes/clear"):
             expected_token = os.environ.get("NOTE_API_TOKEN", "")
             if expected_token and self.headers.get("X-API-Token") != expected_token:
                 self._send_json({"ok": False, "error": "unauthorized"}, status=401)
                 return
-        if self.path == "/api/note":
+        if path == "/api/note":
             try:
                 length = int(self.headers.get("Content-Length", 0) or 0)
                 body = self.rfile.read(length).decode("utf-8") if length else "{}"
@@ -2640,7 +2681,7 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json({"ok": ok, "key": key})
             except Exception as e:
                 self._send_json({"ok": False, "error": str(e)}, status=400)
-        elif self.path == "/api/notes/clear":
+        elif path == "/api/notes/clear":
             try:
                 length = int(self.headers.get("Content-Length", 0) or 0)
                 body = self.rfile.read(length).decode("utf-8") if length else "{}"
@@ -2683,7 +2724,7 @@ def _sync_managed_repo(src_name, repo_root, repo_url, branch):
 def _is_sparse_worktree(repo_root):
     """判断仓库是否已启用 sparse-checkout（受管目录正常状态）。"""
     try:
-        result = subprocess.run(
+        result = _run(
             ["git", "sparse-checkout", "list"],
             cwd=repo_root, capture_output=True, text=True, timeout=30,
         )
@@ -2726,28 +2767,28 @@ def _clone_managed_repo(src_name, repo_root, repo_url, branch):
         _remove_dir_force(repo_root)
     print(f"[sync] {src_name}: 稀疏克隆 {repo_url} ({branch}) -> {repo_root}")
     try:
-        result = subprocess.run(
+        result = _run(
             ["git", "clone", "--depth=1", "--no-checkout", "--branch", branch, repo_url, repo_root],
             capture_output=True, text=True, timeout=120,
         )
         if result.returncode != 0:
             print(f"[sync] {src_name}: clone failed: {result.stderr.strip()}")
             return
-        result = subprocess.run(
+        result = _run(
             ["git", "sparse-checkout", "init", "--cone"],
             cwd=repo_root, capture_output=True, text=True, timeout=30,
         )
         if result.returncode != 0:
             print(f"[sync] {src_name}: sparse-checkout init failed: {result.stderr.strip()}")
             return
-        result = subprocess.run(
+        result = _run(
             ["git", "sparse-checkout", "set"] + SPARSE_CHECKOUT_PATHS,
             cwd=repo_root, capture_output=True, text=True, timeout=30,
         )
         if result.returncode != 0:
             print(f"[sync] {src_name}: sparse-checkout set failed: {result.stderr.strip()}")
             return
-        result = subprocess.run(
+        result = _run(
             ["git", "checkout", branch],
             cwd=repo_root, capture_output=True, text=True, timeout=60,
         )
@@ -2764,7 +2805,7 @@ def _update_managed_repo(src_name, repo_root, repo_url, branch):
     branch = branch or "main"
     print(f"[sync] {src_name}: 增量更新 {repo_root} ({branch})")
     try:
-        result = subprocess.run(
+        result = _run(
             ["git", "fetch", "origin", branch, "--depth=1"],
             cwd=repo_root, capture_output=True, text=True, timeout=60,
         )
@@ -2775,7 +2816,7 @@ def _update_managed_repo(src_name, repo_root, repo_url, branch):
             _clone_managed_repo(src_name, repo_root, repo_url, branch)
             return
         # reset --hard 在 cone 稀疏检出下仅物化稀疏路径内的文件
-        result = subprocess.run(
+        result = _run(
             ["git", "reset", "--hard", f"origin/{branch}"],
             cwd=repo_root, capture_output=True, text=True, timeout=60,
         )
@@ -2797,7 +2838,7 @@ def _sync_local_repo(src_name, repo_root):
     stashed = False
     try:
         # 检查是否有本地未提交改动，避免 reset --hard 清空用户改动
-        status = subprocess.run(
+        status = _run(
             ["git", "status", "--porcelain"],
             capture_output=True, text=True, timeout=30,
             cwd=repo_root,
@@ -2805,7 +2846,7 @@ def _sync_local_repo(src_name, repo_root):
         has_local_changes = bool(status.stdout.strip())
         if has_local_changes:
             print(f"[sync] {src_name}: 检测到本地未提交改动，使用 stash 暂存后再更新（保留用户改动）")
-            stash = subprocess.run(
+            stash = _run(
                 ["git", "stash", "push", "-u", "-m", "dashboard-sync"],
                 capture_output=True, text=True, timeout=30,
                 cwd=repo_root,
@@ -2814,7 +2855,7 @@ def _sync_local_repo(src_name, repo_root):
             if not stashed:
                 print(f"[sync] {src_name}: stash 失败，跳过更新: {stash.stderr.strip()}")
 
-        result = subprocess.run(
+        result = _run(
             ["git", "pull", "--ff-only"],
             capture_output=True, text=True, timeout=60,
             cwd=repo_root,
@@ -2828,7 +2869,7 @@ def _sync_local_repo(src_name, repo_root):
 
         # 恢复被暂存的本地改动
         if stashed:
-            pop = subprocess.run(
+            pop = _run(
                 ["git", "stash", "pop"],
                 capture_output=True, text=True, timeout=30,
                 cwd=repo_root,
@@ -2885,14 +2926,14 @@ def sync_suite_registry():
             if not _is_sparse_worktree(repo_root):
                 _remove_dir_force(repo_root)
             else:
-                result = subprocess.run(
+                result = _run(
                     ["git", "fetch", "origin", SUITE_REGISTRY_BRANCH, "--depth=1"],
                     cwd=repo_root, capture_output=True, text=True, timeout=120,
                 )
                 if result.returncode != 0:
                     print(f"[suite] fetch failed: {result.stderr.strip()}")
                 else:
-                    subprocess.run(
+                    _run(
                         ["git", "reset", "--hard", f"origin/{SUITE_REGISTRY_BRANCH}"],
                         cwd=repo_root, capture_output=True, text=True, timeout=60,
                     )
@@ -2901,7 +2942,7 @@ def sync_suite_registry():
             parent = os.path.dirname(repo_root)
             os.makedirs(parent, exist_ok=True)
             _remove_dir_force(repo_root)
-            result = subprocess.run(
+            result = _run(
                 ["git", "clone", "--depth=1", "--no-checkout", "--branch",
                  SUITE_REGISTRY_BRANCH, SUITE_REGISTRY_REPO_URL, repo_root],
                 capture_output=True, text=True, timeout=180,
@@ -2916,7 +2957,7 @@ def sync_suite_registry():
                 (["git", "sparse-checkout", "set", SUITE_REGISTRY_SUBDIR], "sparse-checkout set"),
                 (["git", "checkout", SUITE_REGISTRY_BRANCH], "checkout"),
             ]:
-                result = subprocess.run(
+                result = _run(
                     cmd, cwd=repo_root, capture_output=True, text=True, timeout=60,
                 )
                 if result.returncode != 0:
@@ -3090,14 +3131,14 @@ def _push_notes_to_git():
     rel_path = os.path.relpath(_notes_path(), repo_root).replace("\\", "/")
     try:
         # 只提交 notes.json，避免把其他未跟踪/改动文件带入
-        r = subprocess.run(
+        r = _run(
             ["git", "add", "--", rel_path], cwd=repo_root,
             capture_output=True, text=True, timeout=60,
         )
         if r.returncode != 0:
             print(f"[notes-git] add failed: {r.stderr.strip()[:200]}")
             return False
-        r = subprocess.run(
+        r = _run(
             ["git", "commit", "-m", "dashboard: update test case notes", "--", rel_path],
             cwd=repo_root, capture_output=True, text=True, timeout=60,
         )
@@ -3105,14 +3146,14 @@ def _push_notes_to_git():
             print(f"[notes-git] commit failed: {r.stderr.strip()[:200]}")
             return False
         # 推送前先追平远端（同事的备注提交），避免 push 因远端已推进被拒绝
-        r = subprocess.run(
+        r = _run(
             ["git", "pull", "--rebase", "--autostash", "origin", "main"],
             cwd=repo_root, capture_output=True, text=True, timeout=120,
         )
         if r.returncode != 0:
             print(f"[notes-git] pull --rebase failed: {r.stderr.strip()[:200]}")
             return False
-        r = subprocess.run(
+        r = _run(
             ["git", "push", "origin", "HEAD"], cwd=repo_root,
             capture_output=True, text=True, timeout=120,
         )

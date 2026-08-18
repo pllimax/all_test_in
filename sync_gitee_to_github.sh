@@ -50,13 +50,22 @@ fi
 # 构造带认证地址
 # Gitee: oauth2:TOKEN@gitee.com（已验证）
 # GitHub: TOKEN@github.com（GitHub 接受以 token 作为用户名的形式）
+# 兼容 http:// 与 https:// 两种协议头（_strip_scheme 负责剥离）。
+_strip_scheme() {
+    local url="$1"
+    case "$url" in
+        http://*)  echo "${url#http://}" ;;
+        https://*) echo "${url#https://}" ;;
+        *)         echo "$url" ;;
+    esac
+}
 if [ -n "$GITEE_TOKEN" ]; then
-    GITEE_AUTH="https://oauth2:${GITEE_TOKEN}@${GITEE_REPO#https://}"
+    GITEE_AUTH="https://oauth2:${GITEE_TOKEN}@$(_strip_scheme "$GITEE_REPO")"
 else
     GITEE_AUTH="$GITEE_REPO"
 fi
 if [ -n "$GITHUB_TOKEN" ]; then
-    GITHUB_AUTH="https://${GITHUB_TOKEN}@${GITHUB_REPO#https://}"
+    GITHUB_AUTH="https://${GITHUB_TOKEN}@$(_strip_scheme "$GITHUB_REPO")"
 else
     GITHUB_AUTH="$GITHUB_REPO"
 fi
@@ -80,12 +89,22 @@ git remote set-url github "$GITHUB_AUTH" 2>/dev/null || git remote add github "$
 # 文件级合并同步：以当前 HEAD（GitHub 基准）为底，把 Gitee 的 SYNC_PATH
 # 检出覆盖/新增进来（git checkout <tree> -- <path> 只增与覆盖，不删除本地独有文件），
 # 再提交。该方式不依赖两端共同祖先，可处理 force push 导致的 unrelated histories。
+# SYNC_PATH 支持空格分隔的多个相对路径，逐个处理。
 _file_level_sync() {
-    if ! git cat-file -e "gitee/$BRANCH:$SYNC_PATH" 2>/dev/null; then
-        echo "[sync] 警告: Gitee 上不存在路径 ${SYNC_PATH}，跳过文件级同步"
+    local p sync_any=0
+    for p in ${SYNC_PATH}; do
+        [ -n "$p" ] || continue
+        if ! git cat-file -e "gitee/$BRANCH:$p" 2>/dev/null; then
+            echo "[sync] 警告: Gitee 上不存在路径 ${p}，跳过"
+            continue
+        fi
+        git checkout "gitee/$BRANCH" -- "$p"
+        sync_any=1
+    done
+    if [ "${sync_any}" -eq 0 ]; then
+        echo "[sync] 警告: Gitee 上不存在任何 SYNC_PATH（${SYNC_PATH}），跳过文件级同步"
         return 0
     fi
-    git checkout "gitee/$BRANCH" -- "$SYNC_PATH"
     git add -A
     if git diff --cached --quiet; then
         echo "[sync] ${SYNC_PATH} 无变更，跳过提交"
@@ -118,10 +137,20 @@ else
     _file_level_sync
 fi
 
+# 推送（带冲突降级）：
+#   1) 直接 push；
+#   2) 被拒（平台可能刚推了备注）→ pull 追平远端后重试；
+#   3) pull 冲突或再次被拒 → 回到文件级合并（只同步 SYNC_PATH，不覆盖平台维护文件）后重推。
 echo "[sync] push github/$BRANCH"
-if ! git push github "$BRANCH"; then
-    echo "[sync] push 被拒（平台可能刚推了备注），合并远端最新后重试"
-    git pull --no-rebase --no-edit github "$BRANCH"
+if git push github "$BRANCH"; then
+    :
+elif git pull --no-rebase --no-edit github "$BRANCH" && git push github "$BRANCH"; then
+    :
+else
+    echo "[sync] push 冲突，改用文件级合并 ${SYNC_PATH} 后重试"
+    git merge --abort 2>/dev/null || true
+    git checkout -f "github/$BRANCH"
+    _file_level_sync
     git push github "$BRANCH"
 fi
 
