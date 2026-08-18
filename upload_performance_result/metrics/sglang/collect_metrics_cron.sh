@@ -102,10 +102,16 @@ _rotate_log() {
 _rotate_log
 
 # ---------- 1) 防重叠 ----------
-exec 9>"${LOCK_FILE}"
-if ! flock -n 9; then
-    _log "已有实例在运行（${LOCK_FILE}），本次跳过"
-    exit 0
+# flock 为 Linux 命令；在无 flock 的环境（如 Windows Git Bash 开发机）降级为不锁，
+# 仅告警，避免误报"已有实例在运行"。
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"${LOCK_FILE}"
+    if ! flock -n 9; then
+        _log "已有实例在运行（${LOCK_FILE}），本次跳过"
+        exit 0
+    fi
+else
+    _log "[warn] 未找到 flock（仅 Linux 支持），本次跳过防重叠锁"
 fi
 
 # ---------- 2) 代码保鲜（可选，默认开启） ----------
@@ -157,7 +163,7 @@ TOTAL_FAIL=0
 for b in ${COLLECT_BRANCHES}; do
     [ -n "${b}" ] || continue
     _log "==== 开始收集分支: ${b} ===="
-    if "${COLLECT_SCRIPT}" --branch "${b}" ${LOGS_FLAG} >> "${LOG_FILE}" 2>&1; then
+    if bash "${COLLECT_SCRIPT}" --branch "${b}" ${LOGS_FLAG} >> "${LOG_FILE}" 2>&1; then
         _log "分支 ${b} 收集完成"
     else
         _log "[error] 分支 ${b} 收集失败（详见日志 ${LOG_FILE}）"
@@ -176,7 +182,7 @@ if [ -n "${COLLECT_DATES}" ]; then
         done
         _log "==== 开始收集日期: auto（今天及前3天: ${AUTO_DATES[*]}） ===="
         # shellcheck disable=SC2086
-        if "${COLLECT_SCRIPT}" ${AUTO_DATES[*]} >> "${LOG_FILE}" 2>&1; then
+        if bash "${COLLECT_SCRIPT}" ${AUTO_DATES[*]} >> "${LOG_FILE}" 2>&1; then
             _log "日期模式(auto) 收集完成"
         else
             _log "[error] 日期模式(auto) 收集失败"
@@ -185,7 +191,7 @@ if [ -n "${COLLECT_DATES}" ]; then
     else
         _log "==== 开始收集日期: ${COLLECT_DATES} ===="
         # shellcheck disable=SC2086
-        if "${COLLECT_SCRIPT}" ${COLLECT_DATES} >> "${LOG_FILE}" 2>&1; then
+        if bash "${COLLECT_SCRIPT}" ${COLLECT_DATES} >> "${LOG_FILE}" 2>&1; then
             _log "日期模式(${COLLECT_DATES}) 收集完成"
         else
             _log "[error] 日期模式(${COLLECT_DATES}) 收集失败"
