@@ -1,0 +1,170 @@
+can not use command: npu-smi info
+2026-08-18 06:02:41,879 - INFO - get env NAMESPACE = sgl-project
+2026-08-18 06:02:41,879 - INFO - get env KUBE_CONFIG_MAP = sglang-configmap-98b0babfgezoga4p
+2026-08-18 06:02:41,880 - INFO - The nic name matched is enp23s0f3
+2026-08-18 06:02:41,880 - INFO - PYTHON_FOR_TEST_TOOL: python3
+2026-08-18 06:02:41,891 - INFO - PYTHON_FOR_TEST_TOOL: python3
+2026-08-18 06:02:41,897 - INFO - get env POD_IP = 172.22.3.160
+2026-08-18 06:02:41,897 - INFO - get env HOSTNAME = ascend-sglang-accuracy-test-98b0babfgezoga4p-sglang-router-0
+2026-08-18 06:02:41,897 - INFO - Init 172.22.3.160 cls.role='router'!
+2026-08-18 06:02:41,897 - INFO - The current node is router, skip this function start_pd_server.
+2026-08-18 06:02:41,897 - INFO - Starting router in thread...
+2026-08-18 06:02:41,897 - INFO - launch_router start ......
+2026-08-18 06:02:41,897 - INFO - Waiting for router to be ready at http://172.22.3.160:6677/health
+2026-08-18 06:02:41,897 - INFO - Waiting for the server to start at http://172.22.3.160:6677/health...
+2026-08-18 06:02:42,066 - INFO - get env KUBECONFIG = /root/.cache/.cache/kb.yaml
+2026-08-18 06:02:42,268 - INFO - Discovered 8 worker nodes (prefill: 4, decode: 4)
+2026-08-18 06:02:42,299 - INFO - Successfully queried ConfigMap sglang-configmap-98b0babfgezoga4p in namespace sgl-project
+2026-08-18 06:02:42,300 - INFO - ConfigMap data is not available yet, waiting for 15s...
+2026-08-18 06:02:57,332 - INFO - Successfully queried ConfigMap sglang-configmap-98b0babfgezoga4p in namespace sgl-project
+2026-08-18 06:02:57,333 - INFO - ConfigMap data is not available yet, waiting for 15s...
+2026-08-18 06:03:12,363 - INFO - Successfully queried ConfigMap sglang-configmap-98b0babfgezoga4p in namespace sgl-project
+2026-08-18 06:03:12,365 - INFO - ConfigMap data is not available yet, waiting for 15s...
+2026-08-18 06:03:27,396 - INFO - Successfully queried ConfigMap sglang-configmap-98b0babfgezoga4p in namespace sgl-project
+2026-08-18 06:03:27,398 - INFO - ConfigMap data is not available yet, waiting for 15s...
+2026-08-18 06:03:42,432 - INFO - Successfully queried ConfigMap sglang-configmap-98b0babfgezoga4p in namespace sgl-project
+2026-08-18 06:03:42,434 - INFO - ConfigMap data is not available yet, waiting for 15s...
+2026-08-18 06:03:57,482 - INFO - Successfully queried ConfigMap sglang-configmap-98b0babfgezoga4p in namespace sgl-project
+2026-08-18 06:03:57,484 - INFO - Retrieved ConfigMap data: {'ascend-sglang-accuracy-test-98b0babfgezoga4p-sglang-decode-0': '172.22.3.166', 'ascend-sglang-accuracy-test-98b0babfgezoga4p-sglang-decode-1': '172.22.3.79', 'ascend-sglang-accuracy-test-98b0babfgezoga4p-sglang-prefill-0': '172.22.3.154', 'ascend-sglang-accuracy-test-98b0babfgezoga4p-sglang-prefill-1': '172.22.3.158', 'ascend-sglang-accuracy-test-98b0babfgezoga4p-sglang-router-0': '172.22.3.160'}
+2026-08-18 06:03:57,484 - INFO - ConfigMap monitoring complete: prefill_url=['172.22.3.154:8000'], decode_url=['172.22.3.166:8000'], bootstrap_ports=['8995'], node_ip_list=['172.22.3.166', '172.22.3.154']
+2026-08-18 06:08:42,502 - INFO - Node 172.22.3.154:8000 is ready
+2026-08-18 06:08:42,502 - INFO - Waiting for 1 more nodes to be ready...
+2026-08-18 06:09:42,505 - INFO - Node 172.22.3.166:8000 is ready
+2026-08-18 06:09:42,505 - INFO - All 2 nodes' ports are ready!
+2026-08-18 06:09:42,505 - INFO - Starting router with command: python3 -u -m sglang_router.launch_router --host 0.0.0.0 --port 6677 --pd-disaggregation --policy cache_aware --policy round_robin --prefill http://172.22.3.154:8000 8995 --decode http://172.22.3.166:8000
+2026-08-18 06:09:42,506 - INFO - Router process started with PID: 367
+/usr/local/python3.11.15/lib/python3.11/subprocess.py:1127: ResourceWarning: subprocess 367 is still running
+  _warn("subprocess %s is still running" % self.pid,
+can not use command: npu-smi info
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m794:[0m Starting router on 0.0.0.0:6677 | mode: PrefillDecode { prefill_urls: [("http://172.22.3.154:8000", Some(8995))], decode_urls: ["http://172.22.3.166:8000"], prefill_policy: None, decode_policy: None } | policy: RoundRobin | max_payload: 512MB
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::app_context[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/app_context.rs[0m[2m:[0m[2m412:[0m Tokenizer path is not provided, will load from worker on the fly
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::data_connector::factory[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/data_connector/factory.rs[0m[2m:[0m[2m51:[0m Initializing data connector: Memory
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::mcp::manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/mcp/manager.rs[0m[2m:[0m[2m90:[0m No static MCP servers connected
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m833:[0m Initializing workers for routing mode: PrefillDecode { prefill_urls: [("http://172.22.3.154:8000", Some(8995))], decode_urls: ["http://172.22.3.166:8000"], prefill_policy: None, decode_policy: None }
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m851:[0m Worker initialization job submitted (will complete in background)
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m863:[0m No MCP config provided, skipping MCP server initialization
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m875:[0m Workers initialized: 0 total, 0 healthy
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::routers::router_manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/routers/router_manager.rs[0m[2m:[0m[2m169:[0m Initializing RouterManager in single-router mode
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::routers::router_manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/routers/router_manager.rs[0m[2m:[0m[2m177:[0m Created single router with ID: http-pd
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::routers::router_manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/routers/router_manager.rs[0m[2m:[0m[2m216:[0m Set default router to http-pd
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::core::worker_manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/worker_manager.rs[0m[2m:[0m[2m350:[0m Starting load monitoring with interval: 30s
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m907:[0m Rate limiting is disabled (max_concurrent_requests = -1)
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m985:[0m Router ready | workers: []
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m197:[0m Workflow started [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mdefinition_id[0m[2m=[0mlocal_worker_registration
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m197:[0m Workflow started [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mdefinition_id[0m[2m=[0mlocal_worker_registration
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mdetect_connection_mode [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mdetect_connection_mode [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:50[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m1018:[0m Starting server on 0.0.0.0:6677
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mdetect_connection_mode [3mduration_ms[0m[2m=[0m1002
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mdiscover_metadata [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mdetect_connection_mode [3mduration_ms[0m[2m=[0m1004
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mdiscover_metadata [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mdiscover_dp_info [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mdiscover_metadata [3mduration_ms[0m[2m=[0m20
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mdiscover_dp_info [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mcreate_worker [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mcreate_worker [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mregister_workers [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mregister_workers [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::core::steps::worker::shared::activate[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/activate.rs[0m[2m:[0m[2m31:[0m Activated 1 worker(s) (marked as healthy)
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::tokenizer::registry[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/tokenizer/registry.rs[0m[2m:[0m[2m121:[0m Loading tokenizer 'glm-5' from source: /root/.cache/modelscope/hub/models/Eco-Tech/GLM-5.1-w4a8
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::policies::registry[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/policies/registry.rs[0m[2m:[0m[2m89:[0m Assigning policy round_robin to new model glm-5
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mactivate_workers [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mactivate_workers [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mupdate_policies [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mupdate_policies [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mGET [3muri[0m[2m=[0m/health [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"req-zA3lm8R9Xb0i4y7ErRPnME4Z"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mGET [3muri[0m[2m=[0m/health [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"req-zA3lm8R9Xb0i4y7ErRPnME4Z" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m74[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+2026-08-18 06:09:51,963 - INFO - Server http://172.22.3.160:6677/health is ready!
+2026-08-18 06:09:51,963 - INFO - Waiting 120 seconds for the server to fully initialize...
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mdiscover_metadata [3mduration_ms[0m[2m=[0m115
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mdiscover_dp_info [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mdiscover_dp_info [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mcreate_worker [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mcreate_worker [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mregister_workers [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mregister_workers [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::core::steps::worker::shared::activate[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/activate.rs[0m[2m:[0m[2m31:[0m Activated 1 worker(s) (marked as healthy)
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mregister_tokenizer [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mactivate_workers [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:51[0m [33m WARN[0m [2msmg::core::steps::worker::shared::update_policies[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/update_policies.rs[0m[2m:[0m[2m62:[0m Model glm-5 has conflicting tp_size: prefill=Some("4"), decode=Some("32")
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mactivate_workers [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [33m WARN[0m [2msmg::core::steps::worker::shared::update_policies[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/update_policies.rs[0m[2m:[0m[2m62:[0m Model glm-5 has conflicting dp_size: prefill=Some("1"), decode=Some("32")
+[2m2026-08-17 22:09:51[0m [33m WARN[0m [2msmg::core::steps::worker::shared::update_policies[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/update_policies.rs[0m[2m:[0m[2m62:[0m Model glm-5 has conflicting load_balance_method: prefill=Some("follow_bootstrap_room"), decode=Some("round_robin")
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mupdate_policies [3mduration_ms[0m[2m=[0m0
+[2m2026-08-17 22:09:51[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mupdate_policies [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:52[0m [32m INFO[0m [2msmg::tokenizer::registry[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/tokenizer/registry.rs[0m[2m:[0m[2m141:[0m Successfully registered tokenizer 'glm-5' with id: 7d88c324-003e-404b-a956-97051465a06d
+[2m2026-08-17 22:09:52[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mregister_tokenizer [3mattempt[0m[2m=[0m1
+[2m2026-08-17 22:09:52[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mstep_id[0m[2m=[0mregister_tokenizer [3mduration_ms[0m[2m=[0m999
+[2m2026-08-17 22:09:52[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m259:[0m Workflow completed [3minstance_id[0m[2m=[0m07e2a579-38ea-4093-806b-a712686cc87f [3mduration_ms[0m[2m=[0m2023
+[2m2026-08-17 22:09:52[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mstep_id[0m[2m=[0mregister_tokenizer [3mduration_ms[0m[2m=[0m903
+[2m2026-08-17 22:09:52[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m259:[0m Workflow completed [3minstance_id[0m[2m=[0m962e4082-f33d-441d-ae32-81bfa7b2b452 [3mduration_ms[0m[2m=[0m2023
+[CI Test Method] TestNPUGLM5_1_W4A8_PD_SEP_AIME2026.test_npu_glm5_1_w4a8_pd_sep_aime2026
+2026-08-18 06:11:51,964 - INFO - get env SGLANG_TEST_MAX_RETRY = 0
+2026-08-18 06:11:51,964 - INFO - get env METRICS_DATA_FILE = /root/.cache/tests/output/pllimax-pllimax-outputlogdirstructure-20260818-0026-32029874051-2/Nightly_Test_NPU/accuracy/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26
+2026-08-18 06:11:51,964 - INFO - The metrics result file: /root/.cache/tests/output/pllimax-pllimax-outputlogdirstructure-20260818-0026-32029874051-2/Nightly_Test_NPU/accuracy/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26
+2026-08-18 06:11:51,964 - INFO - Generated evalscope script: /tmp/evalscope_run_GLM-5.1-w4a8_aime26.py
+/bin/bash: /root/sglang/python/sglang/test/ascend/e2e/run_evalscope.sh: No such file or directory
+Traceback (most recent call last):
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/common.py", line 3408, in retry
+    return fn()
+           ^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/test_utils.py", line 2150, in <lambda>
+    lambda: super(CustomTestCase, self)._callTestMethod(method),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/unittest/case.py", line 579, in _callTestMethod
+    if method() is not None:
+       ^^^^^^^^
+  File "/root/sglang/test/registered/npu/accuracy/glm5_1/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26.py", line 178, in test_npu_glm5_1_w4a8_pd_sep_aime2026
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_multi_node_utils.py", line 413, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 742, in run_accuracy
+    metrics = run_evalscope(
+              ^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 166, in run_evalscope
+    subprocess.run(install_cmd, shell=True, check=True)
+  File "/usr/local/python3.11.15/lib/python3.11/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '/bin/bash /root/sglang/python/sglang/test/ascend/e2e/run_evalscope.sh' returned non-zero exit status 127.
+E
+======================================================================
+ERROR: test_npu_glm5_1_w4a8_pd_sep_aime2026 (__main__.TestNPUGLM5_1_W4A8_PD_SEP_AIME2026.test_npu_glm5_1_w4a8_pd_sep_aime2026)
+Run NPU accuracy test for GLM-5.1-w4a8 PD separation on AIME2026
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/common.py", line 3408, in retry
+    return fn()
+           ^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/test_utils.py", line 2150, in <lambda>
+    lambda: super(CustomTestCase, self)._callTestMethod(method),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/unittest/case.py", line 579, in _callTestMethod
+    if method() is not None:
+       ^^^^^^^^
+  File "/root/sglang/test/registered/npu/accuracy/glm5_1/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26.py", line 178, in test_npu_glm5_1_w4a8_pd_sep_aime2026
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_multi_node_utils.py", line 413, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 742, in run_accuracy
+    metrics = run_evalscope(
+              ^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 166, in run_evalscope
+    subprocess.run(install_cmd, shell=True, check=True)
+  File "/usr/local/python3.11.15/lib/python3.11/subprocess.py", line 571, in run
+    raise CalledProcessError(retcode, process.args,
+subprocess.CalledProcessError: Command '/bin/bash /root/sglang/python/sglang/test/ascend/e2e/run_evalscope.sh' returned non-zero exit status 127.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/sgl-workspace/sglang/python/sglang/test/test_utils.py", line 2149, in _callTestMethod
+    retry(
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/common.py", line 3423, in retry
+    raise Exception(f"retry() exceed maximum number of retries.")
+Exception: retry() exceed maximum number of retries.
+
+----------------------------------------------------------------------
+Ran 1 test in 550.080s
+
+FAILED (errors=1)

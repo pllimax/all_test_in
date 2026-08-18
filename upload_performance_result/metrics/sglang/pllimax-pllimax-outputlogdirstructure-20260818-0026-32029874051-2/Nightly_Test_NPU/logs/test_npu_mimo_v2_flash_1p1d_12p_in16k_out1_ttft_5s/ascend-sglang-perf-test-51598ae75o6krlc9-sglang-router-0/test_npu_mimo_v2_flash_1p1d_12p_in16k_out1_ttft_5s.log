@@ -1,0 +1,413 @@
+can not use command: npu-smi info
+2026-08-18 06:17:30,012 - INFO - get env NAMESPACE = sgl-project
+2026-08-18 06:17:30,012 - INFO - get env KUBE_CONFIG_MAP = sglang-configmap-51598ae75o6krlc9
+2026-08-18 06:17:30,013 - INFO - The nic name matched is enp23s0f3
+2026-08-18 06:17:30,013 - INFO - PYTHON_FOR_TEST_TOOL: python3
+2026-08-18 06:17:30,019 - INFO - get env POD_IP = 172.22.3.181
+2026-08-18 06:17:30,019 - INFO - get env HOSTNAME = ascend-sglang-perf-test-51598ae75o6krlc9-sglang-router-0
+2026-08-18 06:17:30,019 - INFO - Init 172.22.3.181 cls.role='router'!
+2026-08-18 06:17:30,019 - INFO - The current node is router, skip this function start_pd_server.
+2026-08-18 06:17:30,180 - INFO - get env KUBECONFIG = /root/.cache/.cache/kb.yaml
+2026-08-18 06:17:30,233 - INFO - Successfully queried ConfigMap sglang-configmap-51598ae75o6krlc9 in namespace sgl-project
+2026-08-18 06:17:30,327 - INFO - Upserted ConfigMap sglang-configmap-51598ae75o6krlc9: active-test-class=TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1_TTFT_5s
+2026-08-18 06:17:30,329 - INFO - active-test-class set for the first time (TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1_TTFT_5s)
+2026-08-18 06:17:30,329 - INFO - Starting router in thread...
+2026-08-18 06:17:30,329 - INFO - launch_router start ......
+2026-08-18 06:17:30,330 - INFO - Waiting for router to be ready at http://172.22.3.181:6677/health
+2026-08-18 06:17:30,330 - INFO - Waiting for the server to start at http://172.22.3.181:6677/health...
+2026-08-18 06:17:30,461 - INFO - Discovered 6 worker nodes (prefill: 3, decode: 3)
+2026-08-18 06:17:30,492 - INFO - Successfully queried ConfigMap sglang-configmap-51598ae75o6krlc9 in namespace sgl-project
+2026-08-18 06:17:30,494 - INFO - Retrieved ConfigMap data: {'active-test-class': 'TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1_TTFT_5s', 'ascend-sglang-perf-test-51598ae75o6krlc9-sglang-decode-0': '172.22.3.138', 'ascend-sglang-perf-test-51598ae75o6krlc9-sglang-prefill-0': '172.22.3.154', 'ascend-sglang-perf-test-51598ae75o6krlc9-sglang-router-0': '172.22.3.181'}
+2026-08-18 06:17:30,494 - INFO - Skipping ConfigMap entry with non-numeric suffix: active-test-class
+2026-08-18 06:17:30,494 - INFO - ConfigMap monitoring complete: prefill_url=['172.22.3.154:8000'], decode_url=['172.22.3.138:8000'], bootstrap_ports=['8995'], node_ip_list=['172.22.3.138', '172.22.3.154']
+2026-08-18 06:24:15,525 - INFO - Node 172.22.3.138:8000 is ready
+2026-08-18 06:24:15,525 - INFO - Waiting for 1 more nodes to be ready...
+2026-08-18 06:27:15,538 - INFO - Node 172.22.3.154:8000 is ready
+2026-08-18 06:27:15,538 - INFO - All 2 nodes' ports are ready!
+2026-08-18 06:27:15,538 - INFO - Starting router with command: python3 -u -m sglang_router.launch_router --host 0.0.0.0 --port 6677 --pd-disaggregation --policy cache_aware --health-check-interval-secs 3600 --mini-lb --prefill http://172.22.3.154:8000 8995 --decode http://172.22.3.138:8000
+2026-08-18 06:27:15,539 - INFO - Router process started with PID: 366
+/usr/local/python3.11.15/lib/python3.11/subprocess.py:1127: ResourceWarning: subprocess 366 is still running
+  _warn("subprocess %s is still running" % self.pid,
+can not use command: npu-smi info
+[33mMiniLB is only for debugging purposes, it only supports random policy![0m
+[MiniLB] Overriding policy to random
+INFO:     Started server process [366]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:6677 (Press CTRL+C to quit)
+INFO:     172.22.3.181:52968 - "GET /health HTTP/1.1" 200 OK
+2026-08-18 06:27:30,448 - INFO - Server http://172.22.3.181:6677/health is ready!
+2026-08-18 06:27:30,448 - INFO - Waiting 120 seconds for the server to fully initialize...
+[CI Test Method] TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1_TTFT_5s.test_npu_mimo_v2_flash_1p1d_16p_in16k_out1_ttft_5s
+2026-08-18 06:29:30,448 - INFO - get env SGLANG_TEST_MAX_RETRY = 0
+2026-08-18 06:29:30,449 - INFO - Executing test attempt 1/2
+2026-08-18 06:29:30,449 - INFO - Starting benchmark with parameters: {'host': '172.22.3.181', 'port': '6677', 'model_path': '/root/.cache/modelscope/hub/models/iridiumine/MiMo-V2-Flash-W8A8', 'backend': 'sglang', 'dataset_name': 'random', 'dataset_path': '/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', 'request_rate': 0.4, 'repeat_rate': None, 'max_concurrency': 64, 'num_prompts': 128, 'input_len': 16000, 'output_len': 1, 'random_range_ratio': 1, 'image_resolution': None, 'image_count': None, 'warmup_requests': None, 'seed': 1, 'temperature': None, 'top_p': None}
+2026-08-18 06:29:30,449 - INFO - get env METRICS_DATA_FILE = /root/.cache/tests/output/pllimax-pllimax-outputlogdirstructure-20260818-0026-32029874051-2/Nightly_Test_NPU/perf/test_npu_mimo_v2_flash_1p1d_12p_in16k_out1_ttft_5s
+2026-08-18 06:29:30,449 - INFO - The metrics result file: /root/.cache/tests/output/pllimax-pllimax-outputlogdirstructure-20260818-0026-32029874051-2/Nightly_Test_NPU/perf/test_npu_mimo_v2_flash_1p1d_12p_in16k_out1_ttft_5s/bench_serving_metrics.txt
+2026-08-18 06:29:30,926 - INFO - memfabric_hybrid          1.0.8
+2026-08-18 06:29:30,926 - INFO - sgl_kernel_npu            2026.6.1
+2026-08-18 06:29:30,926 - INFO - sglang                    0.5.18.dev687+gaf743371c       /sgl-workspace/sglang/python
+2026-08-18 06:29:30,926 - INFO - sglang-router             0.3.2
+2026-08-18 06:29:30,926 - INFO - torch                     2.10.0+cpu
+2026-08-18 06:29:30,926 - INFO - torch_npu                 2.10.0
+2026-08-18 06:29:30,926 - INFO - torchaudio                2.10.0+cpu
+2026-08-18 06:29:30,926 - INFO - torchvision               0.25.0+cpu
+2026-08-18 06:29:30,926 - INFO - CANN: 9.0.0
+2026-08-18 06:29:30,926 - INFO - transformers: 5.12.1
+
+2026-08-18 06:29:30,932 - INFO - Command: python3 -m sglang.bench_serving --host 172.22.3.181 --port 6677 --model /root/.cache/modelscope/hub/models/iridiumine/MiMo-V2-Flash-W8A8 --backend sglang --dataset-name random --dataset-path /tmp/ShareGPT_V3_unfiltered_cleaned_split.json --request-rate 0.4 --max-concurrency 64 --num-prompts 128 --random-input-len 16000 --random-output-len 1 --random-range-ratio 1 --seed 1
+can not use command: npu-smi info
+/sgl-workspace/sglang/python/sglang/bench_serving.py:13: FutureWarning: `sglang.bench_serving` is deprecated and will be removed in a future release; use `sglang.benchmark.serving` instead (e.g. `python -m sglang.benchmark.serving`).
+  warnings.warn(
+/usr/local/python3.11.15/lib/python3.11/site-packages/fastapi/routing.py:352: FastAPIDeprecationWarning: ORJSONResponse is deprecated, FastAPI now serializes data directly to JSON bytes via Pydantic when a return type or response model is set, which is faster and doesn't need a custom response class. Read more in the FastAPI docs: https://fastapi.tiangolo.com/advanced/custom-response/#orjson-or-response-model and https://fastapi.tiangolo.com/tutorial/response-model/
+  return await dependant.call(**values)
+INFO:     172.22.3.181:60094 - "GET /v1/models HTTP/1.1" 200 OK
+[transformers] You are using a model of type `mimo_v2_flash` to instantiate a model of type ``. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.
+/usr/local/python3.11.15/lib/python3.11/site-packages/transformers/modeling_rope_utils.py:1036: FutureWarning: `rope_config_validation` is deprecated and has been removed. Its functionality has been moved to RotaryEmbeddingConfigMixin.validate_rope method. PreTrainedConfig inherits this class, so please call self.validate_rope() instead. Also, make sure to use the new rope_parameters syntax. You can call self.standardize_rope_params() in the meantime.
+  warnings.warn(
+/usr/local/python3.11.15/lib/python3.11/site-packages/sglang_router/mini_lb.py:379: FastAPIDeprecationWarning: ORJSONResponse is deprecated, FastAPI now serializes data directly to JSON bytes via Pydantic when a return type or response model is set, which is faster and doesn't need a custom response class. Read more in the FastAPI docs: https://fastapi.tiangolo.com/advanced/custom-response/#orjson-or-response-model and https://fastapi.tiangolo.com/tutorial/response-model/
+  return await _get_model_info_impl()
+INFO:     172.22.3.181:60108 - "GET /model_info HTTP/1.1" 200 OK
+[transformers] You are using a model of type `mimo_v2_flash` to instantiate a model of type ``. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.
+INFO:     172.22.3.181:60120 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:38474 - "POST /flush_cache?timeout=60.0 HTTP/1.1" 200 OK
+benchmark_args=Namespace(backend='sglang', base_url=None, host='172.22.3.181', port=6677, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/iridiumine/MiMo-V2-Flash-W8A8', served_model_name=None, tokenizer=None, num_prompts=128, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=16000, random_output_len=1, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=0.4, use_trace_timestamps=False, max_concurrency=64, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+Waiting up to 60s for http://172.22.3.181:6677/v1/models to become ready...
+Server ready in 0.0s.
+Namespace(backend='sglang', base_url=None, host='172.22.3.181', port=6677, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/iridiumine/MiMo-V2-Flash-W8A8', served_model_name=None, tokenizer=None, num_prompts=128, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=16000, random_output_len=1, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=0.4, use_trace_timestamps=False, max_concurrency=64, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+#Input tokens: 2048000
+#Output tokens: 128
+Starting warmup with 1 sequences...
+Warmup completed with 1 sequences. Starting main benchmark run...
+INFO:     172.22.3.181:38486 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:38496 - "POST /generate HTTP/1.1" 200 OK
+  0%|          | 0/128 [00:00<?, ?it/s]
+  1%|          | 1/128 [00:01<03:35,  1.70s/it]
+INFO:     172.22.3.181:38502 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:38510 - "POST /generate HTTP/1.1" 200 OK
+  2%|▏         | 2/128 [00:02<02:25,  1.16s/it]
+INFO:     172.22.3.181:38526 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:38542 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:38544 - "POST /generate HTTP/1.1" 200 OK
+  2%|▏         | 3/128 [00:05<04:05,  1.96s/it]
+INFO:     172.22.3.181:38550 - "POST /generate HTTP/1.1" 200 OK
+  4%|▍         | 5/128 [00:06<02:17,  1.12s/it]
+  5%|▍         | 6/128 [00:07<02:03,  1.01s/it]
+INFO:     172.22.3.181:38554 - "POST /generate HTTP/1.1" 200 OK
+  5%|▌         | 7/128 [00:07<01:38,  1.22it/s]
+  6%|▋         | 8/128 [00:07<01:19,  1.50it/s]
+INFO:     172.22.3.181:44090 - "POST /generate HTTP/1.1" 200 OK
+  7%|▋         | 9/128 [00:08<01:21,  1.45it/s]
+INFO:     172.22.3.181:44100 - "POST /generate HTTP/1.1" 200 OK
+  8%|▊         | 10/128 [00:09<01:41,  1.16it/s]
+INFO:     172.22.3.181:44104 - "POST /generate HTTP/1.1" 200 OK
+  9%|▊         | 11/128 [00:11<02:18,  1.18s/it]
+INFO:     172.22.3.181:44112 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:44124 - "POST /generate HTTP/1.1" 200 OK
+  9%|▉         | 12/128 [00:13<02:24,  1.25s/it]
+ 10%|█         | 13/128 [00:15<03:18,  1.72s/it]
+INFO:     172.22.3.181:46970 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:46980 - "POST /generate HTTP/1.1" 200 OK
+ 11%|█         | 14/128 [00:16<02:43,  1.43s/it]
+INFO:     172.22.3.181:46986 - "POST /generate HTTP/1.1" 200 OK
+ 12%|█▏        | 15/128 [00:21<04:45,  2.53s/it]
+INFO:     172.22.3.181:46992 - "POST /generate HTTP/1.1" 200 OK
+ 13%|█▎        | 17/128 [00:24<03:48,  2.06s/it]
+INFO:     172.22.3.181:47000 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:47008 - "POST /generate HTTP/1.1" 200 OK
+ 14%|█▍        | 18/128 [00:25<03:22,  1.84s/it]
+INFO:     172.22.3.181:47024 - "POST /generate HTTP/1.1" 200 OK
+ 15%|█▍        | 19/128 [00:28<03:28,  1.92s/it]
+ 16%|█▌        | 20/128 [00:29<03:03,  1.70s/it]
+INFO:     172.22.3.181:55428 - "POST /generate HTTP/1.1" 200 OK
+ 16%|█▋        | 21/128 [00:29<02:22,  1.33s/it]
+INFO:     172.22.3.181:33784 - "POST /generate HTTP/1.1" 200 OK
+ 17%|█▋        | 22/128 [00:32<03:22,  1.91s/it]
+INFO:     172.22.3.181:33794 - "POST /generate HTTP/1.1" 200 OK
+ 18%|█▊        | 23/128 [00:41<06:45,  3.86s/it]
+INFO:     172.22.3.181:33804 - "POST /generate HTTP/1.1" 200 OK
+ 19%|█▉        | 24/128 [00:42<05:12,  3.01s/it]
+INFO:     172.22.3.181:42310 - "POST /generate HTTP/1.1" 200 OK
+ 20%|█▉        | 25/128 [00:45<05:07,  2.98s/it]
+INFO:     172.22.3.181:42314 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:42318 - "POST /generate HTTP/1.1" 200 OK
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+INFO:     172.22.3.181:42334 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:42338 - "POST /generate HTTP/1.1" 200 OK
+ 20%|██        | 26/128 [00:50<06:13,  3.66s/it]
+ 21%|██        | 27/128 [00:56<07:09,  4.25s/it]
+ 22%|██▏       | 28/128 [00:56<05:07,  3.07s/it]
+ 23%|██▎       | 29/128 [00:57<03:47,  2.30s/it]
+INFO:     172.22.3.181:60178 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:60190 - "POST /generate HTTP/1.1" 200 OK
+ 23%|██▎       | 30/128 [00:57<02:42,  1.66s/it]
+ 24%|██▍       | 31/128 [01:02<04:21,  2.69s/it]
+INFO:     172.22.3.181:60196 - "POST /generate HTTP/1.1" 200 OK
+ 25%|██▌       | 32/128 [01:02<03:07,  1.96s/it]
+INFO:     172.22.3.181:37194 - "POST /generate HTTP/1.1" 200 OK
+ 26%|██▌       | 33/128 [01:04<02:49,  1.78s/it]
+INFO:     172.22.3.181:37196 - "POST /generate HTTP/1.1" 200 OK
+ 27%|██▋       | 34/128 [01:11<05:40,  3.62s/it]
+INFO:     172.22.3.181:37202 - "POST /generate HTTP/1.1" 200 OK
+ 27%|██▋       | 35/128 [01:13<04:49,  3.11s/it]
+INFO:     172.22.3.181:37216 - "POST /generate HTTP/1.1" 200 OK
+ 28%|██▊       | 36/128 [01:16<04:41,  3.06s/it]
+INFO:     172.22.3.181:32852 - "POST /generate HTTP/1.1" 200 OK
+ 29%|██▉       | 37/128 [01:17<03:41,  2.43s/it]
+INFO:     172.22.3.181:32868 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:32874 - "POST /generate HTTP/1.1" 200 OK
+ 30%|██▉       | 38/128 [01:20<03:57,  2.63s/it]
+INFO:     172.22.3.181:32890 - "POST /generate HTTP/1.1" 200 OK
+ 30%|███       | 39/128 [01:25<04:38,  3.12s/it]
+INFO:     172.22.3.181:42984 - "POST /generate HTTP/1.1" 200 OK
+ 32%|███▏      | 41/128 [01:28<03:37,  2.50s/it]
+INFO:     172.22.3.181:42990 - "POST /generate HTTP/1.1" 200 OK
+ 33%|███▎      | 42/128 [01:39<06:41,  4.67s/it]
+INFO:     172.22.3.181:42998 - "POST /generate HTTP/1.1" 200 OK
+ 34%|███▎      | 43/128 [01:43<06:09,  4.35s/it]
+INFO:     172.22.3.181:43004 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:43018 - "POST /generate HTTP/1.1" 200 OK
+ 34%|███▍      | 44/128 [01:44<04:44,  3.39s/it]
+ 35%|███▌      | 45/128 [01:48<04:54,  3.55s/it]
+INFO:     172.22.3.181:34872 - "POST /generate HTTP/1.1" 200 OK
+ 36%|███▌      | 46/128 [01:48<03:43,  2.73s/it]
+INFO:     172.22.3.181:34888 - "POST /generate HTTP/1.1" 200 OK
+ 37%|███▋      | 47/128 [01:49<03:00,  2.23s/it]
+INFO:     172.22.3.181:34896 - "POST /generate HTTP/1.1" 200 OK
+ 38%|███▊      | 48/128 [01:55<04:26,  3.33s/it]
+INFO:     172.22.3.181:34910 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:34912 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:34928 - "POST /generate HTTP/1.1" 200 OK
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+ 38%|███▊      | 49/128 [01:56<03:25,  2.60s/it]
+ 39%|███▉      | 50/128 [01:57<02:42,  2.09s/it]
+ 40%|███▉      | 51/128 [01:58<02:03,  1.60s/it]
+INFO:     172.22.3.181:37098 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:37104 - "POST /generate HTTP/1.1" 200 OK
+ 41%|████      | 52/128 [01:58<01:39,  1.31s/it]
+INFO:     172.22.3.181:37120 - "POST /generate HTTP/1.1" 200 OK
+ 41%|████▏     | 53/128 [02:00<01:57,  1.56s/it]
+ 42%|████▏     | 54/128 [02:01<01:34,  1.27s/it]
+INFO:     172.22.3.181:37124 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:37136 - "POST /generate HTTP/1.1" 200 OK
+ 43%|████▎     | 55/128 [02:02<01:22,  1.12s/it]
+ 44%|████▍     | 56/128 [02:03<01:34,  1.32s/it]
+INFO:     172.22.3.181:37140 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:37152 - "POST /generate HTTP/1.1" 200 OK
+ 45%|████▍     | 57/128 [02:04<01:19,  1.12s/it]
+ 45%|████▌     | 58/128 [02:06<01:28,  1.27s/it]
+INFO:     172.22.3.181:37156 - "POST /generate HTTP/1.1" 200 OK
+ 46%|████▌     | 59/128 [02:06<01:14,  1.08s/it]
+INFO:     172.22.3.181:60816 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:60820 - "POST /generate HTTP/1.1" 200 OK
+ 47%|████▋     | 60/128 [02:08<01:30,  1.33s/it]
+ 48%|████▊     | 61/128 [02:11<02:02,  1.83s/it]
+INFO:     172.22.3.181:60828 - "POST /generate HTTP/1.1" 200 OK
+ 48%|████▊     | 62/128 [02:12<01:29,  1.36s/it]
+INFO:     172.22.3.181:60842 - "POST /generate HTTP/1.1" 200 OK
+ 49%|████▉     | 63/128 [02:13<01:28,  1.36s/it]
+INFO:     172.22.3.181:60846 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:60850 - "POST /generate HTTP/1.1" 200 OK
+ 50%|█████     | 64/128 [02:16<01:57,  1.84s/it]
+ 51%|█████     | 65/128 [02:17<01:46,  1.69s/it]
+INFO:     172.22.3.181:34064 - "POST /generate HTTP/1.1" 200 OK
+ 52%|█████▏    | 66/128 [02:17<01:15,  1.23s/it]
+INFO:     172.22.3.181:34078 - "POST /generate HTTP/1.1" 200 OK
+ 52%|█████▏    | 67/128 [02:19<01:27,  1.43s/it]
+INFO:     172.22.3.181:34082 - "POST /generate HTTP/1.1" 200 OK
+ 53%|█████▎    | 68/128 [02:22<01:48,  1.82s/it]
+INFO:     172.22.3.181:35202 - "POST /generate HTTP/1.1" 200 OK
+ 54%|█████▍    | 69/128 [02:24<01:47,  1.82s/it]
+INFO:     172.22.3.181:35208 - "POST /generate HTTP/1.1" 200 OK
+ 55%|█████▍    | 70/128 [02:31<03:19,  3.44s/it]
+INFO:     172.22.3.181:45690 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:45698 - "POST /generate HTTP/1.1" 200 OK
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+INFO:     172.22.3.181:45710 - "POST /generate HTTP/1.1" 200 OK
+ 55%|█████▌    | 71/128 [02:33<02:55,  3.08s/it]
+ 56%|█████▋    | 72/128 [02:39<03:38,  3.90s/it]
+ 57%|█████▋    | 73/128 [02:40<02:38,  2.88s/it]
+INFO:     172.22.3.181:45726 - "POST /generate HTTP/1.1" 200 OK
+ 58%|█████▊    | 74/128 [02:40<01:58,  2.20s/it]
+INFO:     172.22.3.181:45730 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:45742 - "POST /generate HTTP/1.1" 200 OK
+ 59%|█████▊    | 75/128 [02:44<02:21,  2.67s/it]
+ 59%|█████▉    | 76/128 [02:45<01:57,  2.25s/it]
+INFO:     172.22.3.181:60822 - "POST /generate HTTP/1.1" 200 OK
+ 60%|██████    | 77/128 [02:46<01:27,  1.71s/it]
+INFO:     172.22.3.181:60826 - "POST /generate HTTP/1.1" 200 OK
+ 61%|██████    | 78/128 [02:52<02:38,  3.17s/it]
+INFO:     172.22.3.181:60840 - "POST /generate HTTP/1.1" 200 OK
+ 62%|██████▏   | 79/128 [02:53<02:04,  2.54s/it]
+INFO:     172.22.3.181:37640 - "POST /generate HTTP/1.1" 200 OK
+ 62%|██████▎   | 80/128 [02:57<02:15,  2.82s/it]
+INFO:     172.22.3.181:37650 - "POST /generate HTTP/1.1" 200 OK
+ 63%|██████▎   | 81/128 [03:00<02:18,  2.95s/it]
+INFO:     172.22.3.181:37662 - "POST /generate HTTP/1.1" 200 OK
+ 64%|██████▍   | 82/128 [03:05<02:48,  3.67s/it]
+INFO:     172.22.3.181:42202 - "POST /generate HTTP/1.1" 200 OK
+ 65%|██████▍   | 83/128 [03:08<02:28,  3.31s/it]
+INFO:     172.22.3.181:42214 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:42226 - "POST /generate HTTP/1.1" 200 OK
+ 66%|██████▌   | 84/128 [03:11<02:27,  3.36s/it]
+ 66%|██████▋   | 85/128 [03:12<01:55,  2.68s/it]
+INFO:     172.22.3.181:42242 - "POST /generate HTTP/1.1" 200 OK
+ 67%|██████▋   | 86/128 [03:13<01:28,  2.10s/it]
+INFO:     172.22.3.181:43554 - "POST /generate HTTP/1.1" 200 OK
+ 68%|██████▊   | 87/128 [03:19<02:09,  3.16s/it]
+INFO:     172.22.3.181:43564 - "POST /generate HTTP/1.1" 200 OK
+ 69%|██████▉   | 88/128 [03:20<01:45,  2.64s/it]
+INFO:     172.22.3.181:58802 - "POST /generate HTTP/1.1" 200 OK
+ 70%|██████▉   | 89/128 [03:29<02:49,  4.36s/it]
+INFO:     172.22.3.181:58808 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:58816 - "POST /generate HTTP/1.1" 200 OK
+ 70%|███████   | 90/128 [03:31<02:27,  3.87s/it]
+ 71%|███████   | 91/128 [03:34<02:08,  3.46s/it]
+INFO:     172.22.3.181:41112 - "POST /generate HTTP/1.1" 200 OK
+ 72%|███████▏  | 92/128 [03:35<01:34,  2.62s/it]
+INFO:     172.22.3.181:41116 - "POST /generate HTTP/1.1" 200 OK
+ 73%|███████▎  | 93/128 [03:42<02:18,  3.95s/it]
+INFO:     172.22.3.181:41126 - "POST /generate HTTP/1.1" 200 OK
+ 73%|███████▎  | 94/128 [03:43<01:49,  3.21s/it]
+INFO:     172.22.3.181:41136 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:41144 - "POST /generate HTTP/1.1" 200 OK
+ 74%|███████▍  | 95/128 [03:45<01:35,  2.89s/it]
+ 75%|███████▌  | 96/128 [03:47<01:17,  2.42s/it]
+INFO:     172.22.3.181:58962 - "POST /generate HTTP/1.1" 200 OK
+ 76%|███████▌  | 97/128 [03:47<00:58,  1.90s/it]
+INFO:     172.22.3.181:58972 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:58980 - "POST /generate HTTP/1.1" 200 OK
+ 77%|███████▋  | 98/128 [03:53<01:32,  3.08s/it]
+ 77%|███████▋  | 99/128 [03:55<01:21,  2.83s/it]
+INFO:     172.22.3.181:58984 - "POST /generate HTTP/1.1" 200 OK
+ 78%|███████▊  | 100/128 [03:56<01:00,  2.17s/it]
+INFO:     172.22.3.181:58988 - "POST /generate HTTP/1.1" 200 OK
+ 79%|███████▉  | 101/128 [03:58<00:54,  2.02s/it]
+INFO:     172.22.3.181:42398 - "POST /generate HTTP/1.1" 200 OK
+ 80%|███████▉  | 102/128 [03:59<00:44,  1.71s/it]
+INFO:     172.22.3.181:42404 - "POST /generate HTTP/1.1" 200 OK
+ 80%|████████  | 103/128 [04:00<00:44,  1.76s/it]
+INFO:     172.22.3.181:42410 - "POST /generate HTTP/1.1" 200 OK
+ 81%|████████▏ | 104/128 [04:06<01:08,  2.86s/it]
+INFO:     172.22.3.181:51798 - "POST /generate HTTP/1.1" 200 OK
+ 82%|████████▏ | 105/128 [04:07<00:53,  2.33s/it]
+INFO:     172.22.3.181:51812 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:51828 - "POST /generate HTTP/1.1" 200 OK
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+ 83%|████████▎ | 106/128 [04:13<01:15,  3.43s/it]
+INFO:     172.22.3.181:46512 - "POST /generate HTTP/1.1" 200 OK
+ 84%|████████▎ | 107/128 [04:15<01:05,  3.13s/it]
+INFO:     172.22.3.181:46528 - "POST /generate HTTP/1.1" 200 OK
+ 85%|████████▌ | 109/128 [04:22<01:01,  3.23s/it]
+INFO:     172.22.3.181:38668 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:38684 - "POST /generate HTTP/1.1" 200 OK
+ 86%|████████▌ | 110/128 [04:25<00:56,  3.16s/it]
+INFO:     172.22.3.181:38698 - "POST /generate HTTP/1.1" 200 OK
+ 87%|████████▋ | 111/128 [04:40<01:45,  6.21s/it]
+ 88%|████████▊ | 112/128 [04:40<01:14,  4.67s/it]
+INFO:     172.22.3.181:38712 - "POST /generate HTTP/1.1" 200 OK
+ 88%|████████▊ | 113/128 [04:41<00:53,  3.54s/it]
+INFO:     172.22.3.181:39956 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:39958 - "POST /generate HTTP/1.1" 200 OK
+ 89%|████████▉ | 114/128 [04:47<01:00,  4.36s/it]
+ 90%|████████▉ | 115/128 [04:50<00:51,  3.96s/it]
+INFO:     172.22.3.181:39972 - "POST /generate HTTP/1.1" 200 OK
+ 91%|█████████ | 116/128 [04:51<00:34,  2.85s/it]
+INFO:     172.22.3.181:39988 - "POST /generate HTTP/1.1" 200 OK
+ 91%|█████████▏| 117/128 [04:54<00:33,  3.05s/it]
+INFO:     172.22.3.181:42468 - "POST /generate HTTP/1.1" 200 OK
+ 92%|█████████▏| 118/128 [04:58<00:31,  3.19s/it]
+INFO:     172.22.3.181:42478 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:42492 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:42508 - "POST /generate HTTP/1.1" 200 OK
+Unclosed connection
+client_connection: Connection<ConnectionKey(host='172.22.3.154', port=8000, is_ssl=False, ssl=True, proxy=None, proxy_auth=None, proxy_headers_hash=None, server_hostname=None)>
+INFO:     172.22.3.181:42518 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.181:42534 - "POST /generate HTTP/1.1" 200 OK
+ 93%|█████████▎| 119/128 [05:04<00:37,  4.15s/it]
+INFO:     172.22.3.181:42544 - "POST /generate HTTP/1.1" 200 OK
+ 94%|█████████▍| 120/128 [05:07<00:30,  3.86s/it]
+ 95%|█████████▍| 121/128 [05:08<00:19,  2.85s/it]
+ 95%|█████████▌| 122/128 [05:08<00:12,  2.08s/it]
+ 96%|█████████▌| 123/128 [05:08<00:08,  1.60s/it]
+ 97%|█████████▋| 124/128 [05:09<00:04,  1.17s/it]
+INFO:     172.22.3.181:37208 - "POST /generate HTTP/1.1" 200 OK
+ 98%|█████████▊| 125/128 [05:09<00:02,  1.05it/s]
+INFO:     172.22.3.181:37210 - "POST /generate HTTP/1.1" 200 OK
+ 98%|█████████▊| 126/128 [05:13<00:03,  1.94s/it]
+INFO:     172.22.3.181:37212 - "POST /generate HTTP/1.1" 200 OK
+ 99%|█████████▉| 127/128 [05:15<00:01,  1.93s/it]
+100%|██████████| 128/128 [05:17<00:00,  1.96s/it]
+100%|██████████| 128/128 [05:21<00:00,  2.51s/it]
+INFO:     172.22.3.181:41172 - "GET /server_info HTTP/1.1" 404 Not Found
+INFO:     172.22.3.181:41180 - "GET /server_info HTTP/1.1" 404 Not Found
+============ Serving Benchmark Result ============
+Backend:                                 sglang    
+Traffic request rate:                    0.4       
+Max request concurrency:                 64        
+Successful requests:                     128       
+Benchmark duration (s):                  321.54    
+Total input tokens:                      2048000   
+Total input text tokens:                 2048000   
+Total generated tokens:                  128       
+Total generated tokens (retokenized):    127       
+Request throughput (req/s):              0.40      
+Input token throughput (tok/s):          6369.37   
+Output token throughput (tok/s):         0.40      
+Peak output token throughput (tok/s):    3.00      
+Peak concurrent requests:                5         
+Total token throughput (tok/s):          6369.77   
+Concurrency:                             0.37      
+----------------End-to-End Latency----------------
+Mean E2E Latency (ms):                   917.75    
+Median E2E Latency (ms):                 819.86    
+P90 E2E Latency (ms):                    1263.11   
+P95 E2E Latency (ms):                    1507.06   
+P99 E2E Latency (ms):                    1681.83   
+---------------Time to First Token----------------
+Mean TTFT (ms):                          911.35    
+Median TTFT (ms):                        819.84    
+P90 TTFT (ms):                           1263.09   
+P95 TTFT (ms):                           1507.05   
+P99 TTFT (ms):                           1681.81   
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          0.00      
+Median TPOT (ms):                        0.00      
+P90 TPOT (ms):                           0.00      
+P95 TPOT (ms):                           0.00      
+P99 TPOT (ms):                           0.00      
+---------------Inter-Token Latency----------------
+Mean ITL (ms):                           0.00      
+Median ITL (ms):                         0.00      
+P90 ITL (ms):                            0.00      
+P95 ITL (ms):                            0.00      
+P99 ITL (ms):                            0.00      
+Max ITL (ms):                            0.00      
+==================================================
+[METRIC] ttft=911.35 labels={"test_case": "TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1_TTFT_5s", "type": "perf"}
+[METRIC] ttft_baseline=5000.0 labels={"test_case": "TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1_TTFT_5s", "type": "perf"}
+.2026-08-18 06:35:15,644 - INFO - Start exec tearDownClass
+2026-08-18 06:35:15,644 - INFO - tearDownClass finished
+
+----------------------------------------------------------------------
+Ran 1 test in 1065.625s
+
+OK
