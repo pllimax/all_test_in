@@ -715,6 +715,39 @@ def _attach_script_urls(items):
                 # 该 run 的 job 列表已抓取到但未匹配到本用例 → 该 run 未执行此用例
                 item["job_status"] = "no_job"
 
+    # 功能用例 per-case 状态：聚合 suite job 的结论是 suite 级，不能代表单个用例，
+    # 需解析 suite job 日志得到每个功能用例的真实通过/失败（func_status: pass/fail/running）。
+    # 解析结果由后台线程异步填充缓存，未解析到时前端回退到 job 结论归因。
+    func_log_cache = fetch_func_logs_for_items(items)
+    for item in items:
+        if item.get("case_type") != "function":
+            continue
+        run_id = str(item.get("run_id", "") or "")
+        run_url = item.get("run_url", "")
+        if not run_id or not run_url:
+            continue
+        repo = _web_base_to_repo(run_url)
+        if not repo:
+            continue
+        yaml_name = str(item.get("yaml_name", "") or "")
+        base = re.sub(r"^test_npu_", "", yaml_name)
+        suite = None
+        for c in (yaml_name, base):
+            if c in case_suite_map:
+                suite = case_suite_map[c]
+                break
+        if not suite:
+            continue
+        entry = func_log_cache.get((repo, run_id, suite))
+        if entry is None:
+            continue
+        if entry.get("running"):
+            item["func_status"] = "running"
+        else:
+            pmap = entry.get("map", {})
+            if base in pmap:
+                item["func_status"] = "pass" if pmap[base] else "fail"
+
 
 # ============================================================
 # GitHub Actions job 级链接解析
@@ -734,6 +767,7 @@ _jobs_pending = set()  # 待后台抓取的 (repo, run_id)
 _jobs_refresh_started = False
 _jobs_fetch_logged = {}
 _jobs_lock = threading.RLock()  # 保护 jobs 缓存系列变量的并发读写
+_run_jobs_raw = {}     # {(repo, run_id): [job, ...]}  原始 job 列表（含重试 attempt），由 _fetch_run_jobs 填充，供功能用例日志解析使用
 
 
 def _github_token():
@@ -764,6 +798,7 @@ def _fetch_run_jobs(repo, run_id):
     if token:
         headers["Authorization"] = f"Bearer {token}"
     result = {}
+    raw_jobs = []
     # GitHub API 单页上限 100 且默认返回第一页；run 的 job 数可能超过 100
     # （大规模 nightly 全套测试），需按 page 循环抓取避免数据丢失。
     per_page = 100
@@ -778,6 +813,7 @@ def _fetch_run_jobs(repo, run_id):
             with urllib.request.urlopen(req, timeout=JOBS_API_TIMEOUT) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
             jobs = data.get("jobs", [])
+            raw_jobs.extend(jobs)
             for job in jobs:
                 name = job.get("name", "")
                 job_id = job.get("id")
@@ -801,6 +837,8 @@ def _fetch_run_jobs(repo, run_id):
             _jobs_fetch_logged[key] = str(e)
             print(f"[jobs] fetch failed for {repo}/{run_id}: {e}")
         return None
+    with _jobs_lock:
+        _run_jobs_raw[(repo, run_id)] = raw_jobs
     return result
 
 
@@ -975,6 +1013,230 @@ def force_refresh_jobs():
         _jobs_cache_ts.clear()
         _jobs_failed_ts.clear()
     return _jobs_cache
+
+
+# ============================================================
+# 功能用例 per-case 状态：解析聚合 suite job 日志
+# 聚合 suite job（如 nightly-1-npu-a3）一次运行多个功能用例，其 conclusion 是
+# suite 级（一个用例失败整套失败），不能代表单个功能用例的实际结果。
+# 需下载该 suite job 日志，解析 JSON 行 {"file": "...", "passed": ...}
+# 得到每个功能用例的真实通过/失败。重试 job（run (N)）取最高 attempt 日志。
+# ============================================================
+FUNC_LOG_CACHE_TTL = 12 * 3600      # 秒：已完成 suite job 日志缓存时长（终态日志不变）
+FUNC_LOG_REFRESH_INTERVAL = 120     # 秒：suite job 仍在执行中时的刷新间隔
+FUNC_LOG_RETRY_INTERVAL = 600       # 秒：日志下载失败后的退避重试间隔
+FUNC_LOG_API_TIMEOUT = 90           # 秒：日志下载超时（日志较大）
+_func_log_cache = {}       # {(repo, run_id, suite): {case: passed_bool}}，缺失=日志中未找到该用例
+_func_log_running = {}     # {(repo, run_id, suite): bool}  该 suite 是否有 job 仍在执行中
+_func_log_ts = {}          # {(repo, run_id, suite): 最近成功抓取时间}
+_func_log_failed_ts = {}   # {(repo, run_id, suite): 最近失败时间（退避用）}
+_func_log_pending = set()  # 待后台抓取的 (repo, run_id, suite)
+_func_log_started = False
+_func_log_lock = threading.RLock()  # 保护 func-log 缓存系列变量的并发读写
+
+
+class _NoAuthRedirect(urllib.request.HTTPRedirectHandler):
+    """GitHub 日志下载会 302 重定向到带签名的对象存储 URL，
+    重定向时需剥离 Authorization 头，否则签名 URL 校验失败返回 401。"""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        newreq = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if newreq is not None:
+            newreq.headers.pop("Authorization", None)
+        return newreq
+
+
+def _download_job_log(repo, job_id):
+    """下载 GitHub Actions job 日志文本；失败返回 None。"""
+    if not repo or not job_id:
+        return None
+    token = _github_token()
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "User-Agent": "sglang-dashboard",
+        "X-GitHub-Api-Version": "2022-11-28",
+    }
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    url = f"https://api.github.com/repos/{repo}/actions/jobs/{job_id}/logs"
+    try:
+        req = urllib.request.Request(url, headers=headers)
+        opener = urllib.request.build_opener(_NoAuthRedirect())
+        with opener.open(req, timeout=FUNC_LOG_API_TIMEOUT) as resp:
+            return resp.read().decode("utf-8", errors="replace")
+    except Exception as e:
+        print(f"[func-log] download failed {repo}/{job_id}: {e}")
+        return None
+
+
+def _parse_func_log(log_text):
+    """从 job 日志解析 per-case 结果：{"file": "...", "passed": ...} 行 → {case_name: passed}。"""
+    result = {}
+    if not log_text:
+        return result
+    for line in log_text.splitlines():
+        ln = re.sub(r"^.*?Z ", "", line).strip()
+        if ln.startswith('{"file"') and '"passed"' in ln and '"elapsed"' in ln:
+            try:
+                obj = json.loads(ln)
+                fname = obj.get("file", "")
+                base = os.path.basename(fname).replace(".py", "")
+                c = re.sub(r"^test_npu_", "", base)
+                if c:
+                    result[c] = bool(obj.get("passed"))
+            except Exception:
+                pass
+    return result
+
+
+def _attempt_of(job_name):
+    """从聚合 job 名提取重试序号："nightly-1-npu-a3 / run (2)" → 2；无重试 → 0。"""
+    m = re.search(r"/ run\s*\(\s*(\d+)\s*\)", job_name or "")
+    return int(m.group(1)) if m else 0
+
+
+def _ensure_func_log_thread():
+    global _func_log_started
+    with _func_log_lock:
+        if _func_log_started:
+            return
+        _func_log_started = True
+    t = threading.Thread(target=_func_log_worker, daemon=True)
+    t.start()
+
+
+def _func_log_worker():
+    """后台线程：逐个抓取待处理 (repo, run_id, suite) 的 per-case 日志结果并写入缓存。
+    周期性淘汰超过 TTL 且已终态（无运行中 job）的缓存条目。
+    """
+    while True:
+        try:
+            key = None
+            with _func_log_lock:
+                if _func_log_pending:
+                    key = _func_log_pending.pop()
+            if key is not None:
+                _fetch_func_log(key)
+            with _func_log_lock:
+                now = time.time()
+                stale = [
+                    k for k, ts in _func_log_ts.items()
+                    if now - ts > FUNC_LOG_CACHE_TTL and not _func_log_running.get(k)
+                ]
+                for k in stale:
+                    _func_log_cache.pop(k, None)
+                    _func_log_running.pop(k, None)
+                    _func_log_ts.pop(k, None)
+                    _func_log_failed_ts.pop(k, None)
+                    _func_log_pending.discard(k)
+        except Exception as e:
+            print(f"[func-log] worker error: {e}")
+        time.sleep(2)
+
+
+def _fetch_func_log(key):
+    """抓取一个 (repo, run_id, suite) 的 per-case 日志结果写入缓存。
+    取该 run 原始 job 列表中匹配该 suite 的全部 job（含重试），
+    任一 job 仍在执行中则标记 running（稍后刷新）；否则按 attempt 从高到低
+    下载最高 attempt 已完成 job 的日志解析 per-case 状态。
+    """
+    repo, run_id, suite = key
+    with _jobs_lock:
+        raw = list(_run_jobs_raw.get((repo, run_id), []))
+    if not raw:
+        # 原始 job 列表未缓存：先抓取一次 jobs（同时填充 _run_jobs_raw）
+        _fetch_run_jobs(repo, run_id)
+        with _jobs_lock:
+            raw = list(_run_jobs_raw.get((repo, run_id), []))
+        if not raw:
+            _func_log_failed_ts[key] = time.time()
+            return
+    matches = []
+    for j in raw:
+        name = str(j.get("name", "") or "")
+        if name == suite or name.startswith(suite + " /") or name.startswith(suite + "/"):
+            matches.append((_attempt_of(name), j))
+    if not matches:
+        # 该 run 未执行此 suite → 该 suite 全部用例无结果
+        _func_log_cache[key] = {}
+        _func_log_running[key] = False
+        _func_log_ts[key] = time.time()
+        return
+    if any(str(j.get("status", "") or "") != "completed" for _, j in matches):
+        # 存在执行中的 job：标记 running，由调度按刷新间隔重新抓取
+        _func_log_running[key] = True
+        _func_log_ts[key] = time.time()
+        return
+    _func_log_running[key] = False
+    # 合并所有已完成 attempt 的 per-case 结果：重试 job（run (N)）与首次运行
+    # 可能运行不同的用例子集（如重试只补跑部分用例），需解析全部日志补齐缺口。
+    # 同一用例多个 attempt 都有结果时，高 attempt（最终状态）优先。
+    merged = {}
+    for _, j in sorted(matches, key=lambda x: x[0], reverse=True):
+        if str(j.get("status", "") or "") != "completed":
+            continue
+        log_text = _download_job_log(repo, j.get("id"))
+        if log_text is None:
+            continue
+        for c, passed in _parse_func_log(log_text).items():
+            if c not in merged:
+                merged[c] = passed
+    if merged:
+        _func_log_cache[key] = merged
+        _func_log_ts[key] = time.time()
+        _func_log_failed_ts.pop(key, None)
+        return
+    _func_log_failed_ts[key] = time.time()
+
+
+def fetch_func_logs_for_items(items):
+    """为功能用例调度聚合 suite job 日志抓取（后台线程，不阻塞请求），返回缓存快照。
+    返回 {(repo, run_id, suite): {"map": {case: passed}, "running": bool}}。
+    调度规则：
+      - 未缓存且距上次失败超过退避间隔 → 加入抓取队列
+      - 已缓存但 suite job 仍在执行中且超过刷新间隔 → 重新抓取
+      - 已缓存且已终态 → 不再重复请求
+    """
+    now = time.time()
+    pairs = {}
+    case_suite_map = get_case_suite_map()
+    for item in items:
+        if item.get("case_type") != "function":
+            continue
+        run_id = str(item.get("run_id", "") or "")
+        run_url = item.get("run_url", "")
+        if not run_id or not run_url:
+            continue
+        repo = _web_base_to_repo(run_url)
+        if not repo:
+            continue
+        yaml_name = str(item.get("yaml_name", "") or "")
+        base = re.sub(r"^test_npu_", "", yaml_name)
+        suite = None
+        for c in (yaml_name, base):
+            if c in case_suite_map:
+                suite = case_suite_map[c]
+                break
+        if not suite:
+            continue
+        pairs[(repo, run_id, suite)] = True
+    with _func_log_lock:
+        for k in pairs:
+            cached = _func_log_cache.get(k)
+            if cached is not None:
+                if _func_log_running.get(k) and now - _func_log_ts.get(k, 0) >= FUNC_LOG_REFRESH_INTERVAL:
+                    _func_log_pending.add(k)
+                continue
+            last_fail = _func_log_failed_ts.get(k, 0)
+            if now - last_fail >= FUNC_LOG_RETRY_INTERVAL:
+                _func_log_pending.add(k)
+    _ensure_func_log_thread()
+    with _func_log_lock:
+        return {
+            k: {"map": dict(v), "running": bool(_func_log_running.get(k, False))}
+            for k, v in _func_log_cache.items()
+        }
+
 
 _nnodes_cache = {}
 _nnodes_lock = threading.RLock()  # 保护 nnodes 缓存
@@ -1583,9 +1845,13 @@ function jobRunLabel(d) {
 }
 
 function computeStatus(d) {
-  // 功能用例（case_type=function）：不参与基线/指标比对（功能用例无性能/精度指标），
-  // 仅依据 GitHub Actions job 结论判断是否通过（简化显示）。job 结论来自 GitHub API。
+  // 功能用例（case_type=function）：不参与基线/指标比对（功能用例无性能/精度指标）。
+  // 状态优先取后端解析的 per-case 结果（func_status: pass/fail/running，来自聚合
+  // suite job 日志），未解析到时回退到 GitHub job 结论归因（suite 级，仅供参考）。
   if (d.case_type === 'function') {
+    if (d.func_status === 'pass') return 'PASS';
+    if (d.func_status === 'fail') return 'FAILED';
+    if (d.func_status === 'running') return '执行中';
     const runLabel = jobRunLabel(d);
     if (runLabel === '成功') return 'PASS';
     if (runLabel === '已执行失败') return 'FAILED';
