@@ -279,9 +279,9 @@ def parse_filename(filename):
         extra_bs = bm.group(1)
         name = name[:bm.start()] + name[bm.end():]
 
-    # Extract dataset suffix (e.g., _aime26, _gpqa)
+    # Extract dataset suffix (e.g., _aime26, _gpqa, _gsm8k)
     dataset = ""
-    dataset_match = re.search(r"_(aime\d+|gpqa|mmmu|random)$", name)
+    dataset_match = re.search(r"_(aime\d+|gpqa|mmmu|random|gsm8k)$", name)
     if dataset_match:
         dataset = dataset_match.group(1)
         name = name[: dataset_match.start()]
@@ -293,14 +293,9 @@ def parse_filename(filename):
         request_rate = rr_match.group(1)
         name = name[: rr_match.start()]
 
-    # Handle special benchmark type suffixes (_ttft, _tpot)
-    bench_type = ""
-    bt_match = re.search(r"_(ttft|tpot)$", name)
-    if bt_match:
-        bench_type = bt_match.group(1)
-        name = name[: bt_match.start()]
-        if not dataset:
-            dataset = bench_type
+    # Handle special benchmark type suffixes (_ttft, _tpot).
+    # These are performance benchmark modes, not datasets — strip without setting dataset.
+    name = re.sub(r"_(ttft|tpot)$", "", name)
 
     # Extract input_len for multimodal cases first (e.g., _in1024x1024_30, _in1080p_30)
     # Resolution -> input_len, frame count -> output_len
