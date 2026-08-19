@@ -715,13 +715,13 @@ def _attach_script_urls(items):
                 # 该 run 的 job 列表已抓取到但未匹配到本用例 → 该 run 未执行此用例
                 item["job_status"] = "no_job"
 
-    # 功能用例 per-case 状态：聚合 suite job 的结论是 suite 级，不能代表单个用例，
-    # 需解析 suite job 日志得到每个功能用例的真实通过/失败（func_status: pass/fail/running）。
-    # 解析结果由后台线程异步填充缓存，未解析到时前端回退到 job 结论归因。
+    # per-case 结果：聚合 suite job 的结论是 suite 级，不能代表单个用例。
+    # 后台线程下载 suite job 日志，解析 JSON 行得到每个用例的真实通过/失败
+    # （func_status: pass/fail/running）以及真实执行该用例的 job_id。
+    # 并行分区 job（同名多个，如 4 个 nightly-acc-2-npu-a3）无法靠 job 名区分
+    # 用例归属，必须以日志为准覆盖 suite 聚合匹配的结果。
     func_log_cache = fetch_func_logs_for_items(items)
     for item in items:
-        if item.get("case_type") != "function":
-            continue
         run_id = str(item.get("run_id", "") or "")
         run_url = item.get("run_url", "")
         if not run_id or not run_url:
@@ -731,6 +731,7 @@ def _attach_script_urls(items):
             continue
         yaml_name = str(item.get("yaml_name", "") or "")
         base = re.sub(r"^test_npu_", "", yaml_name)
+        is_function = item.get("case_type") == "function"
         suite = None
         for c in (yaml_name, base, "test_npu_" + base):
             if c in case_suite_map:
@@ -738,15 +739,27 @@ def _attach_script_urls(items):
                 break
         if not suite:
             continue
-        entry = func_log_cache.get((repo, run_id, suite))
+        entry = func_log_cache.get((repo, run_id, suite, is_function))
         if entry is None:
             continue
-        if entry.get("running"):
-            item["func_status"] = "running"
-        else:
-            pmap = entry.get("map", {})
-            if base in pmap:
-                item["func_status"] = "pass" if pmap[base] else "fail"
+        pmap = entry.get("map", {})
+        if base not in pmap:
+            continue
+        case_info = pmap[base]
+        # 功能用例 per-case 状态
+        if is_function:
+            if entry.get("running"):
+                item["func_status"] = "running"
+            else:
+                item["func_status"] = "pass" if case_info.get("passed") else "fail"
+        # 覆盖 job 链接：仅当用例未被 job 名直配（matrix job）时，
+        # 用日志解析出的真实 job（处理并行分区/重试同名 job 场景）。
+        jobs_for_run = jobs_cache.get((repo, run_id))
+        name_job = _match_job_for_case(yaml_name, jobs_for_run) if jobs_for_run else None
+        if name_job is None and case_info.get("job_id"):
+            item["job_url"] = f"{run_url}/job/{case_info['job_id']}"
+            item["job_status"] = case_info.get("status", "")
+            item["job_conclusion"] = case_info.get("conclusion", "")
 
 
 # ============================================================
@@ -1026,11 +1039,11 @@ FUNC_LOG_CACHE_TTL = 12 * 3600      # 秒：已完成 suite job 日志缓存时�
 FUNC_LOG_REFRESH_INTERVAL = 120     # 秒：suite job 仍在执行中时的刷新间隔
 FUNC_LOG_RETRY_INTERVAL = 600       # 秒：日志下载失败后的退避重试间隔
 FUNC_LOG_API_TIMEOUT = 90           # 秒：日志下载超时（日志较大）
-_func_log_cache = {}       # {(repo, run_id, suite): {case: passed_bool}}，缺失=日志中未找到该用例
-_func_log_running = {}     # {(repo, run_id, suite): bool}  该 suite 是否有 job 仍在执行中
-_func_log_ts = {}          # {(repo, run_id, suite): 最近成功抓取时间}
-_func_log_failed_ts = {}   # {(repo, run_id, suite): 最近失败时间（退避用）}
-_func_log_pending = set()  # 待后台抓取的 (repo, run_id, suite)
+_func_log_cache = {}       # {(repo, run_id, suite, is_function): {case: {"passed": bool, "job_id": str, ...}}}，缺失=日志中未找到该用例
+_func_log_running = {}     # {(repo, run_id, suite, is_function): bool}  该 suite 是否有 job 仍在执行中
+_func_log_ts = {}          # {(repo, run_id, suite, is_function): 最近成功抓取时间}
+_func_log_failed_ts = {}   # {(repo, run_id, suite, is_function): 最近失败时间（退避用）}
+_func_log_pending = set()  # 待后台抓取的 (repo, run_id, suite, is_function)
 _func_log_started = False
 _func_log_lock = threading.RLock()  # 保护 func-log 缓存系列变量的并发读写
 
@@ -1135,12 +1148,14 @@ def _func_log_worker():
 
 
 def _fetch_func_log(key):
-    """抓取一个 (repo, run_id, suite) 的 per-case 日志结果写入缓存。
-    取该 run 原始 job 列表中匹配该 suite 的全部 job（含重试），
+    """抓取一个 (repo, run_id, suite, is_function) 的 per-case 日志结果写入缓存。
+    取该 run 原始 job 列表中匹配该 suite 的全部 job（含重试与并行分区），
     任一 job 仍在执行中则标记 running（稍后刷新）；否则按 attempt 从高到低
-    下载最高 attempt 已完成 job 的日志解析 per-case 状态。
+    下载已完成 job 的日志解析 per-case 状态与真实 job_id。
+    非功能套件且该 suite 只有单个 job（无并行分区/重试）时，job 名匹配已足够，
+    无需下载日志（不写入 per-case 映射）。
     """
-    repo, run_id, suite = key
+    repo, run_id, suite, is_function = key
     with _jobs_lock:
         raw = list(_run_jobs_raw.get((repo, run_id), []))
     if not raw:
@@ -1168,8 +1183,13 @@ def _fetch_func_log(key):
         _func_log_ts[key] = time.time()
         return
     _func_log_running[key] = False
-    # 合并所有已完成 attempt 的 per-case 结果：重试 job（run (N)）与首次运行
-    # 可能运行不同的用例子集（如重试只补跑部分用例），需解析全部日志补齐缺口。
+    if not is_function and len(matches) <= 1:
+        # 非功能套件且无并行分区/重试：job 名匹配已足够，无需下载日志
+        _func_log_cache[key] = {}
+        _func_log_ts[key] = time.time()
+        return
+    # 合并所有已完成 attempt 的 per-case 结果：重试 job（run (N)）与并行分区
+    # 可能运行不同的用例子集，需解析全部日志补齐缺口。
     # 同一用例多个 attempt 都有结果时，高 attempt（最终状态）优先。
     merged = {}
     for _, j in sorted(matches, key=lambda x: x[0], reverse=True):
@@ -1180,7 +1200,12 @@ def _fetch_func_log(key):
             continue
         for c, passed in _parse_func_log(log_text).items():
             if c not in merged:
-                merged[c] = passed
+                merged[c] = {
+                    "passed": passed,
+                    "job_id": str(j.get("id")),
+                    "status": str(j.get("status", "") or ""),
+                    "conclusion": str(j.get("conclusion", "") or ""),
+                }
     if merged:
         _func_log_cache[key] = merged
         _func_log_ts[key] = time.time()
@@ -1190,8 +1215,12 @@ def _fetch_func_log(key):
 
 
 def fetch_func_logs_for_items(items):
-    """为功能用例调度聚合 suite job 日志抓取（后台线程，不阻塞请求），返回缓存快照。
-    返回 {(repo, run_id, suite): {"map": {case: passed}, "running": bool}}。
+    """调度聚合 suite job 日志抓取（后台线程，不阻塞请求），返回缓存快照。
+    返回 {(repo, run_id, suite, is_function): {"map": {case: {passed, job_id, ...}}, "running": bool}}。
+    调度范围：
+      - 功能用例：始终调度（用于 func_status per-case 状态）
+      - 非功能用例：也调度，由后台线程按 raw job 判断该 suite 是否有并行分区/重试，
+        是则下载日志解析用例真实所在 job（同名分区无法靠 job 名区分），否则跳过不下载。
     调度规则：
       - 未缓存且距上次失败超过退避间隔 → 加入抓取队列
       - 已缓存但 suite job 仍在执行中且超过刷新间隔 → 重新抓取
@@ -1201,8 +1230,6 @@ def fetch_func_logs_for_items(items):
     pairs = {}
     case_suite_map = get_case_suite_map()
     for item in items:
-        if item.get("case_type") != "function":
-            continue
         run_id = str(item.get("run_id", "") or "")
         run_url = item.get("run_url", "")
         if not run_id or not run_url:
@@ -1210,6 +1237,7 @@ def fetch_func_logs_for_items(items):
         repo = _web_base_to_repo(run_url)
         if not repo:
             continue
+        is_function = item.get("case_type") == "function"
         yaml_name = str(item.get("yaml_name", "") or "")
         base = re.sub(r"^test_npu_", "", yaml_name)
         suite = None
@@ -1219,7 +1247,7 @@ def fetch_func_logs_for_items(items):
                 break
         if not suite:
             continue
-        pairs[(repo, run_id, suite)] = True
+        pairs[(repo, run_id, suite, is_function)] = True
     with _func_log_lock:
         for k in pairs:
             cached = _func_log_cache.get(k)
