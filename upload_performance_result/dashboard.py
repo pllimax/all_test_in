@@ -58,18 +58,17 @@ SOURCE_SYNC_INTERVAL = int(os.environ.get("SOURCE_SYNC_INTERVAL", "7200"))
 # 新测试框架将 a3 芯片用例聚合到 suite job（如 nightly-perf-2-npu-a3）运行，
 # job 名 = suite 名，不含具体用例名。为把用例链接到其聚合 job，需从用例文件
 # 的 register_npu_ci(suite="X", nightly=True) 注册信息构建 suite→用例 映射。
-# 映射数据源从 pllimax 分支拉取（main 分支尚未合入该重构）；后续合入主线后
-# 将 SUITE_REGISTRY_REPO_URL / BRANCH 切回 sgl-project/sglang main 即可。
+# pllimax 分支已合并到社区 main，直接使用 sgl-project/sglang 的 main 分支。
 # ============================================================
 SUITE_REGISTRY_CACHE_DIR = os.environ.get(
     "SUITE_REGISTRY_CACHE_DIR",
     os.path.join(TESTCASES_CACHE_DIR, "suite_registry"),
 )
 SUITE_REGISTRY_REPO_URL = os.environ.get(
-    "SUITE_REGISTRY_REPO_URL", "https://github.com/pllimax/sglang.git"
+    "SUITE_REGISTRY_REPO_URL", "https://github.com/sgl-project/sglang.git"
 )
 SUITE_REGISTRY_BRANCH = os.environ.get(
-    "SUITE_REGISTRY_BRANCH", "pllimax/output-log-dir-structure"
+    "SUITE_REGISTRY_BRANCH", "main"
 )
 SUITE_REGISTRY_SUBDIR = "test/registered/npu"
 
@@ -2192,6 +2191,87 @@ def filename_to_yaml_name(filename):
     return name
 
 
+def _is_nightly_registered(content):
+    """判断测试脚本是否通过 register_npu_ci(nightly=True) 注册到 nightly 流水线。
+    通过括号配对提取每个 register_npu_ci(...) 调用的参数块后匹配 nightly=True。
+    """
+    for m in re.finditer(r"register_npu_ci\s*\(", content):
+        depth = 0
+        start = m.end() - 1
+        end = start
+        for i in range(start, len(content)):
+            if content[i] == "(":
+                depth += 1
+            elif content[i] == ")":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+        args_block = content[m.end() - 1:end]
+        if re.search(r"nightly\s*=\s*True", args_block):
+            return True
+    return False
+
+
+def _collect_registry_expected_test_cases():
+    """扫描各 source 仓库的 test/registered/npu/{accuracy,performance} 目录，
+    收集 register_npu_ci(nightly=True) 注册的 nightly 单机用例。
+
+    新测试框架下，单机用例通过注册器注册到 nightly 流水线（不再全部写在
+    nightly-test-npu.yml 的 test_config 中）；多机用例仍在 YAML 中单独配置
+    （由 collect_expected_test_cases 的 YAML 解析负责）。
+
+    返回 {yaml_name: {"labels": ..., "source": ..., "yaml_name": ..., "type": ...}}，
+    其中 type 根据所在子目录取 accuracy/performance。
+    """
+    found = {}
+    for src_name, src_cfg in SOURCES.items():
+        repo_root = src_cfg.get("repo_root", "")
+        if not repo_root:
+            continue
+        npu_root = os.path.join(repo_root, "test", "registered", "npu")
+        if not os.path.isdir(npu_root):
+            continue
+        for sub_dir, case_type in (("accuracy", "accuracy"),
+                                   ("performance", "performance")):
+            scan_root = os.path.join(npu_root, sub_dir)
+            if not os.path.isdir(scan_root):
+                continue
+            for root, _, files in os.walk(scan_root):
+                for fname in sorted(files):
+                    if not fname.endswith(".py"):
+                        continue
+                    case_name = fname[:-3]  # 去掉 .py，如 test_npu_xxx
+                    yaml_name = filename_to_yaml_name(case_name + ".txt")
+                    if yaml_name in EXCLUDED_TEST_CASES or case_name in EXCLUDED_TEST_CASES:
+                        continue
+                    filepath = os.path.join(root, fname)
+                    try:
+                        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                            content = f.read()
+                    except OSError:
+                        continue
+                    if not _is_nightly_registered(content):
+                        continue
+                    labels = parse_yaml_test_name(yaml_name)
+                    if yaml_name not in found:
+                        found[yaml_name] = {
+                            "labels": labels,
+                            "source": src_name,
+                            "yaml_name": yaml_name,
+                            "type": case_type,
+                        }
+                    else:
+                        existing = found[yaml_name]
+                        if src_name not in existing["source"].split(","):
+                            existing["source"] = existing["source"] + "," + src_name
+                        if existing.get("type") == "unknown":
+                            existing["type"] = case_type
+    if found:
+        print(f"[registry] 识别到 {len(found)} 个 register_npu_ci(nightly=True) 注册用例")
+    return found
+
+
 def collect_expected_test_cases():
     """Parse YAML workflow configs and collect all expected test case IDs.
     Only extracts names from matrix.test_config entries (structure-aware parsing).
@@ -2279,6 +2359,34 @@ def collect_expected_test_cases():
                                 case_type = "unknown"
                             if expected[current_name].get("type") == "unknown":
                                 expected[current_name]["type"] = case_type
+
+    # 合并注册器用例（新测试框架）：单机用例通过 register_npu_ci(nightly=True)
+    # 注册到 nightly 流水线，仅筛选 test/registered/npu/{accuracy,performance}
+    # 目录（排除 basic_function 等功能用例）；多机用例仍在 YAML test_config 中配置。
+    registry = _collect_registry_expected_test_cases()
+    for name, info in registry.items():
+        srcs = [s for s in info["source"].split(",") if s]
+        case_type = info.get("type", "unknown")
+        target_key = name
+        if name not in expected:
+            # YAML 中可能以 test_npu_ 前缀命名（如 mimo 系列），做前缀归一化
+            alt = "test_npu_" + name
+            if alt in expected:
+                target_key = alt
+        if target_key in expected:
+            existing = expected[target_key]
+            for s in srcs:
+                if s and s not in existing["source"].split(","):
+                    existing["source"] = existing["source"] + "," + s if existing["source"] else s
+            if existing.get("type") == "unknown":
+                existing["type"] = case_type
+        else:
+            expected[target_key] = {
+                "labels": info["labels"],
+                "source": ",".join(srcs),
+                "yaml_name": target_key,
+                "type": case_type,
+            }
 
     return expected
 
