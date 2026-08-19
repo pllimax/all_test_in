@@ -2289,6 +2289,8 @@ def _collect_registry_expected_test_cases():
 def _load_testcases_config():
     """从本地配置文件加载需展示的用例列表（权威来源）。
 
+    配置文件中每条仅保留 {source, type}：key 即 yaml_name，
+    labels 由 parse_yaml_test_name(yaml_name) 动态推导，避免冗余存储。
     返回 dict 或 None（文件不存在/解析失败时返回 None，由调用方回退到动态扫描）。
     """
     if not os.path.isfile(TESTCASES_CONFIG_FILE):
@@ -2299,6 +2301,12 @@ def _load_testcases_config():
         if not isinstance(data, dict):
             print(f"[testcases-config] Warning: {TESTCASES_CONFIG_FILE} 格式异常（应为对象），忽略")
             return None
+        # 补全动态推导字段，供 collect_all_data / 占位符逻辑使用
+        for name, info in data.items():
+            if not isinstance(info, dict):
+                continue
+            info["labels"] = parse_yaml_test_name(name)
+            info["yaml_name"] = name
         print(f"[testcases-config] 从本地配置文件加载 {len(data)} 个需展示用例: {TESTCASES_CONFIG_FILE}")
         return data
     except Exception as e:
@@ -2310,17 +2318,26 @@ def regenerate_testcases_config():
     """基于最新代码仓内容（YAML test_config + 注册器用例）重新生成本地配置文件。
 
     调用前需先执行 sync_repos() 拉取最新代码；采用临时文件 + os.replace 原子写入。
+    简化存储：key 即 yaml_name，labels 由 parse_yaml_test_name(yaml_name) 动态推导，
+    故每条仅保存 {source, type}，减小文件体积并避免冗余。
     """
     expected = collect_expected_test_cases(use_local_config=False)
+    simplified = {
+        name: {
+            "source": info.get("source", ""),
+            "type": info.get("type", "unknown"),
+        }
+        for name, info in expected.items()
+    }
     tmp = TESTCASES_CONFIG_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump(expected, f, ensure_ascii=False, indent=2)
+        json.dump(simplified, f, ensure_ascii=False, indent=2)
     os.replace(tmp, TESTCASES_CONFIG_FILE)
     n_type = {}
-    for v in expected.values():
+    for v in simplified.values():
         t = v.get("type", "unknown")
         n_type[t] = n_type.get(t, 0) + 1
-    print(f"[testcases-config] 已生成 {len(expected)} 个用例配置文件: {TESTCASES_CONFIG_FILE}")
+    print(f"[testcases-config] 已生成 {len(simplified)} 个用例配置文件: {TESTCASES_CONFIG_FILE}")
     print(f"[testcases-config] 类型分布: {n_type}")
 
 
