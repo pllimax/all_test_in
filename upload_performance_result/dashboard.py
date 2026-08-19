@@ -732,7 +732,7 @@ def _attach_script_urls(items):
         yaml_name = str(item.get("yaml_name", "") or "")
         base = re.sub(r"^test_npu_", "", yaml_name)
         suite = None
-        for c in (yaml_name, base):
+        for c in (yaml_name, base, "test_npu_" + base):
             if c in case_suite_map:
                 suite = case_suite_map[c]
                 break
@@ -1213,7 +1213,7 @@ def fetch_func_logs_for_items(items):
         yaml_name = str(item.get("yaml_name", "") or "")
         base = re.sub(r"^test_npu_", "", yaml_name)
         suite = None
-        for c in (yaml_name, base):
+        for c in (yaml_name, base, "test_npu_" + base):
             if c in case_suite_map:
                 suite = case_suite_map[c]
                 break
