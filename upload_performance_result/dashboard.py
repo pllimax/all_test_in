@@ -808,6 +808,9 @@ def _extract_case_names(job_name):
     """从 job name 中提取候选用例名（去重保序）。
     实际格式：single-node-poc (qwen3_6_35b_a3b_1p_aime26, runner, test/... / qwen3_6_35b_a3b_1p_aime26
     提取括号内第一个字段与末尾 / 后的字段，并去掉 test_npu_ 前缀。
+    聚合 suite job 名形如 "nightly-1-npu-a3 / run (0)" 或
+    "nightly-perf-2-npu-a3 / nightly-perf-2-npu-a3"：额外提取 " / " 前的
+    suite 名作为候选 key，供 _match_job_for_case_with_suite 按 suite 匹配。
     """
     cases = []
     m = re.search(r"\(\s*([^,()]+?)\s*,", job_name)
@@ -820,6 +823,15 @@ def _extract_case_names(job_name):
         c = m.group(1).strip()
         if c:
             cases.append(c)
+    # 聚合 suite job：" / " 分隔的两段中，干净标识符（无括号/逗号）均提取为候选 key。
+    # 实际命名变体：前后一致（nightly-perf-16-npu-a3 / nightly-perf-16-npu-a3）、
+    # 尾段为 suite（nightly-acc-2-npu-a3 (part 0/3) / nightly-acc-2-npu-a3）、
+    # 首段为展示名/尾段为 suite（single-node-mix-a2 / nightly-mix-1-npu-a2）。
+    if " / " in job_name:
+        for part in job_name.split(" / "):
+            part = part.strip()
+            if part and not any(ch in part for ch in "(),"):
+                cases.append(part)
     result = []
     for c in cases:
         c = re.sub(r"^test_npu_", "", c)
@@ -1097,6 +1109,11 @@ tr.selected:hover { background: #254070 !important; }
 .status-none { color: #ff7b72; font-weight: 700; }
 /* 已执行成功但无结果数据（CI job conclusion=success 但无指标）→ 绿色，区别于失败/未执行 */
 .status-success-nr { color: #7ee787; font-weight: 700; }
+/* CI job 执行中 */
+.status-running { color: #d29922; font-weight: 700; }
+/* 功能用例聚合明细行：浅色底纹 + 左侧缩进，区别于普通数据行 */
+.func-detail-row { background: rgba(88, 166, 255, 0.04); }
+.func-detail-row td { border-top: 1px dashed rgba(88, 166, 255, 0.12); }
 .baseline-val { font-size: 11px; color: #8b949e; }
 .metric-fail { color: #ff7b72; font-weight: 700; }
 .baseline-col { font-size: 11px; color: #8b949e; display: block; width: 100%; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
@@ -1566,6 +1583,16 @@ function jobRunLabel(d) {
 }
 
 function computeStatus(d) {
+  // 功能用例（case_type=function）：不参与基线/指标比对（功能用例无性能/精度指标），
+  // 仅依据 GitHub Actions job 结论判断是否通过（简化显示）。job 结论来自 GitHub API。
+  if (d.case_type === 'function') {
+    const runLabel = jobRunLabel(d);
+    if (runLabel === '成功') return 'PASS';
+    if (runLabel === '已执行失败') return 'FAILED';
+    if (runLabel === '执行中') return '执行中';
+    if (runLabel === '未执行') return 'FAILED(无结果)';
+    return 'FAILED(无结果)'; // 无 run_id 或 job 信息尚未抓取到
+  }
   const b = d.baselines || {};
   const hasPerf = d.mean_ttft != null;
   const hasEval = d.eval_score != null;
@@ -1608,6 +1635,36 @@ function computeStatus(d) {
     if (d.eval_score < threshold) return 'FAILED';
   }
   return 'PASS';
+}
+
+// 功能用例聚合状态：统计一组（同日期）功能用例的通过/失败/执行中/未执行数量。
+// 状态取自 computeStatus（功能用例仅依据 GitHub job 结论判定）。
+function aggregateFuncStatus(items) {
+  const counts = { pass: 0, fail: 0, run: 0, nores: 0 };
+  items.forEach(d => {
+    const s = computeStatus(d);
+    if (s === 'PASS') counts.pass++;
+    else if (s === '执行中') counts.run++;
+    else if (s === 'FAILED') counts.fail++;
+    else counts.nores++; // FAILED(无结果) 等 → 未执行
+  });
+  const parts = [];
+  if (counts.pass) parts.push('通过 ' + counts.pass);
+  if (counts.fail) parts.push('失败 ' + counts.fail);
+  if (counts.run) parts.push('执行中 ' + counts.run);
+  if (counts.nores) parts.push('未执行 ' + counts.nores);
+  return parts.join(' / ') || '--';
+}
+
+// 收起所有已展开的功能用例聚合明细行
+function collapseFuncAggregates(root) {
+  root.querySelectorAll('tr.func-agg-row.func-open').forEach(r => {
+    const od = r.getAttribute('data-fdate');
+    root.querySelectorAll('tr[data-fdet="1"][data-fdate="' + od + '"]').forEach(dr => { dr.style.display = 'none'; });
+    r.classList.remove('func-open');
+    const ic = r.querySelector('.expand-icon');
+    if (ic) ic.textContent = '▶';
+  });
 }
 
 function getTestCaseStatus(items) {
@@ -1695,9 +1752,14 @@ function updateTable(data) {
     return;
   }
 
-  // Group by test case, sort by date within each group
+  // 分离功能用例：不解析模型名、整体按日期聚合成一组（见下方聚合渲染），
+  // 不参与普通用例分组；其余用例维持原分组逻辑。
+  const funcRows = data.filter(d => d.case_type === 'function');
+  const normalData = data.filter(d => d.case_type !== 'function');
+
+  // Group by test case, sort by date within each group（普通用例）
   const groups = {};
-  data.forEach(d => {
+  normalData.forEach(d => {
     if (!groups[d._id]) groups[d._id] = [];
     groups[d._id].push(d);
   });
@@ -1912,6 +1974,59 @@ function updateTable(data) {
     // Add hidden chart row after each test case group
     rows += `<tr class="chart-row" id="chart_${safeId}" data-tc="${safeId}" style="display:none"><td colspan="29"></td></tr>`;
   });
+
+  // ---- 功能用例聚合渲染：不解析模型名、整体汇总到一起，按日期每组一行聚合行（可展开查看明细） ----
+  // 模型列统一显示"功能用例"，用例ID列显示"功能用例（可展开）"
+  const funcDateGroups = {};
+  funcRows.forEach(d => {
+    const fdate = d.date || '';
+    if (!funcDateGroups[fdate]) funcDateGroups[fdate] = [];
+    funcDateGroups[fdate].push(d);
+  });
+  // 日期倒序展示，最新日期在前
+  const sortedFuncDates = Object.keys(funcDateGroups).sort((a, b) => b.localeCompare(a));
+
+  sortedFuncDates.forEach(fdate => {
+    const items = funcDateGroups[fdate];
+    // 明细行内按用例名排序，便于查看
+    items.sort((a, b) => (a._id || '').localeCompare(b._id || ''));
+    const aggStatus = aggregateFuncStatus(items);
+    // 全部通过 → 绿；无任何状态 → 红；其余（含失败/执行中/未执行）→ 红
+    const statusCls = /^通过 \d+$/.test(aggStatus) ? 'status-pass'
+      : (aggStatus === '--' ? 'status-none' : 'status-fail');
+    visibleCount++;
+    rows += `<tr class="data-row func-agg-row" data-fdate="${escHtml(fdate)}">
+      <td class="col-model sticky-col col-l0">功能用例</td>
+      <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" style="cursor:pointer;" title="点击展开/收起功能用例明细"><span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;">▶</span>功能用例</span></td>
+      <td class="col-meta sticky-col col-l2">${escHtml(fdate)}</td>
+      <td class="col-meta sticky-col col-l3"><span class="${statusCls}">${escHtml(aggStatus)}</span></td>
+      <td class="col-script sticky-col col-l4">--</td>
+      <td class="col-meta sticky-col col-l5">--</td>
+      <td class="col-note sticky-col col-l6">--</td>
+      <td class="col-baseline sticky-col col-l7">--</td>
+      <td colspan="21">--</td>
+    </tr>`;
+    // 明细行：每个功能用例一条，默认隐藏
+    items.forEach(d => {
+      const status = computeStatus(d);
+      // PASS → 绿；执行中 → 黄；FAILED → 红；FAILED(无结果)/未执行 → 默认色
+      const statusCls2 = status === 'PASS' ? 'status-pass'
+        : (status === '执行中' ? 'status-running'
+          : (status === 'FAILED' ? 'status-fail' : ''));
+      rows += `<tr class="data-row func-detail-row" data-fdet="1" data-fdate="${escHtml(fdate)}" style="display:none">
+        <td class="col-model sticky-col col-l0"></td>
+        <td class="col-tc-id sticky-col col-l1" style="padding-left:26px;"><span class="testcase-id" title="${escHtml(d._id || '')}">${escHtml(d._id || '')}</span></td>
+        <td class="col-meta sticky-col col-l2">${escHtml(d.date)}</td>
+        <td class="col-meta sticky-col col-l3"><span class="${statusCls2}">${escHtml(status)}</span></td>
+        <td class="col-script sticky-col col-l4">${fmtScriptLinks(d)}</td>
+        <td class="col-meta sticky-col col-l5">${fmtRunLink(d)}</td>
+        <td class="col-note sticky-col col-l6">${fmtNote(d)}</td>
+        <td class="col-baseline sticky-col col-l7">--</td>
+        <td colspan="21">--</td>
+      </tr>`;
+    });
+  });
+
   document.getElementById('tableCount').textContent = `(${visibleCount} 条)`;
   tbody.innerHTML = rows;
 }
@@ -1950,6 +2065,21 @@ function applyHistoryFilter() {
 document.getElementById('tableBody').addEventListener('click', function(e) {
   const tr = e.target.closest('tr');
   if (!tr || tr.querySelector('.no-data') || tr.classList.contains('chart-row')) return;
+  // 功能用例聚合行：点击任意位置 → 展开/收起该日功能用例明细
+  const fAgg = tr.closest('tr.func-agg-row');
+  if (fAgg) {
+    const fdate = fAgg.getAttribute('data-fdate');
+    if (fAgg.classList.contains('func-open')) {
+      collapseFuncAggregates(this);
+    } else {
+      collapseFuncAggregates(this); // 先收起其它已展开的聚合行
+      this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${fdate}"]`).forEach(dr => { dr.style.display = ''; });
+      fAgg.classList.add('func-open');
+      const ic = fAgg.querySelector('.expand-icon');
+      if (ic) ic.textContent = '▼';
+    }
+    return;
+  }
   // 交互元素（链接、备注按钮、展开图标）点击不触发行选中/展开
   if (e.target.closest('a') || e.target.closest('.note-edit') || e.target.closest('.expand-icon')) return;
   const tcId = tr.getAttribute('data-tc');
@@ -2227,17 +2357,68 @@ def _is_nightly_registered(content):
     return False
 
 
+def _nightly_suite_of(content):
+    """返回 content 中 register_npu_ci(nightly=True) 注册对应的 suite 值。
+
+    仅统计 nightly=True 的注册调用；同一脚本可能注册到多个 suite，
+    优先返回以 nightly- 开头的 suite（与 _build_suite_maps_from_registry 的
+    聚合 job 命名规则一致）；无 nightly 注册或无 suite 时返回空字符串。
+    """
+    suite = ""
+    for m in re.finditer(r"register_npu_ci\s*\(", content):
+        depth = 0
+        start = m.end() - 1
+        end = start
+        for i in range(start, len(content)):
+            if content[i] == "(":
+                depth += 1
+            elif content[i] == ")":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+        args_block = content[m.end() - 1:end]
+        if not re.search(r"nightly\s*=\s*True", args_block):
+            continue
+        suite_match = re.search(
+            r"suite\s*=\s*([\"']?)(.*?)\1\s*(,|$)", args_block
+        )
+        if suite_match and suite_match.group(2).strip():
+            s = suite_match.group(2).strip()
+            if s.startswith("nightly-"):
+                return s
+            if not suite:
+                suite = s
+    return suite
+
+
 def _collect_registry_expected_test_cases():
-    """扫描各 source 仓库的 test/registered/npu/{accuracy,performance} 目录，
+    """扫描各 source 仓库的 test/registered/npu 目录，
     收集 register_npu_ci(nightly=True) 注册的 nightly 单机用例。
 
     新测试框架下，单机用例通过注册器注册到 nightly 流水线（不再全部写在
     nightly-test-npu.yml 的 test_config 中）；多机用例仍在 YAML 中单独配置
     （由 collect_expected_test_cases 的 YAML 解析负责）。
 
+    用例类型按所在子目录区分：accuracy/performance 目录 → accuracy/performance；
+    其余目录（basic_function/llm_models/interface/embedding_models/rerank_models/
+    reward_models/vlm_models 等功能用例）及根级散文件 → function。
+
+    功能用例仅从 nightly 来源收集：功能用例是 nightly 流水线由注册器创建运行的，
+    fulltest 来源仓虽也含同名功能用例文件，但不在 nightly 流水线执行，纳入平台
+    列表会形成永远无执行结果的噪音用例；accuracy/performance 仍收集全部来源
+    （与既有行为一致）。
+
     返回 {yaml_name: {"labels": ..., "source": ..., "yaml_name": ..., "type": ...}}，
-    其中 type 根据所在子目录取 accuracy/performance。
+    其中 type 根据所在子目录取 accuracy/performance/function。
     """
+    # 子目录 → 用例类型；不在映射中的目录及根级文件一律视为功能用例（function）
+    type_map = {
+        "accuracy": "accuracy",
+        "performance": "performance",
+    }
+    # 功能用例仅收集 nightly 来源（见函数 docstring 说明）
+    function_only_sources = {"nightly"}
     found = {}
     for src_name, src_cfg in SOURCES.items():
         repo_root = src_cfg.get("repo_root", "")
@@ -2246,41 +2427,46 @@ def _collect_registry_expected_test_cases():
         npu_root = os.path.join(repo_root, "test", "registered", "npu")
         if not os.path.isdir(npu_root):
             continue
-        for sub_dir, case_type in (("accuracy", "accuracy"),
-                                   ("performance", "performance")):
-            scan_root = os.path.join(npu_root, sub_dir)
-            if not os.path.isdir(scan_root):
+        for root, _, files in os.walk(npu_root):
+            rel = os.path.relpath(root, npu_root)
+            top_dir = rel.split(os.sep)[0] if rel != "." else ""
+            case_type = type_map.get(top_dir, "function")
+            if case_type == "function" and src_name not in function_only_sources:
                 continue
-            for root, _, files in os.walk(scan_root):
-                for fname in sorted(files):
-                    if not fname.endswith(".py"):
+            for fname in sorted(files):
+                if not fname.endswith(".py"):
+                    continue
+                case_name = fname[:-3]  # 去掉 .py，如 test_npu_xxx
+                yaml_name = filename_to_yaml_name(case_name + ".txt")
+                if yaml_name in EXCLUDED_TEST_CASES or case_name in EXCLUDED_TEST_CASES:
+                    continue
+                filepath = os.path.join(root, fname)
+                try:
+                    with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                        content = f.read()
+                except OSError:
+                    continue
+                if not _is_nightly_registered(content):
+                    continue
+                # 功能用例需额外筛选 suite 以 nightly- 开头（仅收集 nightly 流水线执行的功能用例）
+                if case_type == "function":
+                    suite = _nightly_suite_of(content)
+                    if not suite.startswith("nightly-"):
                         continue
-                    case_name = fname[:-3]  # 去掉 .py，如 test_npu_xxx
-                    yaml_name = filename_to_yaml_name(case_name + ".txt")
-                    if yaml_name in EXCLUDED_TEST_CASES or case_name in EXCLUDED_TEST_CASES:
-                        continue
-                    filepath = os.path.join(root, fname)
-                    try:
-                        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-                            content = f.read()
-                    except OSError:
-                        continue
-                    if not _is_nightly_registered(content):
-                        continue
-                    labels = parse_yaml_test_name(yaml_name)
-                    if yaml_name not in found:
-                        found[yaml_name] = {
-                            "labels": labels,
-                            "source": src_name,
-                            "yaml_name": yaml_name,
-                            "type": case_type,
-                        }
-                    else:
-                        existing = found[yaml_name]
-                        if src_name not in existing["source"].split(","):
-                            existing["source"] = existing["source"] + "," + src_name
-                        if existing.get("type") == "unknown":
-                            existing["type"] = case_type
+                labels = parse_yaml_test_name(yaml_name)
+                if yaml_name not in found:
+                    found[yaml_name] = {
+                        "labels": labels,
+                        "source": src_name,
+                        "yaml_name": yaml_name,
+                        "type": case_type,
+                    }
+                else:
+                    existing = found[yaml_name]
+                    if src_name not in existing["source"].split(","):
+                        existing["source"] = existing["source"] + "," + src_name
+                    if existing.get("type") == "unknown":
+                        existing["type"] = case_type
     if found:
         print(f"[registry] 识别到 {len(found)} 个 register_npu_ci(nightly=True) 注册用例")
     return found
@@ -2636,6 +2822,9 @@ def collect_all_data():
             r["source"] = expected[yaml_name]["source"]
             # 用例类型（accuracy/performance/unknown）用于前端基线显示与状态判定
             r["case_type"] = expected[yaml_name].get("type", "unknown")
+            # 功能用例不解析模型名：模型列统一显示为"功能用例"
+            if r["case_type"] == "function":
+                r["model"] = "功能用例"
             # 纯精度用例（YAML 定义为 accuracy 测试）只显示精度结果：
             # 丢弃因同名 perf 脚本或历史数据混入的性能字段
             if r["case_type"] == "accuracy":
@@ -2721,6 +2910,9 @@ def collect_all_data():
                 }
                 # 占位符无性能数据，清空全部性能字段
                 placeholder.update({k: None for k in PERF_ONLY_FIELDS})
+                # 功能用例占位符同样统一模型列显示
+                if info.get("type", "unknown") == "function":
+                    placeholder["model"] = "功能用例"
                 filtered.append(placeholder)
 
     # Attach topology info to all items
