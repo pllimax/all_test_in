@@ -7,6 +7,7 @@ Results are compared across dates for each exact test case.
 import os
 import re
 import json
+import sys
 import time
 import threading
 import urllib.request
@@ -71,6 +72,19 @@ SUITE_REGISTRY_BRANCH = os.environ.get(
     "SUITE_REGISTRY_BRANCH", "main"
 )
 SUITE_REGISTRY_SUBDIR = "test/registered/npu"
+
+# ============================================================
+# 平台展示用例的本地配置文件（权威来源）
+# 为避免 GitHub 社区仓中用例被他人删除/修改导致平台用例列表漂移，
+# 将识别到的用例清单固化为本地 testcases_config.json，
+# collect_expected_test_cases 优先从该文件加载。
+# 如需更新用例列表，执行 python dashboard.py --update-testcases-config
+# （会先同步代码仓，再基于最新 YAML + 注册器扫描结果重新生成配置文件）。
+# ============================================================
+TESTCASES_CONFIG_FILE = os.environ.get(
+    "TESTCASES_CONFIG_FILE",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "testcases_config.json"),
+)
 
 # 用例 → suite 全局映射（构建成功后缓存）
 _suite_case_map = None       # {suite: [case_name, ...]}
@@ -2272,11 +2286,61 @@ def _collect_registry_expected_test_cases():
     return found
 
 
-def collect_expected_test_cases():
-    """Parse YAML workflow configs and collect all expected test case IDs.
-    Only extracts names from matrix.test_config entries (structure-aware parsing).
-    Returns a dict: {test_case_id: {"labels": labels, "source": "fulltest"|"nightly"|...}}
+def _load_testcases_config():
+    """从本地配置文件加载需展示的用例列表（权威来源）。
+
+    返回 dict 或 None（文件不存在/解析失败时返回 None，由调用方回退到动态扫描）。
     """
+    if not os.path.isfile(TESTCASES_CONFIG_FILE):
+        return None
+    try:
+        with open(TESTCASES_CONFIG_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        if not isinstance(data, dict):
+            print(f"[testcases-config] Warning: {TESTCASES_CONFIG_FILE} 格式异常（应为对象），忽略")
+            return None
+        print(f"[testcases-config] 从本地配置文件加载 {len(data)} 个需展示用例: {TESTCASES_CONFIG_FILE}")
+        return data
+    except Exception as e:
+        print(f"[testcases-config] Warning: 加载配置文件失败 {e}，回退到动态扫描")
+        return None
+
+
+def regenerate_testcases_config():
+    """基于最新代码仓内容（YAML test_config + 注册器用例）重新生成本地配置文件。
+
+    调用前需先执行 sync_repos() 拉取最新代码；采用临时文件 + os.replace 原子写入。
+    """
+    expected = collect_expected_test_cases(use_local_config=False)
+    tmp = TESTCASES_CONFIG_FILE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(expected, f, ensure_ascii=False, indent=2)
+    os.replace(tmp, TESTCASES_CONFIG_FILE)
+    n_type = {}
+    for v in expected.values():
+        t = v.get("type", "unknown")
+        n_type[t] = n_type.get(t, 0) + 1
+    print(f"[testcases-config] 已生成 {len(expected)} 个用例配置文件: {TESTCASES_CONFIG_FILE}")
+    print(f"[testcases-config] 类型分布: {n_type}")
+
+
+def collect_expected_test_cases(use_local_config=True):
+    """获取平台需展示的期望用例列表。
+
+    优先从本地配置文件 testcases_config.json 加载（权威来源），避免 GitHub
+    社区仓中用例被他人删除/修改导致平台展示列表漂移；仅当配置文件不存在时，
+    才回退到动态扫描（YAML test_config + 注册器用例，见 _collect_registry_expected_test_cases），
+    并提示使用 python dashboard.py --update-testcases-config 生成配置文件。
+
+    use_local_config=False 时跳过本地配置，强制动态扫描（用于重新生成配置文件）。
+    Returns a dict: {test_case_id: {"labels": labels, "source": "fulltest"|"nightly"|..., "type": ...}}
+    """
+    if use_local_config:
+        cfg = _load_testcases_config()
+        if cfg is not None:
+            return cfg
+        print("[testcases-config] 配置文件不存在，回退到动态扫描"
+              "（可用 python dashboard.py --update-testcases-config 生成本地配置）")
     if not YAML_CONFIGS:
         print("[yaml] No YAML configs available (skip collecting expected test cases)")
         return {}
@@ -3322,4 +3386,9 @@ def start_dashboard():
 
 
 if __name__ == "__main__":
-    start_dashboard()
+    if "--update-testcases-config" in sys.argv:
+        # 先同步代码仓，再基于最新 YAML + 注册器扫描结果生成本地配置文件
+        sync_repos()
+        regenerate_testcases_config()
+    else:
+        start_dashboard()
