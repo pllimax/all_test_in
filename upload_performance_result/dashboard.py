@@ -1276,7 +1276,10 @@ def _get_nnodes_from_script(yaml_name):
     with _nnodes_lock:
         if yaml_name in _nnodes_cache:
             return _nnodes_cache[yaml_name]
-    test_file = "test_npu_" + yaml_name + ".py"
+    # yaml_name 可能带/不带 test_npu_ 前缀（配置键已统一为脚本文件名），
+    # 构建脚本路径前先去除前缀，避免双重前缀。
+    base = re.sub(r"^test_npu_", "", yaml_name)
+    test_file = "test_npu_" + base + ".py"
     for test_scripts_root in TEST_SCRIPTS_ROOTS:
         for root, _, files in os.walk(test_scripts_root):
             if test_file in files:
@@ -2686,6 +2689,82 @@ def _nightly_suite_of(content):
     return suite
 
 
+# 功能用例仅接受的标准聚合 suite 模式（nightly-<n>-npu-a3 / nightly-acc-* /
+# nightly-perf-* / full-*）；非标准 suite（如 test_npu_api 的 nightly-npu-a3-merged）
+# 对应的聚合 job 无逐用例执行证据，属于无实际用例的注册器，需排除显示。
+_STANDARD_NPU_SUITE_RE = re.compile(
+    r"^(?:nightly-\d+-npu-a\d|nightly-acc-\d+-npu-a\d|nightly-perf-\d+-npu-a\d|full-\d+-npu-a\d)$"
+)
+
+
+def _is_standard_suite(suite):
+    """判断 suite 是否为标准聚合 suite，返回 bool。"""
+    return bool(suite and _STANDARD_NPU_SUITE_RE.match(suite))
+
+
+def _nightly_registration_blocks(content):
+    """提取 content 中所有 register_npu_ci(nightly=True) 调用的参数块列表。"""
+    blocks = []
+    for m in re.finditer(r"register_npu_ci\s*\(", content):
+        depth = 0
+        start = m.end() - 1
+        end = start
+        for i in range(start, len(content)):
+            if content[i] == "(":
+                depth += 1
+            elif content[i] == ")":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+        args_block = content[m.end() - 1:end]
+        if re.search(r"nightly\s*=\s*True", args_block):
+            blocks.append(args_block)
+    return blocks
+
+
+def _disabled_is_set(args_block):
+    """判断 register_npu_ci 参数块是否设置了 disabled（非空值即视为禁用）。"""
+    m = re.search(r"disabled\s*=\s*([\"']?)(.*?)\1\s*(?:,|\))", args_block)
+    if not m:
+        return False
+    v = m.group(2).strip()
+    return v.lower() not in ("", "none", "false", "0")
+
+
+def _card_count_from_name(yaml_name):
+    """从用例名提取总卡数（与 compute_topology_info 的卡数逻辑一致，跳过 PD 模式）。
+    无法识别时返回 0。"""
+    p_match = re.search(r'_(\d+p\d*d?(?:_\d+p)?)(?=_|$)', yaml_name)
+    if not p_match:
+        return 0
+    parallelism = p_match.group(1)
+    total = 0
+    for part in parallelism.split('_'):
+        if re.search(r'\d+p\d+d', part):
+            continue
+        n = re.search(r'(\d+)p', part)
+        if n:
+            total += int(n.group(1))
+    return total
+
+
+def _is_disabled_single_node(content, case_name):
+    """判断用例是否为「已禁用且单机」的注册器用例。
+
+    单机用例只能通过注册器（register_npu_ci(nightly=True)）执行；其注册器一旦
+    开启 disabled 即不会在 nightly 流水线运行，应排除。多机 disabled 用例仍会通过
+    nightly-test-npu.yml 的 test_config 执行，需保留（只排除单机 disabled 用例）。
+    """
+    blocks = _nightly_registration_blocks(content)
+    if not blocks:
+        return False
+    # 存在任一未禁用的 nightly 注册 → 用例仍会执行，不排除
+    if any(not _disabled_is_set(b) for b in blocks):
+        return False
+    return _card_count_from_name(case_name) <= 8
+
+
 def _collect_registry_expected_test_cases():
     """扫描各 source 仓库的 test/registered/npu 目录，
     收集 register_npu_ci(nightly=True) 注册的 nightly 单机用例。
@@ -2731,8 +2810,10 @@ def _collect_registry_expected_test_cases():
                 if not fname.endswith(".py"):
                     continue
                 case_name = fname[:-3]  # 去掉 .py，如 test_npu_xxx
-                yaml_name = filename_to_yaml_name(case_name + ".txt")
-                if yaml_name in EXCLUDED_TEST_CASES or case_name in EXCLUDED_TEST_CASES:
+                yaml_name = case_name  # 保留 test_npu_ 前缀，与 python 文件名（及配置文件 key）一致
+                # EXCLUDED_TEST_CASES 中同时含裸名与带前缀两种形式，均需匹配
+                bare_name = case_name[len("test_npu_"):] if case_name.startswith("test_npu_") else case_name
+                if case_name in EXCLUDED_TEST_CASES or bare_name in EXCLUDED_TEST_CASES:
                     continue
                 filepath = os.path.join(root, fname)
                 try:
@@ -2742,10 +2823,17 @@ def _collect_registry_expected_test_cases():
                     continue
                 if not _is_nightly_registered(content):
                     continue
-                # 功能用例需额外筛选 suite 以 nightly- 开头（仅收集 nightly 流水线执行的功能用例）
+                # 排除已禁用(disabled)的单机用例：单机用例只能通过注册器执行，
+                # 注册器一旦 disabled 即不会在 nightly 流水线运行；多机 disabled
+                # 用例仍会通过 nightly-test-npu.yml 执行，予以保留。
+                if _is_disabled_single_node(content, case_name):
+                    continue
+                # 功能用例需额外筛选：suite 以 nightly- 开头（仅收集 nightly 流水线执行的
+                # 功能用例，排除 full-* 等 fulltest 流水线用例）且为标准聚合 suite
+                # （排除 test_npu_api 的 nightly-npu-a3-merged 等无实际用例的非标准 suite）
                 if case_type == "function":
                     suite = _nightly_suite_of(content)
-                    if not suite.startswith("nightly-"):
+                    if not suite.startswith("nightly-") or not _is_standard_suite(suite):
                         continue
                 labels = parse_yaml_test_name(yaml_name)
                 if yaml_name not in found:
@@ -2889,22 +2977,25 @@ def collect_expected_test_cases(use_local_config=True):
                     name_match = re.match(r'- name:\s*(\S+)', stripped)
                     if name_match:
                         current_name = name_match.group(1)
-                        name = current_name
-                        labels = parse_yaml_test_name(name)
+                        # 统一为带 test_npu_ 前缀的 python 文件名（与注册器 / 配置文件 key 命名一致）
+                        if not current_name.startswith("test_npu_"):
+                            current_name = "test_npu_" + current_name
+                        labels = parse_yaml_test_name(current_name)
                         model = labels.get("model", "")
                         if " " in model or not model:
                             current_name = None
                             continue
-                        # Skip excluded test cases
-                        if name in EXCLUDED_TEST_CASES:
+                        # Skip excluded test cases（EXCLUDED 中同时含裸名与带前缀两种形式）
+                        bare_name = current_name[len("test_npu_"):] if current_name.startswith("test_npu_") else current_name
+                        if current_name in EXCLUDED_TEST_CASES or bare_name in EXCLUDED_TEST_CASES:
                             current_name = None
                             continue
-                        # Use YAML name directly as test case ID
-                        if name not in expected:
-                            expected[name] = {"labels": labels, "source": source, "yaml_name": name, "type": "unknown"}
+                        # Use prefixed python filename as test case ID
+                        if current_name not in expected:
+                            expected[current_name] = {"labels": labels, "source": source, "yaml_name": current_name, "type": "unknown"}
                         else:
                             # 同一用例可能同时存在于多个 workflow（如 fulltest + nightly），合并 source
-                            existing = expected[name]
+                            existing = expected[current_name]
                             if source not in existing["source"].split(","):
                                 existing["source"] = existing["source"] + "," + source
                     else:
@@ -2929,11 +3020,6 @@ def collect_expected_test_cases(use_local_config=True):
         srcs = [s for s in info["source"].split(",") if s]
         case_type = info.get("type", "unknown")
         target_key = name
-        if name not in expected:
-            # YAML 中可能以 test_npu_ 前缀命名（如 mimo 系列），做前缀归一化
-            alt = "test_npu_" + name
-            if alt in expected:
-                target_key = alt
         if target_key in expected:
             existing = expected[target_key]
             for s in srcs:
