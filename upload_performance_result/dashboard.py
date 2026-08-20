@@ -2456,6 +2456,28 @@ function applyHistoryFilter() {
       });
     }
   });
+  // 功能用例：按"历史天数"窗口重新过滤 L1 历史日期行（仅显示窗口内天数）
+  applyFuncHistoryCutoff(document.getElementById('tableBody'));
+}
+
+// 功能用例 L1 历史日期行按"历史天数"窗口过滤：仅显示窗口内日期；
+// 顶层行未展开时全部隐藏（与 collapseFuncHistory 的收起语义一致）
+function applyFuncHistoryCutoff(root) {
+  const cutoff = getDateCutoff(parseInt(document.getElementById('historyDays').value) || 7);
+  const top = root.querySelector('tr.func-top-row');
+  const expanded = !!top && (top.classList.contains('func-top-open') || top.classList.contains('func-open'));
+  root.querySelectorAll('tr.func-date-row').forEach(r => {
+    const fd = r.getAttribute('data-fdate');
+    const inWin = fd != null && fd >= cutoff;
+    r.style.display = (expanded && inWin) ? '' : 'none';
+    if (!inWin) {
+      // 超出窗口：收起该日期已展开的明细并重置图标
+      root.querySelectorAll(`tr[data-fdet="1"][data-fdate="${fd}"]`).forEach(dr => { dr.style.display = 'none'; });
+      r.classList.remove('func-open');
+      const ic = r.querySelector('.expand-icon');
+      if (ic) ic.textContent = '▶';
+    }
+  });
 }
 
 // 点击测试用例ID列 → 展开/收起历史直接结果与图表；
@@ -2481,10 +2503,10 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
       this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = ''; });
       fTop.classList.add('func-open');
     } else {
-      // 第1次点击：展开历史天数聚合行（L1）
+      // 第1次点击：展开历史天数聚合行（L1，仅显示"历史天数"窗口内的日期）
       collapseFuncHistory(this); // 先收起已展开的历史天数
-      this.querySelectorAll('tr.func-date-row').forEach(r => { r.style.display = ''; });
       fTop.classList.add('func-top-open');
+      applyFuncHistoryCutoff(this); // 只显示与历史天数栏相同天数的记录
     }
     const ic = fTop.querySelector('.expand-icon');
     if (ic) ic.textContent = (fTop.classList.contains('func-open') || fTop.classList.contains('func-top-open')) ? '▼' : '▶';
