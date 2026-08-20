@@ -10,6 +10,7 @@ import json
 import sys
 import time
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import urllib.request
 import urllib.parse
 import http.server
@@ -1240,11 +1241,28 @@ def _fetch_func_log(key):
     # 合并所有已完成 attempt 的 per-case 结果：重试 job（run (N)）与并行分区
     # 可能运行不同的用例子集，需解析全部日志补齐缺口。
     # 同一用例多个 attempt 都有结果时，高 attempt（最终状态）优先。
+    # 并行下载同一套件的多个 job 日志，避免服务器到 GitHub 慢网下串行排队
+    # 拖慢整个套件的 per-case 状态填充（一个套件含并行分区/重试多个 job）。
+    completed_jobs = [j for _, j in sorted(matches, key=lambda x: x[0], reverse=True)
+                      if str(j.get("status", "") or "") == "completed"]
+    # 并行下载同一套件的多个 job 日志（服务器到 GitHub 慢网下可显著缩短
+    # 单个套件的填充耗时；下载量小，用线程池并发安全）。
+    logs = {}
+
+    def _dl(j):
+        return j, _download_job_log(repo, j.get("id"))
+
+    if len(completed_jobs) > 1:
+        with ThreadPoolExecutor(max_workers=min(4, len(completed_jobs))) as ex:
+            for j, log_text in ex.map(_dl, completed_jobs):
+                logs[str(j.get("id"))] = log_text
+    else:
+        for j, log_text in map(_dl, completed_jobs):
+            logs[str(j.get("id"))] = log_text
+
     merged = {}
-    for _, j in sorted(matches, key=lambda x: x[0], reverse=True):
-        if str(j.get("status", "") or "") != "completed":
-            continue
-        log_text = _download_job_log(repo, j.get("id"))
+    for j in completed_jobs:
+        log_text = logs.get(str(j.get("id")))
         if log_text is None:
             continue
         for c, passed in _parse_func_log(log_text).items():
