@@ -784,21 +784,28 @@ def _attach_script_urls(items):
             if c in case_suite_map:
                 suite = case_suite_map[c]
                 break
-        if not suite:
-            continue
-        entry = func_log_cache.get((repo, run_id, suite, is_function))
+        entry = None
+        if suite:
+            entry = func_log_cache.get((repo, run_id, suite, is_function))
+        if entry is None:
+            # 用例未通过注册表映射到 suite（注册表稀疏检出可能滞后于社区新增用例）：
+            # 从已解析的 suite job 日志中反查该用例，避免实际已执行却显示「未执行」
+            for (r, rid, s, f), e in func_log_cache.items():
+                if (r, rid) == (repo, run_id) and base in e.get("map", {}):
+                    entry = e
+                    break
         if entry is None:
             continue
         pmap = entry.get("map", {})
         if base not in pmap:
             continue
         case_info = pmap[base]
-        # 功能用例 per-case 状态
-        if is_function:
-            if entry.get("running"):
-                item["func_status"] = "running"
-            else:
-                item["func_status"] = "pass" if case_info.get("passed") else "fail"
+        # per-case 状态（功能与性能/精度用例均从聚合 suite job 日志解析，
+        # 保证单用例状态与 GitHub 实际执行结果一致，而非套件级结论）
+        if entry.get("running"):
+            item["func_status"] = "running"
+        else:
+            item["func_status"] = "pass" if case_info.get("passed") else "fail"
         # 覆盖 job 链接：仅当用例未被 job 名直配（matrix job）时，
         # 用日志解析出的真实 job（处理并行分区/重试同名 job 场景）。
         jobs_for_run = jobs_cache.get((repo, run_id))
@@ -1199,8 +1206,8 @@ def _fetch_func_log(key):
     取该 run 原始 job 列表中匹配该 suite 的全部 job（含重试与并行分区），
     任一 job 仍在执行中则标记 running（稍后刷新）；否则按 attempt 从高到低
     下载已完成 job 的日志解析 per-case 状态与真实 job_id。
-    非功能套件且该 suite 只有单个 job（无并行分区/重试）时，job 名匹配已足够，
-    无需下载日志（不写入 per-case 映射）。
+    无论功能/性能/精度套件均下载日志解析 per-case 结果，保证单用例状态
+    与 GitHub 实际执行结果一致（套件级 job 结论只能代表整个 suite）。
     """
     repo, run_id, suite, is_function = key
     with _jobs_lock:
@@ -1230,11 +1237,6 @@ def _fetch_func_log(key):
         _func_log_ts[key] = time.time()
         return
     _func_log_running[key] = False
-    if not is_function and len(matches) <= 1:
-        # 非功能套件且无并行分区/重试：job 名匹配已足够，无需下载日志
-        _func_log_cache[key] = {}
-        _func_log_ts[key] = time.time()
-        return
     # 合并所有已完成 attempt 的 per-case 结果：重试 job（run (N)）与并行分区
     # 可能运行不同的用例子集，需解析全部日志补齐缺口。
     # 同一用例多个 attempt 都有结果时，高 attempt（最终状态）优先。
@@ -1266,8 +1268,8 @@ def fetch_func_logs_for_items(items):
     返回 {(repo, run_id, suite, is_function): {"map": {case: {passed, job_id, ...}}, "running": bool}}。
     调度范围：
       - 功能用例：始终调度（用于 func_status per-case 状态）
-      - 非功能用例：也调度，由后台线程按 raw job 判断该 suite 是否有并行分区/重试，
-        是则下载日志解析用例真实所在 job（同名分区无法靠 job 名区分），否则跳过不下载。
+      - 非功能用例：也调度，由后台线程下载该 suite job 日志解析 per-case 真实
+        通过/失败与所在 job，保证性能/精度单用例状态与 GitHub 实际执行结果一致。
     调度规则：
       - 未缓存且距上次失败超过退避间隔 → 加入抓取队列
       - 已缓存但 suite job 仍在执行中且超过刷新间隔 → 重新抓取
@@ -1454,6 +1456,9 @@ tr.selected:hover { background: #254070 !important; }
 /* 功能用例聚合明细行：浅色底纹 + 左侧缩进，区别于普通数据行 */
 .func-detail-row { background: rgba(88, 166, 255, 0.04); }
 .func-detail-row td { border-top: 1px dashed rgba(88, 166, 255, 0.12); }
+/* 功能用例历史天数聚合行：介于顶层"功能用例"与具体用例明细之间的次级层级 */
+.func-date-row { background: rgba(88, 166, 255, 0.07); }
+.func-date-row td { border-top: 1px dashed rgba(88, 166, 255, 0.18); }
 .baseline-val { font-size: 11px; color: #8b949e; }
 .metric-fail { color: #ff7b72; font-weight: 700; }
 .baseline-col { font-size: 11px; color: #8b949e; display: block; width: 100%; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
@@ -1923,13 +1928,13 @@ function jobRunLabel(d) {
 }
 
 function computeStatus(d) {
-  // 功能用例（case_type=function）：不参与基线/指标比对（功能用例无性能/精度指标）。
   // 状态优先取后端解析的 per-case 结果（func_status: pass/fail/running，来自聚合
-  // suite job 日志），未解析到时回退到 GitHub job 结论归因（suite 级，仅供参考）。
+  // suite job 日志），功能与性能/精度用例统一适用，保证单用例状态与 GitHub
+  // 实际执行结果一致。未解析到时回退到 GitHub job 结论归因（suite 级，仅供参考）。
+  if (d.func_status === 'pass') return 'PASS';
+  if (d.func_status === 'fail') return 'FAILED';
+  if (d.func_status === 'running') return '执行中';
   if (d.case_type === 'function') {
-    if (d.func_status === 'pass') return 'PASS';
-    if (d.func_status === 'fail') return 'FAILED';
-    if (d.func_status === 'running') return '执行中';
     const runLabel = jobRunLabel(d);
     if (runLabel === '成功') return 'PASS';
     if (runLabel === '已执行失败') return 'FAILED';
@@ -2000,11 +2005,31 @@ function aggregateFuncStatus(items) {
   return parts.join(' / ') || '--';
 }
 
-// 收起所有已展开的功能用例聚合明细行
-function collapseFuncAggregates(root) {
-  root.querySelectorAll('tr.func-agg-row.func-open').forEach(r => {
+// 收起指定日期（fdate 为空则全部）已展开的功能用例明细行（L2）
+function collapseFuncAggregates(root, fdate) {
+  const sel = fdate
+    ? `tr.func-date-row.func-open[data-fdate="${fdate}"]`
+    : 'tr.func-date-row.func-open';
+  root.querySelectorAll(sel).forEach(r => {
     const od = r.getAttribute('data-fdate');
-    root.querySelectorAll('tr[data-fdet="1"][data-fdate="' + od + '"]').forEach(dr => { dr.style.display = 'none'; });
+    root.querySelectorAll(`tr[data-fdet="1"][data-fdate="${od}"]`).forEach(dr => { dr.style.display = 'none'; });
+    r.classList.remove('func-open');
+    const ic = r.querySelector('.expand-icon');
+    if (ic) ic.textContent = '▶';
+  });
+}
+
+// 收起顶层"功能用例"行展开的历史天数（L1 日期行及其已展开的 L2 明细），重置图标
+function collapseFuncHistory(root) {
+  root.querySelectorAll('tr.func-top-row.func-top-open').forEach(r => {
+    const ic = r.querySelector('.expand-icon');
+    if (ic) ic.textContent = '▶';
+    r.classList.remove('func-top-open');
+  });
+  root.querySelectorAll('tr.func-date-row').forEach(r => { r.style.display = 'none'; });
+  root.querySelectorAll('tr.func-date-row.func-open').forEach(r => {
+    const od = r.getAttribute('data-fdate');
+    root.querySelectorAll(`tr[data-fdet="1"][data-fdate="${od}"]`).forEach(dr => { dr.style.display = 'none'; });
     r.classList.remove('func-open');
     const ic = r.querySelector('.expand-icon');
     if (ic) ic.textContent = '▶';
@@ -2319,8 +2344,12 @@ function updateTable(data) {
     rows += `<tr class="chart-row" id="chart_${safeId}" data-tc="${safeId}" style="display:none"><td colspan="29"></td></tr>`;
   });
 
-  // ---- 功能用例聚合渲染：不解析模型名、整体汇总到一起，按日期每组一行聚合行（可展开查看明细） ----
-  // 模型列统一显示"功能用例"，用例ID列显示"功能用例（可展开）"
+  // ---- 功能用例聚合渲染（三层嵌套展开）----
+  // L0 顶层"功能用例"行：默认仅显示一行整体结果（最新一天聚合状态，不含明细）；
+  //    第1次点击 → 展开历史天数（L1 每日期聚合行）；
+  //    第2次点击 → 展开最新一天的具体用例明细（L2）；
+  //    第3次点击 → 全部收起回到默认单行。
+  // L1 历史日期聚合行：点击 → 展开该日期具体测试用例的执行结果（L2 明细行）。
   const funcDateGroups = {};
   funcRows.forEach(d => {
     const fdate = d.date || '';
@@ -2330,46 +2359,72 @@ function updateTable(data) {
   // 日期倒序展示，最新日期在前
   const sortedFuncDates = Object.keys(funcDateGroups).sort((a, b) => b.localeCompare(a));
 
-  sortedFuncDates.forEach(fdate => {
-    const items = funcDateGroups[fdate];
-    // 明细行内按用例名排序，便于查看
-    items.sort((a, b) => (a._id || '').localeCompare(b._id || ''));
-    const aggStatus = aggregateFuncStatus(items);
+  // L2 功能用例明细行：显示具体测试用例的执行结果（visible=false 时默认隐藏）
+  function renderFuncDetailRow(d, visible) {
+    const status = computeStatus(d);
+    // PASS → 绿；执行中 → 黄；FAILED → 红；FAILED(无结果)/未执行 → 默认色
+    const statusCls2 = status === 'PASS' ? 'status-pass'
+      : (status === '执行中' ? 'status-running'
+        : (status === 'FAILED' ? 'status-fail' : ''));
+    return `<tr class="data-row func-detail-row" data-fdet="1" data-fdate="${escHtml(d.date)}" ${visible ? '' : 'style="display:none"'}>
+      <td class="col-model sticky-col col-l0"></td>
+      <td class="col-tc-id sticky-col col-l1" style="padding-left:52px;"><span class="testcase-id" title="${escHtml(d._id || '')}">${escHtml(d._id || '')}</span></td>
+      <td class="col-meta sticky-col col-l2">${escHtml(d.date)}</td>
+      <td class="col-meta sticky-col col-l3"><span class="${statusCls2}">${escHtml(status)}</span></td>
+      <td class="col-script sticky-col col-l4">${fmtScriptLinks(d)}</td>
+      <td class="col-meta sticky-col col-l5">${fmtRunLink(d)}</td>
+      <td class="col-note sticky-col col-l6">${fmtNote(d)}</td>
+      <td class="col-baseline sticky-col col-l7">--</td>
+      <td colspan="21">--</td>
+    </tr>`;
+  }
+
+  if (sortedFuncDates.length > 0) {
+    const latestDate = sortedFuncDates[0];
+    const latestItems = funcDateGroups[latestDate].slice()
+      .sort((a, b) => (a._id || '').localeCompare(b._id || ''));
+    const aggLatest = aggregateFuncStatus(latestItems);
     // 全部通过 → 绿；无任何状态 → 红；其余（含失败/执行中/未执行）→ 红
-    const statusCls = /^通过 \d+$/.test(aggStatus) ? 'status-pass'
-      : (aggStatus === '--' ? 'status-none' : 'status-fail');
+    const statusClsTop = /^通过 \d+$/.test(aggLatest) ? 'status-pass'
+      : (aggLatest === '--' ? 'status-none' : 'status-fail');
     visibleCount++;
-    rows += `<tr class="data-row func-agg-row" data-fdate="${escHtml(fdate)}">
+    // L0 顶层行：默认只显示最新一天的执行结果
+    rows += `<tr class="data-row func-top-row" data-fdate="${escHtml(latestDate)}">
       <td class="col-model sticky-col col-l0">功能用例</td>
-      <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" style="cursor:pointer;" title="点击展开/收起功能用例明细"><span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;">▶</span>功能用例</span></td>
-      <td class="col-meta sticky-col col-l2">${escHtml(fdate)}</td>
-      <td class="col-meta sticky-col col-l3"><span class="${statusCls}">${escHtml(aggStatus)}</span></td>
+      <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" style="cursor:pointer;" title="点击展开/收起历史天数执行结果"><span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;">▶</span>功能用例</span></td>
+      <td class="col-meta sticky-col col-l2">${escHtml(latestDate)}<span class="baseline-val">（最新）</span></td>
+      <td class="col-meta sticky-col col-l3"><span class="${statusClsTop}">${escHtml(aggLatest)}</span></td>
       <td class="col-script sticky-col col-l4">--</td>
       <td class="col-meta sticky-col col-l5">--</td>
       <td class="col-note sticky-col col-l6">--</td>
       <td class="col-baseline sticky-col col-l7">--</td>
       <td colspan="21">--</td>
     </tr>`;
-    // 明细行：每个功能用例一条，默认隐藏
-    items.forEach(d => {
-      const status = computeStatus(d);
-      // PASS → 绿；执行中 → 黄；FAILED → 红；FAILED(无结果)/未执行 → 默认色
-      const statusCls2 = status === 'PASS' ? 'status-pass'
-        : (status === '执行中' ? 'status-running'
-          : (status === 'FAILED' ? 'status-fail' : ''));
-      rows += `<tr class="data-row func-detail-row" data-fdet="1" data-fdate="${escHtml(fdate)}" style="display:none">
+    // 最新一天的具体用例明细默认隐藏；第2次点击顶层行时展开（L2）
+    latestItems.forEach(d => { rows += renderFuncDetailRow(d, false); });
+
+    // L1 历史天数聚合行（默认隐藏），点击展开对应日期的具体用例明细
+    sortedFuncDates.forEach(fdate => {
+      if (fdate === latestDate) return;
+      const items = funcDateGroups[fdate].slice()
+        .sort((a, b) => (a._id || '').localeCompare(b._id || ''));
+      const aggStatus = aggregateFuncStatus(items);
+      const statusCls = /^通过 \d+$/.test(aggStatus) ? 'status-pass'
+        : (aggStatus === '--' ? 'status-none' : 'status-fail');
+      rows += `<tr class="data-row func-date-row" data-fdate="${escHtml(fdate)}" style="display:none">
         <td class="col-model sticky-col col-l0"></td>
-        <td class="col-tc-id sticky-col col-l1" style="padding-left:26px;"><span class="testcase-id" title="${escHtml(d._id || '')}">${escHtml(d._id || '')}</span></td>
-        <td class="col-meta sticky-col col-l2">${escHtml(d.date)}</td>
-        <td class="col-meta sticky-col col-l3"><span class="${statusCls2}">${escHtml(status)}</span></td>
-        <td class="col-script sticky-col col-l4">${fmtScriptLinks(d)}</td>
-        <td class="col-meta sticky-col col-l5">${fmtRunLink(d)}</td>
-        <td class="col-note sticky-col col-l6">${fmtNote(d)}</td>
+        <td class="col-tc-id sticky-col col-l1" style="padding-left:26px;"><span class="testcase-id" style="cursor:pointer;" title="点击展开/收起该日期功能用例明细"><span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;">▶</span>功能用例</span></td>
+        <td class="col-meta sticky-col col-l2">${escHtml(fdate)}</td>
+        <td class="col-meta sticky-col col-l3"><span class="${statusCls}">${escHtml(aggStatus)}</span></td>
+        <td class="col-script sticky-col col-l4">--</td>
+        <td class="col-meta sticky-col col-l5">--</td>
+        <td class="col-note sticky-col col-l6">--</td>
         <td class="col-baseline sticky-col col-l7">--</td>
         <td colspan="21">--</td>
       </tr>`;
+      items.forEach(d => { rows += renderFuncDetailRow(d, false); });
     });
-  });
+  }
 
   document.getElementById('tableCount').textContent = `(${visibleCount} 条)`;
   tbody.innerHTML = rows;
@@ -2401,6 +2456,28 @@ function applyHistoryFilter() {
       });
     }
   });
+  // 功能用例：按"历史天数"窗口重新过滤 L1 历史日期行（仅显示窗口内天数）
+  applyFuncHistoryCutoff(document.getElementById('tableBody'));
+}
+
+// 功能用例 L1 历史日期行按"历史天数"窗口过滤：仅显示窗口内日期；
+// 顶层行未展开时全部隐藏（与 collapseFuncHistory 的收起语义一致）
+function applyFuncHistoryCutoff(root) {
+  const cutoff = getDateCutoff(parseInt(document.getElementById('historyDays').value) || 7);
+  const top = root.querySelector('tr.func-top-row');
+  const expanded = !!top && (top.classList.contains('func-top-open') || top.classList.contains('func-open'));
+  root.querySelectorAll('tr.func-date-row').forEach(r => {
+    const fd = r.getAttribute('data-fdate');
+    const inWin = fd != null && fd >= cutoff;
+    r.style.display = (expanded && inWin) ? '' : 'none';
+    if (!inWin) {
+      // 超出窗口：收起该日期已展开的明细并重置图标
+      root.querySelectorAll(`tr[data-fdet="1"][data-fdate="${fd}"]`).forEach(dr => { dr.style.display = 'none'; });
+      r.classList.remove('func-open');
+      const ic = r.querySelector('.expand-icon');
+      if (ic) ic.textContent = '▶';
+    }
+  });
 }
 
 // 点击测试用例ID列 → 展开/收起历史直接结果与图表；
@@ -2409,17 +2486,43 @@ function applyHistoryFilter() {
 document.getElementById('tableBody').addEventListener('click', function(e) {
   const tr = e.target.closest('tr');
   if (!tr || tr.querySelector('.no-data') || tr.classList.contains('chart-row')) return;
-  // 功能用例聚合行：点击任意位置 → 展开/收起该日功能用例明细
-  const fAgg = tr.closest('tr.func-agg-row');
-  if (fAgg) {
-    const fdate = fAgg.getAttribute('data-fdate');
-    if (fAgg.classList.contains('func-open')) {
-      collapseFuncAggregates(this);
+  // 顶层"功能用例"行：渐进展开
+  //   第1次点击 → 展开历史天数聚合行（L1）；第2次点击 → 展开最新一天明细（L2）；
+  //   第3次点击 → 全部收起回到默认单行。
+  const fTop = tr.closest('tr.func-top-row');
+  if (fTop) {
+    const latestDate = fTop.getAttribute('data-fdate');
+    if (fTop.classList.contains('func-open')) {
+      // 第3次点击：收起最新一天明细 + 历史天数，回到默认单行
+      collapseFuncHistory(this);
+      this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = 'none'; });
+      fTop.classList.remove('func-open');
+    } else if (fTop.classList.contains('func-top-open')) {
+      // 第2次点击：展开最新一天的具体用例明细（L2）
+      collapseFuncAggregates(this); // 先收起其它已展开的日期明细
+      this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = ''; });
+      fTop.classList.add('func-open');
     } else {
-      collapseFuncAggregates(this); // 先收起其它已展开的聚合行
+      // 第1次点击：展开历史天数聚合行（L1，仅显示"历史天数"窗口内的日期）
+      collapseFuncHistory(this); // 先收起已展开的历史天数
+      fTop.classList.add('func-top-open');
+      applyFuncHistoryCutoff(this); // 只显示与历史天数栏相同天数的记录
+    }
+    const ic = fTop.querySelector('.expand-icon');
+    if (ic) ic.textContent = (fTop.classList.contains('func-open') || fTop.classList.contains('func-top-open')) ? '▼' : '▶';
+    return;
+  }
+  // 历史日期聚合行：点击任意位置 → 展开/收起该日具体用例明细（L2）
+  const fDateRow = tr.closest('tr.func-date-row');
+  if (fDateRow) {
+    const fdate = fDateRow.getAttribute('data-fdate');
+    if (fDateRow.classList.contains('func-open')) {
+      collapseFuncAggregates(this, fdate); // 收起本日期明细
+    } else {
+      collapseFuncAggregates(this); // 先收起其它已展开的日期明细
       this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${fdate}"]`).forEach(dr => { dr.style.display = ''; });
-      fAgg.classList.add('func-open');
-      const ic = fAgg.querySelector('.expand-icon');
+      fDateRow.classList.add('func-open');
+      const ic = fDateRow.querySelector('.expand-icon');
       if (ic) ic.textContent = '▼';
     }
     return;
