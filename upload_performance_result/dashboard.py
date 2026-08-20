@@ -784,21 +784,28 @@ def _attach_script_urls(items):
             if c in case_suite_map:
                 suite = case_suite_map[c]
                 break
-        if not suite:
-            continue
-        entry = func_log_cache.get((repo, run_id, suite, is_function))
+        entry = None
+        if suite:
+            entry = func_log_cache.get((repo, run_id, suite, is_function))
+        if entry is None:
+            # 用例未通过注册表映射到 suite（注册表稀疏检出可能滞后于社区新增用例）：
+            # 从已解析的 suite job 日志中反查该用例，避免实际已执行却显示「未执行」
+            for (r, rid, s, f), e in func_log_cache.items():
+                if (r, rid) == (repo, run_id) and base in e.get("map", {}):
+                    entry = e
+                    break
         if entry is None:
             continue
         pmap = entry.get("map", {})
         if base not in pmap:
             continue
         case_info = pmap[base]
-        # 功能用例 per-case 状态
-        if is_function:
-            if entry.get("running"):
-                item["func_status"] = "running"
-            else:
-                item["func_status"] = "pass" if case_info.get("passed") else "fail"
+        # per-case 状态（功能与性能/精度用例均从聚合 suite job 日志解析，
+        # 保证单用例状态与 GitHub 实际执行结果一致，而非套件级结论）
+        if entry.get("running"):
+            item["func_status"] = "running"
+        else:
+            item["func_status"] = "pass" if case_info.get("passed") else "fail"
         # 覆盖 job 链接：仅当用例未被 job 名直配（matrix job）时，
         # 用日志解析出的真实 job（处理并行分区/重试同名 job 场景）。
         jobs_for_run = jobs_cache.get((repo, run_id))
@@ -1199,8 +1206,8 @@ def _fetch_func_log(key):
     取该 run 原始 job 列表中匹配该 suite 的全部 job（含重试与并行分区），
     任一 job 仍在执行中则标记 running（稍后刷新）；否则按 attempt 从高到低
     下载已完成 job 的日志解析 per-case 状态与真实 job_id。
-    非功能套件且该 suite 只有单个 job（无并行分区/重试）时，job 名匹配已足够，
-    无需下载日志（不写入 per-case 映射）。
+    无论功能/性能/精度套件均下载日志解析 per-case 结果，保证单用例状态
+    与 GitHub 实际执行结果一致（套件级 job 结论只能代表整个 suite）。
     """
     repo, run_id, suite, is_function = key
     with _jobs_lock:
@@ -1230,11 +1237,6 @@ def _fetch_func_log(key):
         _func_log_ts[key] = time.time()
         return
     _func_log_running[key] = False
-    if not is_function and len(matches) <= 1:
-        # 非功能套件且无并行分区/重试：job 名匹配已足够，无需下载日志
-        _func_log_cache[key] = {}
-        _func_log_ts[key] = time.time()
-        return
     # 合并所有已完成 attempt 的 per-case 结果：重试 job（run (N)）与并行分区
     # 可能运行不同的用例子集，需解析全部日志补齐缺口。
     # 同一用例多个 attempt 都有结果时，高 attempt（最终状态）优先。
@@ -1266,8 +1268,8 @@ def fetch_func_logs_for_items(items):
     返回 {(repo, run_id, suite, is_function): {"map": {case: {passed, job_id, ...}}, "running": bool}}。
     调度范围：
       - 功能用例：始终调度（用于 func_status per-case 状态）
-      - 非功能用例：也调度，由后台线程按 raw job 判断该 suite 是否有并行分区/重试，
-        是则下载日志解析用例真实所在 job（同名分区无法靠 job 名区分），否则跳过不下载。
+      - 非功能用例：也调度，由后台线程下载该 suite job 日志解析 per-case 真实
+        通过/失败与所在 job，保证性能/精度单用例状态与 GitHub 实际执行结果一致。
     调度规则：
       - 未缓存且距上次失败超过退避间隔 → 加入抓取队列
       - 已缓存但 suite job 仍在执行中且超过刷新间隔 → 重新抓取
@@ -1926,13 +1928,13 @@ function jobRunLabel(d) {
 }
 
 function computeStatus(d) {
-  // 功能用例（case_type=function）：不参与基线/指标比对（功能用例无性能/精度指标）。
   // 状态优先取后端解析的 per-case 结果（func_status: pass/fail/running，来自聚合
-  // suite job 日志），未解析到时回退到 GitHub job 结论归因（suite 级，仅供参考）。
+  // suite job 日志），功能与性能/精度用例统一适用，保证单用例状态与 GitHub
+  // 实际执行结果一致。未解析到时回退到 GitHub job 结论归因（suite 级，仅供参考）。
+  if (d.func_status === 'pass') return 'PASS';
+  if (d.func_status === 'fail') return 'FAILED';
+  if (d.func_status === 'running') return '执行中';
   if (d.case_type === 'function') {
-    if (d.func_status === 'pass') return 'PASS';
-    if (d.func_status === 'fail') return 'FAILED';
-    if (d.func_status === 'running') return '执行中';
     const runLabel = jobRunLabel(d);
     if (runLabel === '成功') return 'PASS';
     if (runLabel === '已执行失败') return 'FAILED';
@@ -2343,8 +2345,10 @@ function updateTable(data) {
   });
 
   // ---- 功能用例聚合渲染（三层嵌套展开）----
-  // L0 顶层"功能用例"行：默认仅显示最新一天的执行结果（最新日期聚合 + 其具体用例明细）；
-  //    点击顶层行 → 展开历史天数（L1 每日期聚合行）；
+  // L0 顶层"功能用例"行：默认仅显示一行整体结果（最新一天聚合状态，不含明细）；
+  //    第1次点击 → 展开历史天数（L1 每日期聚合行）；
+  //    第2次点击 → 展开最新一天的具体用例明细（L2）；
+  //    第3次点击 → 全部收起回到默认单行。
   // L1 历史日期聚合行：点击 → 展开该日期具体测试用例的执行结果（L2 明细行）。
   const funcDateGroups = {};
   funcRows.forEach(d => {
@@ -2396,8 +2400,8 @@ function updateTable(data) {
       <td class="col-baseline sticky-col col-l7">--</td>
       <td colspan="21">--</td>
     </tr>`;
-    // 最新一天的具体用例明细默认展开显示
-    latestItems.forEach(d => { rows += renderFuncDetailRow(d, true); });
+    // 最新一天的具体用例明细默认隐藏；第2次点击顶层行时展开（L2）
+    latestItems.forEach(d => { rows += renderFuncDetailRow(d, false); });
 
     // L1 历史天数聚合行（默认隐藏），点击展开对应日期的具体用例明细
     sortedFuncDates.forEach(fdate => {
@@ -2460,18 +2464,30 @@ function applyHistoryFilter() {
 document.getElementById('tableBody').addEventListener('click', function(e) {
   const tr = e.target.closest('tr');
   if (!tr || tr.querySelector('.no-data') || tr.classList.contains('chart-row')) return;
-  // 顶层"功能用例"行：点击任意位置 → 展开/收起历史天数执行结果（L1 日期行）
+  // 顶层"功能用例"行：渐进展开
+  //   第1次点击 → 展开历史天数聚合行（L1）；第2次点击 → 展开最新一天明细（L2）；
+  //   第3次点击 → 全部收起回到默认单行。
   const fTop = tr.closest('tr.func-top-row');
   if (fTop) {
-    if (fTop.classList.contains('func-top-open')) {
+    const latestDate = fTop.getAttribute('data-fdate');
+    if (fTop.classList.contains('func-open')) {
+      // 第3次点击：收起最新一天明细 + 历史天数，回到默认单行
       collapseFuncHistory(this);
+      this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = 'none'; });
+      fTop.classList.remove('func-open');
+    } else if (fTop.classList.contains('func-top-open')) {
+      // 第2次点击：展开最新一天的具体用例明细（L2）
+      collapseFuncAggregates(this); // 先收起其它已展开的日期明细
+      this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = ''; });
+      fTop.classList.add('func-open');
     } else {
+      // 第1次点击：展开历史天数聚合行（L1）
       collapseFuncHistory(this); // 先收起已展开的历史天数
       this.querySelectorAll('tr.func-date-row').forEach(r => { r.style.display = ''; });
       fTop.classList.add('func-top-open');
-      const ic = fTop.querySelector('.expand-icon');
-      if (ic) ic.textContent = '▼';
     }
+    const ic = fTop.querySelector('.expand-icon');
+    if (ic) ic.textContent = (fTop.classList.contains('func-open') || fTop.classList.contains('func-top-open')) ? '▼' : '▶';
     return;
   }
   // 历史日期聚合行：点击任意位置 → 展开/收起该日具体用例明细（L2）
