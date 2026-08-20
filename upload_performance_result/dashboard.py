@@ -362,15 +362,21 @@ def save_note(key, note_text):
 
 
 def clear_notes_for_case(yaml_name):
-    """删除某用例（yaml_name）的所有历史备注条目（纯键 + 复合键）。返回删除条数。"""
+    """删除某用例（yaml_name）的所有历史备注条目（纯键 + 复合键）。返回删除条数。
+    用例名带/不带 test_npu_ 前缀两种形态下的备注键均会清除（兼容配置改名前后）。
+    """
     global _notes, _notes_dirty
     with _notes_lock:
         load_notes()
         prefix = str(yaml_name or "").strip()
         if not prefix:
             return 0
-        removed = [k for k in _notes
-                   if k == prefix or k.startswith(prefix + NOTES_KEY_SEP)]
+        prefixes = _note_name_variants(prefix) or [prefix]
+        removed = []
+        for p in prefixes:
+            removed.extend(k for k in _notes
+                           if k == p or k.startswith(p + NOTES_KEY_SEP))
+        removed = list(dict.fromkeys(removed))
         for k in removed:
             _notes.pop(k, None)
         try:
@@ -382,6 +388,20 @@ def clear_notes_for_case(yaml_name):
             return 0
 
 
+def _note_name_variants(yaml_name):
+    """返回用例名的两种形态（裸名 / 带 test_npu_ 前缀），用于备注键的兼容匹配。
+
+    配置中的用例名可能从裸名改为 test_npu_ 前缀（或反之），历史备注键可能以任意
+    一种形态保存，匹配时需同时尝试两种，避免用例改名后备注在界面「丢失」。
+    """
+    name = str(yaml_name or "")
+    if not name:
+        return []
+    if name.startswith("test_npu_"):
+        return [name, name[len("test_npu_"):]]
+    return [name, "test_npu_" + name]
+
+
 def attach_notes(items):
     """为每条数据附加 note / note_date 字段（按执行结果复合键匹配）。
 
@@ -390,6 +410,9 @@ def attach_notes(items):
       2) 未命中 → 回退到该用例（同 yaml_name）最新的历史备注：从所有复合键中
          取日期（date）最大的一条作为默认备注，并附加其日期 note_date；
          若该用例只有纯 yaml_name 历史键（无日期）则回退到该键且 note_date 为空。
+
+    备注键中的用例名可能带/不带 test_npu_ 前缀（配置曾改名为带前缀），
+    精确复合键与历史回退匹配均按两种形态兼容（见 _note_name_variants）。
     """
     notes = load_notes()
     # 预构建 yaml_name → (date, note) 的最新历史备注映射（复合键，date 最大者）
@@ -402,20 +425,44 @@ def attach_notes(items):
             if len(parts) >= 2:
                 yaml_name = parts[0]
                 date = parts[1]
-                cur = latest_hist.get(yaml_name)
-                if cur is None or date > cur[0]:
-                    latest_hist[yaml_name] = (date, v)
+                # 以裸名/带前缀两种形态登记，兼容用例改名前后保存的备注键
+                for variant in _note_name_variants(yaml_name):
+                    cur = latest_hist.get(variant)
+                    if cur is None or date > cur[0]:
+                        latest_hist[variant] = (date, v)
     for item in items:
         key = note_key_for_item(item)
         note = notes.get(key)
         note_date = None
         if note is None:
             yaml_name = str(item.get("yaml_name", "") or "")
-            hist = latest_hist.get(yaml_name)
-            if hist is not None:
-                note, note_date = hist[1], hist[0]
-            else:
-                note = notes.get(yaml_name, "")
+            variants = _note_name_variants(yaml_name)
+            # 尝试另一种形态的精确复合键（如备注保存在裸名键下）
+            if variants:
+                for vname in variants[1:]:
+                    alt_key = note_key_for(
+                        vname,
+                        item.get("date", ""),
+                        item.get("branch", ""),
+                        item.get("run_id", ""),
+                    )
+                    note = notes.get(alt_key)
+                    if note:
+                        break
+            # 回退到该用例最新的历史备注 / 纯 yaml_name 备注键（两种形态均尝试）
+            if not note:
+                hist = None
+                for vname in (variants or [yaml_name]):
+                    hist = latest_hist.get(vname)
+                    if hist is not None:
+                        break
+                if hist is not None:
+                    note, note_date = hist[1], hist[0]
+                else:
+                    for vname in (variants or [yaml_name]):
+                        note = notes.get(vname, "")
+                        if note:
+                            break
         item["note"] = note or ""
         if note_date:
             item["note_date"] = note_date
