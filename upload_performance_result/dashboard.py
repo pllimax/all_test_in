@@ -3491,7 +3491,10 @@ def collect_all_data(eval_data=None, accuracy_data=None):
 # ============================================================
 DATA_CACHE_TTL = 30  # 秒，控制前台数据新鲜度
 EVAL_CACHE_TTL = 600  # 秒，eval/accuracy 子集合缓存 TTL
-_data_cache = {"ts": 0, "payload": None}
+_data_cache = {"ts": 0, "payload": None, "body": None}
+# body: /api/data 的序列化 JSON bytes。与 payload 一起缓存，备注保存/清理或
+# 后台重建时才重新生成，常规请求直接回写 bytes，避免每请求 json.dumps 的
+# GIL 串行化开销（并发下延迟随 json 序列化时长线性增长）。
 _data_lock = threading.RLock()  # 保护 /api/data 结果缓存的并发读写
 _rebuild_lock = threading.Lock()  # 串行化后台重建，避免多线程同时重建
 _rebuilding = False  # 是否有后台重建在进行（仅在 _data_lock 下读写）
@@ -3530,8 +3533,11 @@ def _revalidate_data():
     with _rebuild_lock:
         try:
             payload = _collect_all_data_cached()
+            attach_notes(payload)
+            body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             with _data_lock:
                 _data_cache["payload"] = payload
+                _data_cache["body"] = body
                 _data_cache["ts"] = time.time()
                 _rebuilding = False
         except Exception:
@@ -3542,24 +3548,42 @@ def _revalidate_data():
 
 
 def _get_data():
+    """返回 /api/data 的序列化 JSON bytes。
+
+    序列化结果与 payload 一起缓存：仅后台重建或备注保存/清理（body 被清空）时
+    重新生成，常规请求直接回写缓存 bytes，避免每请求 json.dumps 的 GIL 串行化开销。
+    """
     global _rebuilding
     with _data_lock:
         now = time.time()
         payload = _data_cache["payload"]
         if payload is None:
-            # 冷启动：无旧缓存可复用，同步重建
+            # 冷启动：无旧缓存可复用，同步重建并序列化
             payload = _collect_all_data_cached()
+            attach_notes(payload)
             _data_cache["payload"] = payload
+            _data_cache["body"] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
             _data_cache["ts"] = now
         elif now - _data_cache["ts"] >= DATA_CACHE_TTL:
-            # 缓存过期：立即返回旧缓存，后台异步重建，请求不阻塞
+            # 缓存过期：返回旧缓存，后台异步重建（stale-while-revalidate），请求不阻塞
             if not _rebuilding:
                 _rebuilding = True
                 threading.Thread(target=_revalidate_data, daemon=True).start()
-        # 附加用例备注（每次请求都刷新，保证保存后立即可见）。
-        # attach_notes 在 _data_lock 下串行执行，避免并发写 item["note"] 竞态
-        attach_notes(payload)
-        return payload
+        if _data_cache["body"] is None:
+            # 序列化缓存被备注变更清空：重新附加备注并序列化
+            attach_notes(payload)
+            _data_cache["body"] = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        return _data_cache["body"]
+
+
+def _invalidate_data_body():
+    """备注保存/清理后使序列化缓存失效，保证下次请求返回最新备注。
+
+    仅在 POST 处理器（不持有任何锁）中调用，避免 _notes_lock / _data_lock
+    的锁顺序死锁（save_note 持有 _notes_lock，而 _get_data 持有 _data_lock）。
+    """
+    with _data_lock:
+        _data_cache["body"] = None
 
 
 # ============================================================
@@ -3585,7 +3609,11 @@ def _asset_url(filename, cdn_url):
 
 class DashboardHandler(http.server.BaseHTTPRequestHandler):
     def _send_json(self, obj, status=200):
-        body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
+        if isinstance(obj, bytes):
+            # 已序列化的响应体（/api/data 复用缓存 bytes，跳过 json.dumps）
+            body = obj
+        else:
+            body = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
@@ -3671,6 +3699,9 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                     return
                 key = note_key_for(yaml_name, date, branch, run_id)
                 ok = save_note(key, note)
+                if ok:
+                    # 备注已写盘：使序列化缓存失效，下次 /api/data 返回最新备注
+                    _invalidate_data_body()
                 self._send_json({"ok": ok, "key": key})
             except Exception as e:
                 self._send_json({"ok": False, "error": str(e)}, status=400)
@@ -3684,6 +3715,9 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                     self._send_json({"ok": False, "error": "yaml_name is required"}, status=400)
                     return
                 removed = clear_notes_for_case(yaml_name)
+                if removed:
+                    # 已删除备注：使序列化缓存失效，下次 /api/data 反映清理结果
+                    _invalidate_data_body()
                 self._send_json({"ok": True, "removed": removed})
             except Exception as e:
                 self._send_json({"ok": False, "error": str(e)}, status=400)
