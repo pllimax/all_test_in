@@ -3265,9 +3265,12 @@ def split_date_label(date_label):
     return date_label, "", "", ""
 
 
-def collect_all_data():
+def collect_all_data(eval_data=None, accuracy_data=None):
     """Collect all benchmark data into a list of dicts.
     Only includes test cases defined in YAML workflow configs.
+
+    可选参数 eval_data / accuracy_data 用于复用长 TTL 缓存的子集合
+    （见 _get_eval_data_cached），避免每次重建重扫数千个 eval 日志文件。
     """
     results = []
     metrics_dir = get_metrics_dir()
@@ -3279,7 +3282,8 @@ def collect_all_data():
     expected_tc_ids = set(expected.keys())
 
     # Collect eval scores: {(test_case_name, date): max_score}
-    eval_data = collect_eval_data()
+    if eval_data is None:
+        eval_data = collect_eval_data()
 
     # Collect baselines from test scripts
     baselines = collect_baselines()
@@ -3323,7 +3327,8 @@ def collect_all_data():
         results.append(labels)
 
     # Append accuracy-only test results from accuracy/ directory (no performance metrics)
-    accuracy_data = collect_accuracy_only_data()
+    if accuracy_data is None:
+        accuracy_data = collect_accuracy_only_data()
     for item in accuracy_data:
         _match_baselines_for_item(item, baselines)
         date_part, branch_part, run_id, run_workflow = split_date_label(item.get("date", ""))
@@ -3477,23 +3482,82 @@ def collect_all_data():
     return filtered
 
 
-# /api/data 结果缓存：metrics 数据更新不频繁（每 300s 轮询 + 手动刷新），
-# 加 TTL 缓存避免每次请求全量重扫 metrics 目录与解析 YAML。
-DATA_CACHE_TTL = 30  # 秒
+# ============================================================
+# /api/data 结果缓存
+# 1) eval/accuracy 子集合数据更新频率低（跟随 nightly/fulltest 跑完才变），
+#    单独长 TTL 缓存，避免每次重建都重扫数千个 eval 日志文件。
+# 2) /api/data 采用 stale-while-revalidate：TTL 到期先返回旧缓存，
+#    后台线程重建，重建期间所有请求均不阻塞。
+# ============================================================
+DATA_CACHE_TTL = 30  # 秒，控制前台数据新鲜度
+EVAL_CACHE_TTL = 600  # 秒，eval/accuracy 子集合缓存 TTL
 _data_cache = {"ts": 0, "payload": None}
 _data_lock = threading.RLock()  # 保护 /api/data 结果缓存的并发读写
+_rebuild_lock = threading.Lock()  # 串行化后台重建，避免多线程同时重建
+_rebuilding = False  # 是否有后台重建在进行（仅在 _data_lock 下读写）
+_eval_cache = {"ts": 0, "eval": None, "acc": None}
+_eval_lock = threading.RLock()  # 保护 eval/accuracy 子集合缓存
+
+
+def _get_eval_data_cached():
+    """返回 (eval_data, accuracy_data)，带长 TTL 缓存。
+
+    eval 精度数据随 CI 跑完才更新，600s 内复用即可；
+    避免每个 /api/data 请求（30s TTL）都重扫 5000+ 个 eval 日志。
+    """
+    with _eval_lock:
+        now = time.time()
+        if _eval_cache["eval"] is None or now - _eval_cache["ts"] >= EVAL_CACHE_TTL:
+            _eval_cache["eval"] = collect_eval_data()
+            _eval_cache["acc"] = collect_accuracy_only_data()
+            _eval_cache["ts"] = now
+        return _eval_cache["eval"], _eval_cache["acc"]
+
+
+def _collect_all_data_cached():
+    """使用长 TTL 缓存的 eval/accuracy 子集合构建完整数据。"""
+    eval_data, accuracy_data = _get_eval_data_cached()
+    return collect_all_data(eval_data=eval_data, accuracy_data=accuracy_data)
+
+
+def _revalidate_data():
+    """后台重建 /api/data 缓存；重建期间继续提供旧缓存（stale-while-revalidate）。
+
+    重建在 _rebuild_lock 下串行执行，不持有 _data_lock，因此
+    不阻塞任何正在进行的 /api/data 请求。
+    """
+    global _rebuilding
+    with _rebuild_lock:
+        try:
+            payload = _collect_all_data_cached()
+            with _data_lock:
+                _data_cache["payload"] = payload
+                _data_cache["ts"] = time.time()
+                _rebuilding = False
+        except Exception:
+            # 重建失败时清空重建标记，下次请求可再次触发重建
+            with _data_lock:
+                _rebuilding = False
+            raise
 
 
 def _get_data():
-    # 加锁保证并发请求下缓存只被构建一次，且 attach_notes 对共享
-    # payload 的修改串行化，避免多个线程同时写 item["note"] 的竞态
+    global _rebuilding
     with _data_lock:
         now = time.time()
-        if _data_cache["payload"] is None or now - _data_cache["ts"] >= DATA_CACHE_TTL:
-            _data_cache["payload"] = collect_all_data()
-            _data_cache["ts"] = now
         payload = _data_cache["payload"]
-        # 附加用例备注（每次请求都刷新，保证保存后立即可见）
+        if payload is None:
+            # 冷启动：无旧缓存可复用，同步重建
+            payload = _collect_all_data_cached()
+            _data_cache["payload"] = payload
+            _data_cache["ts"] = now
+        elif now - _data_cache["ts"] >= DATA_CACHE_TTL:
+            # 缓存过期：立即返回旧缓存，后台异步重建，请求不阻塞
+            if not _rebuilding:
+                _rebuilding = True
+                threading.Thread(target=_revalidate_data, daemon=True).start()
+        # 附加用例备注（每次请求都刷新，保证保存后立即可见）。
+        # attach_notes 在 _data_lock 下串行执行，避免并发写 item["note"] 竞态
         attach_notes(payload)
         return payload
 
