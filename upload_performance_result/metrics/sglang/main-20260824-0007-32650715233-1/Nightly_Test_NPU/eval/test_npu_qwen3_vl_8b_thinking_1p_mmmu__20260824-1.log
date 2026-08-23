@@ -1,0 +1,239 @@
+2026-08-23 19:14:08 - evalscope - INFO: Running with native backend
+2026-08-23 19:14:08 - evalscope - INFO: Dump task config to /root/.cache/tests/output/main-20260824-0007-32650715233-1/Nightly_Test_NPU/accuracy/nightly-acc-2-npu-a3-p0/test_npu_qwen3_vl_8b_thinking_1p_mmmu/20260823_191408/configs/task_config.yaml
+2026-08-23 19:14:08 - evalscope - INFO: {
+    "model": "Qwen3-VL-8B-Thinking",
+    "model_id": "Qwen3-VL-8B-Thinking",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "mmmu"
+    ],
+    "dataset_args": {
+        "mmmu": {
+            "name": "mmmu",
+            "dataset_id": "AI-ModelScope/MMMU",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "Accounting",
+                "Agriculture",
+                "Architecture_and_Engineering",
+                "Art",
+                "Art_Theory",
+                "Basic_Medical_Science",
+                "Biology",
+                "Chemistry",
+                "Clinical_Medicine",
+                "Computer_Science",
+                "Design",
+                "Diagnostics_and_Laboratory_Medicine",
+                "Economics",
+                "Electronics",
+                "Energy_and_Power",
+                "Finance",
+                "Geography",
+                "History",
+                "Literature",
+                "Manage",
+                "Marketing",
+                "Materials",
+                "Math",
+                "Mechanical_Engineering",
+                "Music",
+                "Pharmacy",
+                "Physics",
+                "Psychology",
+                "Public_Health",
+                "Sociology"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "validation",
+            "prompt_template": "\nSolve the following problem step by step. The last line of your response should be of the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem.\n\n{question}\n\nRemember to put your answer on its own line at the end in the form \"ANSWER: [ANSWER]\" (without quotes) where [ANSWER] is the answer to the problem, and you do not need to use a \\boxed command.\n\n",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "MMMU",
+            "description": "\n## Overview\n\nMMMU (Massive Multi-discipline Multimodal Understanding) is a comprehensive benchmark designed to evaluate multimodal models on expert-level tasks requiring college-level subject knowledge and deliberate reasoning. It covers 30 subjects across 6 core disciplines.\n\n## Task Description\n\n- **Task Type**: Multimodal Question Answering (Multiple-Choice and Open-Ended)\n- **Input**: Questions with diverse images (charts, diagrams, maps, tables, etc.)\n- **Output**: Answer letter (MC) or free-form text (Open)\n- **Disciplines**: Art & Design, Business, Science, Health & Medicine, Humanities, Tech & Engineering\n\n## Key Features\n\n- 11.5K meticulously collected multimodal questions\n- From college exams, quizzes, and textbooks\n- 30 subjects and 183 subfields covered\n- 30 heterogeneous image types (charts, diagrams, music sheets, chemical structures, etc.)\n- Tests both perception and expert-level reasoning\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Supports both multiple-choice and open-ended question types\n- Multiple images per question supported (up to 7)\n- For open questions: \"ANSWER: [ANSWER]\" format expected\n- Evaluates on validation split (test set requires submission)\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "MultiModal",
+                "Knowledge",
+                "QA"
+            ],
+            "filters": null,
+            "metric_list": [
+                "acc"
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20260824-0007-32650715233-1/Nightly_Test_NPU/accuracy/nightly-acc-2-npu-a3-p0/test_npu_qwen3_vl_8b_thinking_1p_mmmu/20260823_191408",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20466/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-08-23 19:14:08 - evalscope - INFO: Start loading benchmark dataset: mmmu
+2026-08-23 19:14:12 - evalscope - INFO: Start evaluating 30 subsets of mmmu: ['Accounting', 'Agriculture', 'Architecture_and_Engineering', 'Art', 'Art_Theory', 'Basic_Medical_Science', 'Biology', 'Chemistry', 'Clinical_Medicine', 'Computer_Science', 'Design', 'Diagnostics_and_Laboratory_Medicine', 'Economics', 'Electronics', 'Energy_and_Power', 'Finance', 'Geography', 'History', 'Literature', 'Manage', 'Marketing', 'Materials', 'Math', 'Mechanical_Engineering', 'Music', 'Pharmacy', 'Physics', 'Psychology', 'Public_Health', 'Sociology']
+2026-08-23 19:14:12 - evalscope - INFO: Unified pool: 900 items to process, 0 already fully cached (900 total across all subsets).
+2026-08-23 19:14:12 - evalscope - INFO: Loading model for prediction...
+2026-08-23 19:14:12 - evalscope - INFO: Creating model Qwen3-VL-8B-Thinking with eval_type=openai_api base_url=http://127.0.0.1:20466/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536}, model_args={}
+2026-08-23 19:14:12 - evalscope - INFO: Model loaded successfully.
+2026-08-23 19:15:13 - evalscope - INFO: Evaluating[mmmu]   0%| 0/900 [Elapsed: 01:00 < Remaining: ?, ?it/s]
+2026-08-23 19:16:13 - evalscope - INFO: Evaluating[mmmu]   1%| 5/900 [Elapsed: 02:01 < Remaining: 3:54:11, 15.70s/it]
+2026-08-23 19:17:14 - evalscope - INFO: Evaluating[mmmu]   2%| 20/900 [Elapsed: 03:01 < Remaining: 1:30:18,  6.16s/it]
+2026-08-23 19:18:14 - evalscope - INFO: Evaluating[mmmu]   3%| 31/900 [Elapsed: 04:01 < Remaining: 1:31:18,  6.30s/it]
+2026-08-23 19:19:14 - evalscope - INFO: Evaluating[mmmu]   4%| 37/900 [Elapsed: 05:01 < Remaining: 1:46:16,  7.39s/it]
+2026-08-23 19:20:15 - evalscope - INFO: Evaluating[mmmu]   5%| 45/900 [Elapsed: 06:02 < Remaining: 1:27:13,  6.12s/it]
+2026-08-23 19:21:15 - evalscope - INFO: Evaluating[mmmu]   6%| 51/900 [Elapsed: 07:02 < Remaining: 2:19:04,  9.83s/it]
+2026-08-23 19:22:15 - evalscope - INFO: Evaluating[mmmu]   6%| 54/900 [Elapsed: 08:03 < Remaining: 3:33:15, 15.12s/it]
+2026-08-23 19:23:16 - evalscope - INFO: Evaluating[mmmu]   7%| 63/900 [Elapsed: 09:03 < Remaining: 2:18:38,  9.94s/it]
+2026-08-23 19:24:16 - evalscope - INFO: Evaluating[mmmu]   7%| 66/900 [Elapsed: 10:03 < Remaining: 3:25:02, 14.75s/it]
+2026-08-23 19:25:16 - evalscope - INFO: Evaluating[mmmu]   8%| 73/900 [Elapsed: 11:03 < Remaining: 1:58:11,  8.57s/it]
+2026-08-23 19:26:16 - evalscope - INFO: Evaluating[mmmu]   9%| 78/900 [Elapsed: 12:04 < Remaining: 2:25:03, 10.59s/it]
+2026-08-23 19:27:17 - evalscope - INFO: Evaluating[mmmu]   9%| 85/900 [Elapsed: 13:04 < Remaining: 2:27:48, 10.88s/it]
+2026-08-23 19:28:17 - evalscope - INFO: Evaluating[mmmu]  10%| 92/900 [Elapsed: 14:05 < Remaining: 2:03:44,  9.19s/it]
+2026-08-23 19:29:18 - evalscope - INFO: Evaluating[mmmu]  11%| 102/900 [Elapsed: 15:05 < Remaining: 1:24:12,  6.33s/it]
+2026-08-23 19:30:18 - evalscope - INFO: Evaluating[mmmu]  12%| 106/900 [Elapsed: 16:06 < Remaining: 2:21:11, 10.67s/it]
+2026-08-23 19:31:18 - evalscope - INFO: Evaluating[mmmu]  12%| 111/900 [Elapsed: 17:06 < Remaining: 1:43:39,  7.88s/it]
+2026-08-23 19:32:19 - evalscope - INFO: Evaluating[mmmu]  13%| 121/900 [Elapsed: 18:06 < Remaining: 1:05:04,  5.01s/it]
+2026-08-23 19:33:19 - evalscope - INFO: Evaluating[mmmu]  14%| 124/900 [Elapsed: 19:06 < Remaining: 3:30:52, 16.30s/it]
+2026-08-23 19:34:20 - evalscope - INFO: Evaluating[mmmu]  15%| 133/900 [Elapsed: 20:07 < Remaining: 1:22:51,  6.48s/it]
+2026-08-23 19:35:20 - evalscope - INFO: Evaluating[mmmu]  15%| 134/900 [Elapsed: 21:07 < Remaining: 2:27:36, 11.56s/it]
+2026-08-23 19:36:20 - evalscope - INFO: Evaluating[mmmu]  15%| 138/900 [Elapsed: 22:07 < Remaining: 2:28:56, 11.73s/it]
+2026-08-23 19:37:20 - evalscope - INFO: Evaluating[mmmu]  16%| 144/900 [Elapsed: 23:08 < Remaining: 2:13:57, 10.63s/it]
+2026-08-23 19:38:21 - evalscope - INFO: Evaluating[mmmu]  17%| 150/900 [Elapsed: 24:08 < Remaining: 2:23:10, 11.45s/it]
+2026-08-23 19:39:21 - evalscope - INFO: Evaluating[mmmu]  17%| 155/900 [Elapsed: 25:08 < Remaining: 2:21:08, 11.37s/it]
+2026-08-23 19:40:21 - evalscope - INFO: Evaluating[mmmu]  18%| 159/900 [Elapsed: 26:08 < Remaining: 3:54:56, 19.02s/it]
+2026-08-23 19:41:21 - evalscope - INFO: Evaluating[mmmu]  18%| 161/900 [Elapsed: 27:08 < Remaining: 3:53:46, 18.98s/it]
+2026-08-23 19:42:21 - evalscope - INFO: Evaluating[mmmu]  18%| 162/900 [Elapsed: 28:09 < Remaining: 8:12:13, 40.02s/it]
+2026-08-23 19:43:21 - evalscope - INFO: Evaluating[mmmu]  19%| 167/900 [Elapsed: 29:09 < Remaining: 2:57:11, 14.50s/it]
+2026-08-23 19:44:22 - evalscope - INFO: Evaluating[mmmu]  19%| 170/900 [Elapsed: 30:10 < Remaining: 1:26:22,  7.10s/it]
+2026-08-23 19:45:22 - evalscope - INFO: Evaluating[mmmu]  19%| 175/900 [Elapsed: 31:10 < Remaining: 2:31:21, 12.53s/it]
+2026-08-23 19:46:23 - evalscope - INFO: Evaluating[mmmu]  20%| 178/900 [Elapsed: 32:10 < Remaining: 3:42:52, 18.52s/it]
+2026-08-23 19:47:23 - evalscope - INFO: Evaluating[mmmu]  20%| 183/900 [Elapsed: 33:10 < Remaining: 2:32:17, 12.74s/it]
+2026-08-23 19:48:23 - evalscope - INFO: Evaluating[mmmu]  20%| 184/900 [Elapsed: 34:11 < Remaining: 5:23:39, 27.12s/it]
+2026-08-23 19:49:24 - evalscope - INFO: Evaluating[mmmu]  21%| 187/900 [Elapsed: 35:11 < Remaining: 3:32:09, 17.85s/it]
+2026-08-23 19:50:24 - evalscope - INFO: Evaluating[mmmu]  21%| 187/900 [Elapsed: 36:11 < Remaining: 3:32:09, 17.85s/it]
+2026-08-23 19:51:24 - evalscope - INFO: Evaluating[mmmu]  21%| 192/900 [Elapsed: 37:11 < Remaining: 2:42:41, 13.79s/it]
+2026-08-23 19:52:24 - evalscope - INFO: Evaluating[mmmu]  22%| 197/900 [Elapsed: 38:11 < Remaining: 2:18:24, 11.81s/it]
+2026-08-23 19:53:24 - evalscope - INFO: Evaluating[mmmu]  22%| 199/900 [Elapsed: 39:12 < Remaining: 4:28:01, 22.94s/it]
+2026-08-23 19:54:24 - evalscope - INFO: Evaluating[mmmu]  22%| 201/900 [Elapsed: 40:12 < Remaining: 4:56:34, 25.46s/it]
+2026-08-23 19:55:24 - evalscope - INFO: Evaluating[mmmu]  23%| 205/900 [Elapsed: 41:12 < Remaining: 3:04:44, 15.95s/it]
+2026-08-23 19:56:25 - evalscope - INFO: Evaluating[mmmu]  24%| 212/900 [Elapsed: 42:12 < Remaining: 1:16:06,  6.64s/it]
+2026-08-23 19:57:25 - evalscope - INFO: Evaluating[mmmu]  24%| 215/900 [Elapsed: 43:12 < Remaining: 2:47:41, 14.69s/it]
+2026-08-23 19:58:25 - evalscope - INFO: Evaluating[mmmu]  24%| 219/900 [Elapsed: 44:13 < Remaining: 2:55:40, 15.48s/it]
+2026-08-23 19:59:25 - evalscope - INFO: Evaluating[mmmu]  25%| 223/900 [Elapsed: 45:13 < Remaining: 2:15:33, 12.01s/it]
+2026-08-23 20:00:26 - evalscope - INFO: Evaluating[mmmu]  25%| 227/900 [Elapsed: 46:13 < Remaining: 2:03:31, 11.01s/it]
+2026-08-23 20:01:26 - evalscope - INFO: Evaluating[mmmu]  25%| 228/900 [Elapsed: 47:13 < Remaining: 5:55:26, 31.74s/it]
+2026-08-23 20:02:26 - evalscope - INFO: Evaluating[mmmu]  26%| 234/900 [Elapsed: 48:14 < Remaining: 2:54:02, 15.68s/it]
+2026-08-23 20:03:27 - evalscope - INFO: Evaluating[mmmu]  26%| 236/900 [Elapsed: 49:14 < Remaining: 3:14:26, 17.57s/it]
+2026-08-23 20:04:27 - evalscope - INFO: Evaluating[mmmu]  27%| 242/900 [Elapsed: 50:14 < Remaining: 1:40:02,  9.12s/it]
+2026-08-23 20:05:27 - evalscope - INFO: Evaluating[mmmu]  27%| 246/900 [Elapsed: 51:14 < Remaining: 2:27:46, 13.56s/it]
+2026-08-23 20:06:27 - evalscope - INFO: Evaluating[mmmu]  28%| 251/900 [Elapsed: 52:14 < Remaining: 1:57:52, 10.90s/it]
+2026-08-23 20:07:28 - evalscope - INFO: Evaluating[mmmu]  29%| 258/900 [Elapsed: 53:15 < Remaining: 1:38:04,  9.17s/it]
+2026-08-23 20:08:28 - evalscope - INFO: Evaluating[mmmu]  29%| 263/900 [Elapsed: 54:16 < Remaining: 1:33:12,  8.78s/it]
+2026-08-23 20:09:29 - evalscope - INFO: Evaluating[mmmu]  30%| 272/900 [Elapsed: 55:16 < Remaining: 1:01:08,  5.84s/it]
+2026-08-23 20:10:29 - evalscope - INFO: Evaluating[mmmu]  31%| 276/900 [Elapsed: 56:16 < Remaining: 1:52:08, 10.78s/it]
+2026-08-23 20:11:29 - evalscope - INFO: Evaluating[mmmu]  31%| 281/900 [Elapsed: 57:16 < Remaining: 2:28:31, 14.40s/it]
+2026-08-23 20:12:30 - evalscope - INFO: Evaluating[mmmu]  31%| 283/900 [Elapsed: 58:17 < Remaining: 3:31:57, 20.61s/it]
+2026-08-23 20:13:30 - evalscope - INFO: Evaluating[mmmu]  32%| 288/900 [Elapsed: 59:17 < Remaining: 2:20:26, 13.77s/it]
+2026-08-23 20:14:30 - evalscope - INFO: Evaluating[mmmu]  33%| 293/900 [Elapsed: 1:00:17 < Remaining: 2:05:36, 12.42s/it]
+2026-08-23 20:15:31 - evalscope - INFO: Evaluating[mmmu]  33%| 300/900 [Elapsed: 1:01:18 < Remaining: 49:10,  4.92s/it]
+2026-08-23 20:16:31 - evalscope - INFO: Evaluating[mmmu]  34%| 303/900 [Elapsed: 1:02:18 < Remaining: 2:34:53, 15.57s/it]
+2026-08-23 20:17:31 - evalscope - INFO: Evaluating[mmmu]  35%| 311/900 [Elapsed: 1:03:19 < Remaining: 1:28:47,  9.05s/it]
+2026-08-23 20:18:32 - evalscope - INFO: Evaluating[mmmu]  35%| 318/900 [Elapsed: 1:04:20 < Remaining: 1:21:33,  8.41s/it]
+2026-08-23 20:19:33 - evalscope - INFO: Evaluating[mmmu]  36%| 323/900 [Elapsed: 1:05:20 < Remaining: 1:51:11, 11.56s/it]
+2026-08-23 20:20:33 - evalscope - INFO: Evaluating[mmmu]  36%| 328/900 [Elapsed: 1:06:20 < Remaining: 1:36:50, 10.16s/it]
+2026-08-23 20:21:33 - evalscope - INFO: Evaluating[mmmu]  37%| 332/900 [Elapsed: 1:07:21 < Remaining: 2:28:42, 15.71s/it]
+2026-08-23 20:22:33 - evalscope - INFO: Evaluating[mmmu]  37%| 336/900 [Elapsed: 1:08:21 < Remaining: 1:43:29, 11.01s/it]
+2026-08-23 20:23:34 - evalscope - INFO: Evaluating[mmmu]  38%| 343/900 [Elapsed: 1:09:21 < Remaining: 1:36:24, 10.38s/it]
+2026-08-23 20:24:34 - evalscope - INFO: Evaluating[mmmu]  38%| 344/900 [Elapsed: 1:10:22 < Remaining: 3:44:12, 24.20s/it]
+2026-08-23 20:25:34 - evalscope - INFO: Evaluating[mmmu]  38%| 346/900 [Elapsed: 1:11:22 < Remaining: 2:48:38, 18.26s/it]
+2026-08-23 20:26:34 - evalscope - INFO: Evaluating[mmmu]  39%| 352/900 [Elapsed: 1:12:22 < Remaining: 2:14:09, 14.69s/it]
+2026-08-23 20:27:35 - evalscope - INFO: Evaluating[mmmu]  40%| 356/900 [Elapsed: 1:13:22 < Remaining: 2:02:52, 13.55s/it]
+2026-08-23 20:28:35 - evalscope - INFO: Evaluating[mmmu]  40%| 358/900 [Elapsed: 1:14:22 < Remaining: 2:24:56, 16.05s/it]
+2026-08-23 20:29:35 - evalscope - INFO: Evaluating[mmmu]  40%| 360/900 [Elapsed: 1:15:22 < Remaining: 3:37:03, 24.12s/it]
+2026-08-23 20:30:35 - evalscope - INFO: Evaluating[mmmu]  40%| 361/900 [Elapsed: 1:16:22 < Remaining: 5:00:03, 33.40s/it]
+2026-08-23 20:31:35 - evalscope - INFO: Evaluating[mmmu]  41%| 368/900 [Elapsed: 1:17:23 < Remaining: 1:26:11,  9.72s/it]
+2026-08-23 20:32:36 - evalscope - INFO: Evaluating[mmmu]  41%| 370/900 [Elapsed: 1:18:23 < Remaining: 2:50:30, 19.30s/it]
+2026-08-23 20:33:36 - evalscope - INFO: Evaluating[mmmu]  41%| 373/900 [Elapsed: 1:19:23 < Remaining: 2:44:54, 18.77s/it]
+2026-08-23 20:34:37 - evalscope - INFO: Evaluating[mmmu]  42%| 377/900 [Elapsed: 1:20:24 < Remaining: 2:15:51, 15.59s/it]
+2026-08-23 20:35:37 - evalscope - INFO: Evaluating[mmmu]  42%| 380/900 [Elapsed: 1:21:24 < Remaining: 2:12:38, 15.30s/it]
+2026-08-23 20:36:37 - evalscope - INFO: Evaluating[mmmu]  42%| 381/900 [Elapsed: 1:22:24 < Remaining: 4:39:39, 32.33s/it]
+2026-08-23 20:37:37 - evalscope - INFO: Evaluating[mmmu]  43%| 384/900 [Elapsed: 1:23:24 < Remaining: 3:11:43, 22.29s/it]
+2026-08-23 20:38:38 - evalscope - INFO: Evaluating[mmmu]  43%| 385/900 [Elapsed: 1:24:25 < Remaining: 5:05:03, 35.54s/it]
+2026-08-23 20:39:38 - evalscope - INFO: Evaluating[mmmu]  43%| 388/900 [Elapsed: 1:25:25 < Remaining: 2:56:25, 20.67s/it]
+2026-08-23 20:40:38 - evalscope - INFO: Evaluating[mmmu]  43%| 389/900 [Elapsed: 1:26:26 < Remaining: 4:08:38, 29.19s/it]
+2026-08-23 20:41:38 - evalscope - INFO: Evaluating[mmmu]  44%| 392/900 [Elapsed: 1:27:26 < Remaining: 3:45:09, 26.59s/it]
+2026-08-23 20:42:39 - evalscope - INFO: Evaluating[mmmu]  44%| 393/900 [Elapsed: 1:28:27 < Remaining: 3:49:57, 27.21s/it]
+2026-08-23 20:43:39 - evalscope - INFO: Evaluating[mmmu]  44%| 395/900 [Elapsed: 1:29:27 < Remaining: 5:00:53, 35.75s/it]
+2026-08-23 20:44:40 - evalscope - INFO: Evaluating[mmmu]  44%| 398/900 [Elapsed: 1:30:27 < Remaining: 2:48:54, 20.19s/it]
+2026-08-23 20:45:40 - evalscope - INFO: Evaluating[mmmu]  44%| 400/900 [Elapsed: 1:31:27 < Remaining: 4:41:18, 33.76s/it]
+2026-08-23 20:46:40 - evalscope - INFO: Evaluating[mmmu]  45%| 401/900 [Elapsed: 1:32:27 < Remaining: 3:56:32, 28.44s/it]
+2026-08-23 20:47:40 - evalscope - INFO: Evaluating[mmmu]  45%| 404/900 [Elapsed: 1:33:27 < Remaining: 3:49:15, 27.73s/it]
+2026-08-23 20:48:40 - evalscope - INFO: Evaluating[mmmu]  45%| 405/900 [Elapsed: 1:34:27 < Remaining: 4:29:10, 32.63s/it]
+2026-08-23 20:49:40 - evalscope - INFO: Evaluating[mmmu]  46%| 410/900 [Elapsed: 1:35:27 < Remaining: 2:08:55, 15.79s/it]
+2026-08-23 20:50:40 - evalscope - INFO: Evaluating[mmmu]  46%| 414/900 [Elapsed: 1:36:28 < Remaining: 2:06:23, 15.60s/it]
+2026-08-23 20:51:40 - evalscope - INFO: Evaluating[mmmu]  46%| 414/900 [Elapsed: 1:37:28 < Remaining: 2:06:23, 15.60s/it]
+2026-08-23 20:52:41 - evalscope - INFO: Evaluating[mmmu]  46%| 416/900 [Elapsed: 1:38:28 < Remaining: 3:59:44, 29.72s/it]
+2026-08-23 20:53:41 - evalscope - INFO: Evaluating[mmmu]  47%| 419/900 [Elapsed: 1:39:28 < Remaining: 3:33:55, 26.68s/it]
+2026-08-23 20:54:41 - evalscope - INFO: Evaluating[mmmu]  47%| 420/900 [Elapsed: 1:40:29 < Remaining: 4:16:25, 32.05s/it]
+2026-08-23 20:55:41 - evalscope - INFO: Evaluating[mmmu]  47%| 421/900 [Elapsed: 1:41:29 < Remaining: 4:44:37, 35.65s/it]
+2026-08-23 20:56:41 - evalscope - INFO: Evaluating[mmmu]  47%| 425/900 [Elapsed: 1:42:29 < Remaining: 2:22:43, 18.03s/it]
+2026-08-23 20:57:42 - evalscope - INFO: Evaluating[mmmu]  47%| 427/900 [Elapsed: 1:43:29 < Remaining: 3:37:00, 27.53s/it]
+2026-08-23 20:58:42 - evalscope - INFO: Evaluating[mmmu]  47%| 427/900 [Elapsed: 1:44:29 < Remaining: 3:37:00, 27.53s/it]
+2026-08-23 20:59:42 - evalscope - INFO: Evaluating[mmmu]  48%| 428/900 [Elapsed: 1:45:30 < Remaining: 7:23:44, 56.41s/it]
+
+# [collect_metrics] 文件原始修改时间: 2026-08-24 04:59:49
