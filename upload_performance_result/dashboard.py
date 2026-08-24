@@ -1642,8 +1642,10 @@ function initCharts() {
 }
 
 function showTestCaseChart(tcId, label) {
-  // 仅保留有执行结果的条目：无结果日期不显示在折线图中，保证折线连续
-  const items = allData.filter(d => d._id === tcId && hasData(d));
+  // 仅保留有执行结果的条目：无结果日期不显示在折线图中，保证折线连续；
+  // 且仅显示「历史天数」窗口内的日期，与表格历史天数保持一致
+  const cutoff = getDateCutoff(parseInt(document.getElementById('historyDays').value) || 7);
+  const items = allData.filter(d => d._id === tcId && hasData(d) && d.date >= cutoff);
   items.sort((a, b) => a.date.localeCompare(b.date));
   const dates = items.map(d => d.date);
 
@@ -1888,7 +1890,13 @@ function populateFilters() {
   const keys = ['model','date','branch'];
   const ids = ['modelFilter','dateFilter','branchFilter'];
   keys.forEach((k, i) => {
-    const vals = [...new Set(allData.map(d => d[k]).filter(Boolean))].sort();
+    const vals = [...new Set(allData.map(d => d[k]).filter(Boolean))];
+    // 日期倒序排列，最近的日期在最上面，方便快速筛选；模型/分支保持升序
+    if (k === 'date') {
+      vals.sort((a, b) => b.localeCompare(a));
+    } else {
+      vals.sort();
+    }
     populateMultiSelect(ids[i], vals, '全部');
   });
 }
@@ -2472,6 +2480,10 @@ function applyHistoryFilter() {
         r.style.display = show ? '' : 'none';
         if (show) r.classList.add('selected');
       });
+      // 历史天数变更后重新渲染趋势图，使折线图只显示窗口内数据
+      const latestRow = allRows[allRows.length - 1];
+      const label = latestRow ? latestRow.querySelector('.testcase-id')?.getAttribute('title') : '';
+      if (label) showTestCaseChart(label, label);
     }
   });
   // 功能用例：按"历史天数"窗口重新过滤 L1 历史日期行（仅显示窗口内天数）
