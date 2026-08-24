@@ -1486,11 +1486,10 @@ tr.selected:hover { background: #254070 !important; }
 .note-date { color: #8b949e; font-size: 11px; flex-shrink: 0; margin-left: 4px; line-height: 1.4; white-space: nowrap; }
 .note-edit { cursor: pointer; color: #58a6ff; font-size: 12px; flex-shrink: 0; margin-right: 4px; line-height: 1.4; }
 .note-edit:hover { color: #79c0ff; }
-.chart-row td { padding: 0; background: #0d1117; }
-.tc-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; padding: 12px; background: #0d1117; }
+.tc-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 12px; padding: 12px; background: #0d1117; width: 100%; }
 .tc-chart-box { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 8px; }
-.tc-chart-box h4 { font-size: 12px; color: #8b949e; margin: 0 0 4px 0; }
-.tc-chart-box canvas { max-height: 200px; }
+.tc-chart-box h4 { font-size: 15px; color: #8b949e; margin: 0 0 6px 0; }
+.tc-chart-box canvas { max-height: 300px; }
 .expand-icon { display: inline-block; width: 14px; font-size: 10px; transition: transform 0.2s; }
 /* 测试结果列（精度列起）：等宽 + 居中，数字等宽；宽度容纳最长结果数字，数字不换行 */
 .col-uniform { width: 76px; min-width: 76px; text-align: center; white-space: normal; overflow-wrap: anywhere; word-break: break-all; font-variant-numeric: tabular-nums; }
@@ -1629,12 +1628,43 @@ thead th.sticky-col { z-index: 5; }
   </div>
 </div>
 
+<!-- 历史趋势折线图悬浮面板：固定于视口右下角，脱离表格滚动容器，横向滚动不影响 -->
+<div id="chartPanel" style="display:none;position:fixed;right:16px;bottom:16px;z-index:1000;width:min(1140px,calc(100vw - 32px));max-height:70vh;overflow:auto;background:#161b22;border:1px solid #30363d;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.45);">
+  <div id="chartPanelHeader" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #30363d;position:sticky;top:0;background:#161b22;z-index:1;cursor:move;user-select:none;" title="拖动标题栏可移动面板">
+    <span id="chartPanelTitle" style="font-size:14px;color:#58a6ff;font-family:Consolas,monospace;word-break:break-all;padding-right:8px;"></span>
+    <span id="chartPanelClose" style="cursor:pointer;color:#8b949e;font-size:16px;flex-shrink:0;line-height:1;" title="关闭">✕</span>
+  </div>
+  <div id="chartPanelBody" style="padding:12px;"></div>
+</div>
+
 <script>
 let allData = [];
 let charts = {};
+let _expandedChartTc = null;  // 当前展开折线图（悬浮面板）的用例 yaml_name，null 表示无
+let _funcExpandedLevel = 0;   // 功能用例展开级别：0=折叠 1=L1历史天数展开 2=L2最新一天明细展开
+let _funcOpenedDates = [];    // 功能用例 L1 中已展开明细的具体日期（供轮询重绘后恢复）
+let _panelPos = null;         // 图表面板用户拖拽后的位置 {left,top}，null 表示使用默认右下角
+let _tcItemsCache = null;     // Map<tcId, 该用例全部记录(按日期升序)>，展开时避免重复 filter 全量数据
+let _allDataSnapshot = '';    // 上次渲染时的 allData 序列化快照，用于判断数据是否变化
 
 function buildTestCaseId(d) {
   return d.yaml_name || '';
+}
+
+// 惰性构建用例→记录索引（按日期升序），展开折线图时避免每次 filter 全量数据；
+// allData 更新（loadData 数据变化）时置空重建。
+function getTcItems(tcId) {
+  if (!_tcItemsCache) {
+    const cache = new Map();
+    allData.forEach(d => {
+      const k = d._id;
+      if (!cache.has(k)) cache.set(k, []);
+      cache.get(k).push(d);
+    });
+    cache.forEach(arr => arr.sort((a, b) => a.date.localeCompare(b.date)));
+    _tcItemsCache = cache;
+  }
+  return _tcItemsCache.get(tcId) || null;
 }
 
 function initCharts() {
@@ -1642,20 +1672,50 @@ function initCharts() {
 }
 
 function showTestCaseChart(tcId, label) {
+  // 重新渲染前先销毁旧图表实例，避免 canvas 残留
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+
   // 仅保留有执行结果的条目：无结果日期不显示在折线图中，保证折线连续；
   // 且仅显示「历史天数」窗口内的日期，与表格历史天数保持一致
   const cutoff = getDateCutoff(parseInt(document.getElementById('historyDays').value) || 7);
-  const items = allData.filter(d => d._id === tcId && hasData(d) && d.date >= cutoff);
-  items.sort((a, b) => a.date.localeCompare(b.date));
+  const items = (getTcItems(tcId) || []).filter(d => hasData(d) && d.date >= cutoff);
   const dates = items.map(d => d.date);
 
-  const chartRow = document.getElementById('chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_'));
-  if (!chartRow) return;
+  const panel = document.getElementById('chartPanel');
+  const panelBody = document.getElementById('chartPanelBody');
+  const panelTitle = document.getElementById('chartPanelTitle');
+  if (!panel || !panelBody) return;
+
+  // 应用拖拽位置：已拖拽过（含刷新后从 localStorage 恢复）→ 用上次位置；未拖拽 → 默认右下角
+  if (_panelPos) {
+    // 视口缩小导致保存的位置完全不可见时，重置为默认右下角并清空存储
+    if (_panelPos.left > window.innerWidth - 40 || _panelPos.top > window.innerHeight - 40) {
+      _panelPos = null;
+      savePanelPos(null);
+      panel.style.right = '16px';
+      panel.style.bottom = '16px';
+      panel.style.left = 'auto';
+      panel.style.top = 'auto';
+    } else {
+      panel.style.left = _panelPos.left + 'px';
+      panel.style.top = _panelPos.top + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    }
+  } else {
+    panel.style.right = '16px';
+    panel.style.bottom = '16px';
+    panel.style.left = 'auto';
+    panel.style.top = 'auto';
+  }
 
   // Chart.js 未加载（如内网无法访问 CDN）时给出提示而非静默失败
   if (typeof Chart === 'undefined') {
-    chartRow.querySelector('td').innerHTML =
+    panelTitle.textContent = label || '';
+    panelBody.innerHTML =
       '<div style="padding:12px;color:#8b949e;font-size:13px;">图表库加载失败（无法访问 CDN），历史数据仍可在表格中查看。</div>';
+    panel.style.display = '';
     return;
   }
 
@@ -1681,6 +1741,7 @@ function showTestCaseChart(tcId, label) {
   const commonOpts = {
     responsive: true,
     maintainAspectRatio: false,
+    animation: false, // 关闭入场动画，显著加快展开渲染（多个图表时尤其明显）
     plugins: {
       legend: { display: false }
     },
@@ -1700,7 +1761,9 @@ function showTestCaseChart(tcId, label) {
     }
   });
   html += '</div>';
-  chartRow.querySelector('td').innerHTML = html;
+  panelTitle.textContent = label || '';
+  panelBody.innerHTML = html;
+  panel.style.display = '';
 
   // Create charts after DOM is updated
   setTimeout(() => {
@@ -1710,7 +1773,7 @@ function showTestCaseChart(tcId, label) {
         const canvasId = 'chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_') + '_' + def.key;
         const canvas = document.getElementById(canvasId);
         if (canvas) {
-          new Chart(canvas, {
+          charts[canvasId] = new Chart(canvas, {
             type: 'line',
             data: {
               labels: dates,
@@ -1734,11 +1797,80 @@ function showTestCaseChart(tcId, label) {
   }, 10);
 }
 
-function destroyCharts(tcId) {
-  const chartRow = document.getElementById('chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_'));
-  if (chartRow) {
-    chartRow.querySelector('td').innerHTML = '';
-  }
+function destroyCharts() {
+  // 销毁全部图表实例并隐藏悬浮面板；同时清空展开记录，保证状态一致
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+  _expandedChartTc = null;
+  const panel = document.getElementById('chartPanel');
+  if (panel) panel.style.display = 'none';
+  const panelBody = document.getElementById('chartPanelBody');
+  if (panelBody) panelBody.innerHTML = '';
+}
+
+// 图表面板位置持久化：用 localStorage 保存/读取拖拽位置，刷新页面后仍能保持
+const PANEL_POS_KEY = 'sglang_dashboard_chart_panel_pos';
+function loadPanelPos() {
+  try {
+    const raw = localStorage.getItem(PANEL_POS_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (typeof p === 'object' && p !== null && typeof p.left === 'number' && typeof p.top === 'number') {
+      return { left: p.left, top: p.top };
+    }
+  } catch (e) {}
+  return null;
+}
+function savePanelPos(p) {
+  try {
+    if (p) localStorage.setItem(PANEL_POS_KEY, JSON.stringify(p));
+    else localStorage.removeItem(PANEL_POS_KEY);
+  } catch (e) {}
+}
+
+// 图表面板拖拽移动：按住标题栏拖动面板，位置保存在 _panelPos（关闭后重开保持位置）
+function initPanelDrag() {
+  const panel = document.getElementById('chartPanel');
+  const header = document.getElementById('chartPanelHeader');
+  if (!panel || !header) return;
+  let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+  header.addEventListener('mousedown', function(e) {
+    if (e.target.closest('#chartPanelClose')) return; // 不拦截关闭按钮
+    dragging = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    // 未拖拽过时把当前（右下角定位）转成 left/top 坐标，作为拖拽起点
+    if (!_panelPos) {
+      const rect = panel.getBoundingClientRect();
+      _panelPos = { left: rect.left, top: rect.top };
+    }
+    startLeft = _panelPos.left;
+    startTop = _panelPos.top;
+    panel.style.left = startLeft + 'px';
+    panel.style.top = startTop + 'px';
+    panel.style.right = 'auto';
+    panel.style.bottom = 'auto';
+    panel.style.cursor = 'move';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!dragging) return;
+    let left = startLeft + (e.clientX - startX);
+    let top = startTop + (e.clientY - startY);
+    // 限制面板至少保留一部分在视口内
+    left = Math.max(-panel.offsetWidth + 80, Math.min(left, window.innerWidth - 80));
+    top = Math.max(0, Math.min(top, window.innerHeight - 40));
+    panel.style.left = left + 'px';
+    panel.style.top = top + 'px';
+    _panelPos = { left, top };
+  });
+  document.addEventListener('mouseup', function() {
+    if (!dragging) return;
+    dragging = false;
+    panel.style.cursor = '';
+    // 拖拽结束：持久化位置，刷新页面后仍保持
+    savePanelPos(_panelPos);
+  });
 }
 
 // ===== 执行结果备注编辑 =====
@@ -1857,10 +1989,18 @@ document.addEventListener('keydown', (e) => {
 
 async function loadData() {
   const resp = await fetch('/api/data');
-  allData = await resp.json();
-  allData.forEach(d => { d._id = buildTestCaseId(d); });
-  populateFilters();
-  onFilterChange();
+  const newData = await resp.json();
+  newData.forEach(d => { d._id = buildTestCaseId(d); });
+  // 序列化比对：数据未变化时跳过 populateFilters/onFilterChange 的整体重绘，
+  // 避免每 60s 轮询都重建整张表格（也保留已展开的历史行/趋势图状态）
+  const snapshot = JSON.stringify(newData);
+  if (snapshot !== _allDataSnapshot) {
+    _allDataSnapshot = snapshot;
+    allData = newData;
+    _tcItemsCache = null; // 数据更新后重建用例索引
+    populateFilters();
+    onFilterChange();
+  }
   document.getElementById('updateTime').textContent = '更新: ' + new Date().toLocaleTimeString();
   // Fetch data source status
   try {
@@ -2366,8 +2506,6 @@ function updateTable(data) {
         <td class="col-uniform">${d.request_throughput != null ? (d.request_throughput * 60).toFixed(2) : '--'}</td>
       </tr>`;
     });
-    // Add hidden chart row after each test case group
-    rows += `<tr class="chart-row" id="chart_${safeId}" data-tc="${safeId}" style="display:none"><td colspan="29"></td></tr>`;
   });
 
   // ---- 功能用例聚合渲染（三层嵌套展开）----
@@ -2454,6 +2592,70 @@ function updateTable(data) {
 
   document.getElementById('tableCount').textContent = `(${visibleCount} 条)`;
   tbody.innerHTML = rows;
+  // 表格重建后恢复此前的展开状态（历史执行结果行 + 折线图悬浮面板 / 功能用例层级），
+  // 避免 60s 定时轮询触发重绘后自动折叠
+  restoreExpandedState();
+}
+
+// 轮询/筛选重绘后恢复此前展开的展开状态：
+//   普通用例：按"历史天数"窗口恢复历史执行结果行 + 折线图悬浮面板（_expandedChartTc）；
+//   功能用例：恢复顶层展开级别（_funcExpandedLevel）与已展开明细的日期（_funcOpenedDates）。
+function restoreExpandedState() {
+  const tbody = document.getElementById('tableBody');
+  // ---- 普通用例：历史执行结果行 + 折线图悬浮面板 ----
+  if (_expandedChartTc) {
+    const safeId = _expandedChartTc.replace(/[^a-zA-Z0-9]/g, '_');
+    const allRows = tbody.querySelectorAll(`tr[data-tc="${safeId}"].data-row`);
+    if (allRows.length > 0) {
+      const histDays = parseInt(document.getElementById('historyDays').value) || 7;
+      const cutoff = getDateCutoff(histDays);
+      allRows.forEach((r, i) => {
+        const isLast = i === allRows.length - 1;
+        const rd = r.getAttribute('data-date');
+        const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
+        r.style.display = show ? '' : 'none';
+        if (show) r.classList.add('selected');
+      });
+      showTestCaseChart(_expandedChartTc, _expandedChartTc);
+      const latestRow = allRows[allRows.length - 1];
+      if (latestRow) {
+        const icon = latestRow.querySelector('.expand-icon');
+        if (icon) icon.textContent = '▼';
+      }
+    } else {
+      // 用例被筛选掉或已不存在：关闭图表面板并清空记录
+      destroyCharts();
+    }
+  }
+  // ---- 功能用例：恢复顶层展开级别与已展开明细的日期 ----
+  if (_funcExpandedLevel > 0) {
+    const top = tbody.querySelector('tr.func-top-row');
+    if (top) {
+      top.classList.add('func-top-open');
+      if (_funcExpandedLevel >= 2) top.classList.add('func-open');
+      const ic = top.querySelector('.expand-icon');
+      if (ic) ic.textContent = '▼';
+      applyFuncHistoryCutoff(tbody); // 展开历史天数行（仅窗口内日期）
+      if (_funcExpandedLevel >= 2) {
+        const latestDate = top.getAttribute('data-fdate');
+        tbody.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = ''; });
+      }
+      // 恢复 L1 内用户点开的日期明细
+      _funcOpenedDates.forEach(fd => {
+        const row = tbody.querySelector(`tr.func-date-row[data-fdate="${fd}"]`);
+        if (row) {
+          row.classList.add('func-open');
+          const ic2 = row.querySelector('.expand-icon');
+          if (ic2) ic2.textContent = '▼';
+          tbody.querySelectorAll(`tr[data-fdet="1"][data-fdate="${fd}"]`).forEach(dr => { dr.style.display = ''; });
+        }
+      });
+    } else {
+      // 功能用例被筛选掉：重置记录
+      _funcExpandedLevel = 0;
+      _funcOpenedDates = [];
+    }
+  }
 }
 
 // 日期辅助：YYYYMMDD 纯日期字符串（date 标签已拆分，格式固定）
@@ -2469,10 +2671,11 @@ function getDateCutoff(days) {
 function applyHistoryFilter() {
   const histDays = parseInt(document.getElementById('historyDays').value) || 7;
   const cutoff = getDateCutoff(histDays);
-  document.querySelectorAll('.chart-row').forEach(chartRow => {
-    if (chartRow.style.display !== 'none') {
-      const tcId = chartRow.getAttribute('data-tc');
-      const allRows = document.querySelectorAll(`tr[data-tc="${tcId}"].data-row`);
+  // 依据 _expandedChartTc 定位当前展开的用例（图表面板），对历史行重新过滤
+  if (_expandedChartTc) {
+    const safeId = _expandedChartTc.replace(/[^a-zA-Z0-9]/g, '_');
+    const allRows = document.querySelectorAll(`tr[data-tc="${safeId}"].data-row`);
+    if (allRows.length > 0) {
       allRows.forEach((r, i) => {
         const isLast = i === allRows.length - 1;
         const rd = r.getAttribute('data-date');
@@ -2483,9 +2686,12 @@ function applyHistoryFilter() {
       // 历史天数变更后重新渲染趋势图，使折线图只显示窗口内数据
       const latestRow = allRows[allRows.length - 1];
       const label = latestRow ? latestRow.querySelector('.testcase-id')?.getAttribute('title') : '';
-      if (label) showTestCaseChart(label, label);
+      if (label) {
+        _expandedChartTc = label;
+        showTestCaseChart(label, label);
+      }
     }
-  });
+  }
   // 功能用例：按"历史天数"窗口重新过滤 L1 历史日期行（仅显示窗口内天数）
   applyFuncHistoryCutoff(document.getElementById('tableBody'));
 }
@@ -2515,7 +2721,7 @@ function applyFuncHistoryCutoff(root) {
 // 点击链接/按钮（脚本/任务/备注等交互元素）不触发以上行为。
 document.getElementById('tableBody').addEventListener('click', function(e) {
   const tr = e.target.closest('tr');
-  if (!tr || tr.querySelector('.no-data') || tr.classList.contains('chart-row')) return;
+  if (!tr || tr.querySelector('.no-data')) return;
   // 顶层"功能用例"行：渐进展开
   //   第1次点击 → 展开历史天数聚合行（L1）；第2次点击 → 展开最新一天明细（L2）；
   //   第3次点击 → 全部收起回到默认单行。
@@ -2527,16 +2733,22 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
       collapseFuncHistory(this);
       this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = 'none'; });
       fTop.classList.remove('func-open');
+      _funcExpandedLevel = 0;
+      _funcOpenedDates = [];
     } else if (fTop.classList.contains('func-top-open')) {
       // 第2次点击：展开最新一天的具体用例明细（L2）
       collapseFuncAggregates(this); // 先收起其它已展开的日期明细
       this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = ''; });
       fTop.classList.add('func-open');
+      _funcExpandedLevel = 2;
+      _funcOpenedDates = [];
     } else {
       // 第1次点击：展开历史天数聚合行（L1，仅显示"历史天数"窗口内的日期）
       collapseFuncHistory(this); // 先收起已展开的历史天数
       fTop.classList.add('func-top-open');
       applyFuncHistoryCutoff(this); // 只显示与历史天数栏相同天数的记录
+      _funcExpandedLevel = 1;
+      _funcOpenedDates = [];
     }
     const ic = fTop.querySelector('.expand-icon');
     if (ic) ic.textContent = (fTop.classList.contains('func-open') || fTop.classList.contains('func-top-open')) ? '▼' : '▶';
@@ -2548,12 +2760,14 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
     const fdate = fDateRow.getAttribute('data-fdate');
     if (fDateRow.classList.contains('func-open')) {
       collapseFuncAggregates(this, fdate); // 收起本日期明细
+      _funcOpenedDates = _funcOpenedDates.filter(x => x !== fdate);
     } else {
       collapseFuncAggregates(this); // 先收起其它已展开的日期明细
       this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${fdate}"]`).forEach(dr => { dr.style.display = ''; });
       fDateRow.classList.add('func-open');
       const ic = fDateRow.querySelector('.expand-icon');
       if (ic) ic.textContent = '▼';
+      _funcOpenedDates = [fdate];
     }
     return;
   }
@@ -2570,17 +2784,17 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
     return;
   }
 
-  const chartRow = document.getElementById('chart_' + tcId);
   const allRows = this.querySelectorAll(`tr[data-tc="${tcId}"].data-row`);
-  const isExpanded = chartRow && chartRow.style.display !== 'none';
+  // 展开状态统一以 _expandedChartTc 为准（图表已改画到悬浮面板，表格内不再有占位行）
+  const isExpanded = _expandedChartTc != null && _expandedChartTc.replace(/[^a-zA-Z0-9]/g, '_') === tcId;
 
   if (isExpanded) {
-    // Collapse: hide all rows except the latest, hide chart, destroy chart
+    // Collapse: hide all rows except the latest, hide chart panel
     allRows.forEach((r, i) => {
       if (i < allRows.length - 1) r.style.display = 'none';
     });
     allRows.forEach(r => r.classList.remove('selected'));
-    if (chartRow) { chartRow.style.display = 'none'; destroyCharts(tcId); }
+    destroyCharts(); // 销毁图表、隐藏面板并清空 _expandedChartTc
     // Reset expand icon
     const latestRow = allRows[allRows.length - 1];
     if (latestRow) {
@@ -2588,8 +2802,7 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
       if (icon) icon.textContent = '▶';
     }
   } else {
-    // Collapse all other expanded groups first
-    this.querySelectorAll('.chart-row').forEach(r => { r.style.display = 'none'; });
+    // Collapse other expanded groups first
     this.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
     this.querySelectorAll('.expand-icon').forEach(icon => { icon.textContent = '▶'; });
     // Hide all non-latest rows globally
@@ -2618,8 +2831,8 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
       if (icon) icon.textContent = '▼';
     }
     const label = latestRow ? latestRow.querySelector('.testcase-id')?.getAttribute('title') : '';
-    if (chartRow && label) {
-      chartRow.style.display = '';
+    if (label) {
+      _expandedChartTc = label;
       showTestCaseChart(label, label);
     }
   }
@@ -2755,10 +2968,30 @@ function exportToExcel() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initCharts();
+  // 恢复持久化的图表面板位置（刷新页面后仍保持上次拖拽位置）
+  _panelPos = loadPanelPos();
+  initPanelDrag();
   loadData();
   // 轮询间隔 60s：与后端 DATA_CACHE_TTL(30s) + jobs 后台刷新配合，
-  // 保证「执行中/已执行失败/成功(无结果)」等 job 状态与任务链接及时更新
+  // 保证「执行中/已执行失败/成功(无结果)」等 job 状态与任务链接及时更新。
+  // loadData 内部做了数据序列化比对，仅当数据真正变化时才重绘表格
   setInterval(loadData, 60000);
+
+  // 悬浮面板关闭按钮：与点击用例ID折叠行为一致（收起历史行 + 重置图标 + 关面板）
+  document.getElementById('chartPanelClose').addEventListener('click', function() {
+    if (!_expandedChartTc) { destroyCharts(); return; }
+    const safeId = _expandedChartTc.replace(/[^a-zA-Z0-9]/g, '_');
+    const tbody = document.getElementById('tableBody');
+    const allRows = tbody.querySelectorAll(`tr[data-tc="${safeId}"].data-row`);
+    allRows.forEach((r, i) => { if (i < allRows.length - 1) r.style.display = 'none'; });
+    allRows.forEach(r => r.classList.remove('selected'));
+    const latestRow = allRows[allRows.length - 1];
+    if (latestRow) {
+      const icon = latestRow.querySelector('.expand-icon');
+      if (icon) icon.textContent = '▶';
+    }
+    destroyCharts(); // 销毁图表、隐藏面板并清空 _expandedChartTc
+  });
 });
 </script>
 </body>
