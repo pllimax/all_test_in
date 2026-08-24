@@ -10,6 +10,7 @@ import json
 import sys
 import time
 import threading
+import datetime
 from concurrent.futures import ThreadPoolExecutor
 import urllib.request
 import urllib.parse
@@ -828,6 +829,7 @@ JOBS_CACHE_TTL = 600  # 秒：已完成（终态）job 的缓存时长，过期�
 JOBS_REFRESH_INTERVAL = 60  # 秒：非终态（queued/in_progress）job 的刷新间隔，用于更新执行状态
 JOBS_RETRY_INTERVAL = 300  # 秒：抓取失败后的退避重试间隔，避免频繁请求耗尽 API 配额
 JOBS_API_TIMEOUT = 20  # 秒
+JOBS_CONCURRENCY = 4   # 后台并行抓取 jobs 的 run 数
 _jobs_cache = {}       # {(repo, run_id): {case_name: {"job_id": ..., "name": ...}}}
 _jobs_cache_ts = {}    # {(repo, run_id): 最近一次成功抓取时间}
 _jobs_failed_ts = {}   # {(repo, run_id): 最近一次失败时间（退避用）}
@@ -1034,27 +1036,35 @@ def _ensure_jobs_thread():
 
 
 def _jobs_refresh_worker():
-    """后台线程：逐个抓取待处理 (repo, run_id) 的 jobs 并写入缓存。
+    """后台线程：抓取待处理 (repo, run_id) 的 jobs 并写入缓存。
+    并行抓取多个 run（JOBS_CONCURRENCY），避免 run 多时串行排队拖慢 job 链接/状态填充。
     记录成功/失败时间戳，供调度逻辑（刷新间隔 / 退避重试）使用。
     周期性淘汰超过 TTL 且已终态的缓存条目，防止长期运行内存无限增长。
     """
     global _jobs_cache
     while True:
         try:
-            p = None
+            batch = []
             # 锁内取任务，锁外执行网络请求，避免长时间持锁
             with _jobs_lock:
-                if _jobs_pending:
-                    p = _jobs_pending.pop()
-            if p is not None:
-                fetched = _fetch_run_jobs(p[0], p[1])
+                while _jobs_pending and len(batch) < JOBS_CONCURRENCY:
+                    batch.append(_jobs_pending.pop())
+            if batch:
+                def _fetch_one(p):
+                    return p, _fetch_run_jobs(p[0], p[1])
+                if len(batch) == 1:
+                    jobs = [_fetch_one(batch[0])]
+                else:
+                    with ThreadPoolExecutor(max_workers=len(batch)) as ex:
+                        jobs = list(ex.map(_fetch_one, batch))
                 with _jobs_lock:
-                    if fetched is not None:
-                        _jobs_cache[p] = fetched
-                        _jobs_cache_ts[p] = time.time()
-                        _jobs_failed_ts.pop(p, None)
-                    else:
-                        _jobs_failed_ts[p] = time.time()
+                    for p, fetched in jobs:
+                        if fetched is not None:
+                            _jobs_cache[p] = fetched
+                            _jobs_cache_ts[p] = time.time()
+                            _jobs_failed_ts.pop(p, None)
+                        else:
+                            _jobs_failed_ts[p] = time.time()
             # 淘汰过期缓存：仅淘汰超过 TTL 且全部为终态（completed）的条目，
             # 避免淘汰仍在执行中、需要持续刷新的 job
             with _jobs_lock:
@@ -1094,6 +1104,8 @@ FUNC_LOG_CACHE_TTL = 12 * 3600      # 秒：已完成 suite job 日志缓存时�
 FUNC_LOG_REFRESH_INTERVAL = 120     # 秒：suite job 仍在执行中时的刷新间隔
 FUNC_LOG_RETRY_INTERVAL = 600       # 秒：日志下载失败后的退避重试间隔
 FUNC_LOG_API_TIMEOUT = 90           # 秒：日志下载超时（日志较大）
+FUNC_LOG_CONCURRENCY = 4            # 后台并行抓取的 suite 数（日志下载走对象存储重定向，不占 GitHub API 配额）
+FUNC_LOG_MAX_DAYS = 7               # 只解析最近 N 天日期的 job 日志（与前端默认历史天数窗口一致），超出范围不再下载解析
 _func_log_cache = {}       # {(repo, run_id, suite, is_function): {case: {"passed": bool, "job_id": str, ...}}}，缺失=日志中未找到该用例
 _func_log_running = {}     # {(repo, run_id, suite, is_function): bool}  该 suite 是否有 job 仍在执行中
 _func_log_ts = {}          # {(repo, run_id, suite, is_function): 最近成功抓取时间}
@@ -1174,17 +1186,23 @@ def _ensure_func_log_thread():
 
 
 def _func_log_worker():
-    """后台线程：逐个抓取待处理 (repo, run_id, suite) 的 per-case 日志结果并写入缓存。
+    """后台线程：抓取待处理 (repo, run_id, suite) 的 per-case 日志结果并写入缓存。
+    并行抓取多个 suite（FUNC_LOG_CONCURRENCY），避免慢网下一个 suite 一个 suite
+    串行下载日志导致功能用例 per-case 状态填充过慢。
     周期性淘汰超过 TTL 且已终态（无运行中 job）的缓存条目。
     """
     while True:
         try:
-            key = None
+            batch = []
             with _func_log_lock:
-                if _func_log_pending:
-                    key = _func_log_pending.pop()
-            if key is not None:
-                _fetch_func_log(key)
+                while _func_log_pending and len(batch) < FUNC_LOG_CONCURRENCY:
+                    batch.append(_func_log_pending.pop())
+            if batch:
+                if len(batch) == 1:
+                    _fetch_func_log(batch[0])
+                else:
+                    with ThreadPoolExecutor(max_workers=len(batch)) as ex:
+                        list(ex.map(_fetch_func_log, batch))
             with _func_log_lock:
                 now = time.time()
                 stale = [
@@ -1219,7 +1237,8 @@ def _fetch_func_log(key):
         with _jobs_lock:
             raw = list(_run_jobs_raw.get((repo, run_id), []))
         if not raw:
-            _func_log_failed_ts[key] = time.time()
+            with _func_log_lock:
+                _func_log_failed_ts[key] = time.time()
             return
     matches = []
     for j in raw:
@@ -1228,16 +1247,19 @@ def _fetch_func_log(key):
             matches.append((_attempt_of(name), j))
     if not matches:
         # 该 run 未执行此 suite → 该 suite 全部用例无结果
-        _func_log_cache[key] = {}
-        _func_log_running[key] = False
-        _func_log_ts[key] = time.time()
+        with _func_log_lock:
+            _func_log_cache[key] = {}
+            _func_log_running[key] = False
+            _func_log_ts[key] = time.time()
         return
     if any(str(j.get("status", "") or "") != "completed" for _, j in matches):
         # 存在执行中的 job：标记 running，由调度按刷新间隔重新抓取
-        _func_log_running[key] = True
-        _func_log_ts[key] = time.time()
+        with _func_log_lock:
+            _func_log_running[key] = True
+            _func_log_ts[key] = time.time()
         return
-    _func_log_running[key] = False
+    with _func_log_lock:
+        _func_log_running[key] = False
     # 合并所有已完成 attempt 的 per-case 结果：重试 job（run (N)）与并行分区
     # 可能运行不同的用例子集，需解析全部日志补齐缺口。
     # 同一用例多个 attempt 都有结果时，高 attempt（最终状态）优先。
@@ -1274,11 +1296,13 @@ def _fetch_func_log(key):
                     "conclusion": str(j.get("conclusion", "") or ""),
                 }
     if merged:
-        _func_log_cache[key] = merged
-        _func_log_ts[key] = time.time()
-        _func_log_failed_ts.pop(key, None)
+        with _func_log_lock:
+            _func_log_cache[key] = merged
+            _func_log_ts[key] = time.time()
+            _func_log_failed_ts.pop(key, None)
         return
-    _func_log_failed_ts[key] = time.time()
+    with _func_log_lock:
+        _func_log_failed_ts[key] = time.time()
 
 
 def fetch_func_logs_for_items(items):
@@ -1288,15 +1312,22 @@ def fetch_func_logs_for_items(items):
       - 功能用例：始终调度（用于 func_status per-case 状态）
       - 非功能用例：也调度，由后台线程下载该 suite job 日志解析 per-case 真实
         通过/失败与所在 job，保证性能/精度单用例状态与 GitHub 实际执行结果一致。
+      - 仅处理最近 FUNC_LOG_MAX_DAYS 天日期的条目：更早的历史 run 日志不再
+        下载解析（与前端历史天数窗口一致，避免大量归档日志拖慢填充）。
     调度规则：
       - 未缓存且距上次失败超过退避间隔 → 加入抓取队列
       - 已缓存但 suite job 仍在执行中且超过刷新间隔 → 重新抓取
       - 已缓存且已终态 → 不再重复请求
     """
     now = time.time()
+    # 与前端 getDateCutoff 口径一致：最近 N 天 = 今天往前推 (N-1) 天（如 7 天 = 今天+前6天）
+    cutoff = (datetime.date.today() - datetime.timedelta(days=FUNC_LOG_MAX_DAYS - 1)).strftime("%Y%m%d")
     pairs = {}
     case_suite_map = get_case_suite_map()
     for item in items:
+        d = str(item.get("date", "") or "")
+        if d and d < cutoff:
+            continue
         run_id = str(item.get("run_id", "") or "")
         run_url = item.get("run_url", "")
         if not run_id or not run_url:
@@ -1417,1585 +1448,33 @@ def compute_topology_info(yaml_name):
 
     return topology, card_count, seq_length
 
-HTML_TEMPLATE = r"""<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SGLang Benchmark 性能分析平台</title>
-<script src="__CHART_JS_SRC__"></script>
-<script src="__XLSX_SRC__"></script>
-<style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0d1117; color: #c9d1d9; }
-.header { background: #161b22; border-bottom: 1px solid #30363d; padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
-.header h1 { font-size: 20px; color: #58a6ff; }
-.header .info { font-size: 13px; color: #8b949e; }
-.filters { background: #161b22; border-bottom: 1px solid #30363d; padding: 12px 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
-.filter-group { display: flex; flex-direction: column; gap: 4px; }
-.filter-group label { font-size: 11px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; }
-.filter-group select { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 6px 10px; font-size: 13px; min-width: 120px; max-width: 200px; }
-.filter-group select:focus { outline: none; border-color: #58a6ff; }
-.filter-group select[multiple] { height: 120px; }
-.btn { background: #238636; color: #fff; border: none; border-radius: 6px; padding: 7px 16px; font-size: 13px; cursor: pointer; }
-.btn:hover { background: #2ea043; }
-.btn-reset { background: #21262d; color: #c9d1d9; border: 1px solid #30363d; }
-.btn-reset:hover { background: #30363d; }
-.btn-danger { background: #21262d; color: #f85149; border: 1px solid #f85149; }
-.btn-danger:hover { background: #da3633; color: #fff; border-color: #da3633; }
-.table-container { padding: 0 24px 20px; }
-.table-container h3 { font-size: 14px; color: #8b949e; margin-bottom: 12px; }
-.table-wrap { overflow: auto; max-height: calc(100vh - 320px); min-height: 300px; border: 1px solid #30363d; border-radius: 8px; }
-/* 滚动条深色风格（贴合页面背景） */
-.table-wrap::-webkit-scrollbar { width: 10px; height: 10px; }
-.table-wrap::-webkit-scrollbar-track { background: #161b22; }
-.table-wrap::-webkit-scrollbar-thumb { background: #30363d; border-radius: 5px; border: 2px solid #161b22; }
-.table-wrap::-webkit-scrollbar-thumb:hover { background: #484f58; }
-.table-wrap::-webkit-scrollbar-corner { background: #161b22; }
-.table-wrap { scrollbar-width: thin; scrollbar-color: #30363d #161b22; }
-table { width: 2785px; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: #161b22; }
-th { background: #21262d; padding: 10px 4px; text-align: left; font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #30363d; cursor: pointer; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: table-cell; -webkit-line-clamp: 2; line-clamp: 2; }
-th:hover { color: #c9d1d9; }
-td { padding: 8px 4px; font-size: 13px; border-bottom: 1px solid #21262d; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
-tr:hover { background: #1c2128; }
-tr.selected { background: #1f3a5f !important; }
-tr.selected:hover { background: #254070 !important; }
-.no-data { text-align: center; padding: 40px; color: #8b949e; }
-.testcase-id { font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; color: #58a6ff; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
-.script-link { color: #58a6ff; text-decoration: none; font-size: 12px; margin-right: 6px; white-space: normal; overflow-wrap: anywhere; word-break: break-all; display: inline-block; }
-.script-link:hover { text-decoration: underline; color: #79c0ff; }
-.status-pass { color: #7ee787; font-weight: 700; }
-.status-fail { color: #ff7b72; font-weight: 700; }
-.status-none { color: #ff7b72; font-weight: 700; }
-/* 已执行成功但无结果数据（CI job conclusion=success 但无指标）→ 绿色，区别于失败/未执行 */
-.status-success-nr { color: #7ee787; font-weight: 700; }
-/* CI job 执行中 */
-.status-running { color: #d29922; font-weight: 700; }
-/* 功能用例聚合明细行：浅色底纹 + 左侧缩进，区别于普通数据行 */
-.func-detail-row { background: rgba(88, 166, 255, 0.04); }
-.func-detail-row td { border-top: 1px dashed rgba(88, 166, 255, 0.12); }
-/* 功能用例历史天数聚合行：介于顶层"功能用例"与具体用例明细之间的次级层级 */
-.func-date-row { background: rgba(88, 166, 255, 0.07); }
-.func-date-row td { border-top: 1px dashed rgba(88, 166, 255, 0.18); }
-.baseline-val { font-size: 11px; color: #8b949e; }
-.metric-fail { color: #ff7b72; font-weight: 700; }
-.baseline-col { font-size: 11px; color: #8b949e; display: block; width: 100%; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
-.col-note { white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
-.note-cell { display: flex; align-items: flex-start; }
-.note-text { color: #e6edf3; font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4; max-height: 2.8em; flex: 1; min-width: 0; }
-.note-date { color: #8b949e; font-size: 11px; flex-shrink: 0; margin-left: 4px; line-height: 1.4; white-space: nowrap; }
-.note-edit { cursor: pointer; color: #58a6ff; font-size: 12px; flex-shrink: 0; margin-right: 4px; line-height: 1.4; }
-.note-edit:hover { color: #79c0ff; }
-.tc-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(450px, 1fr)); gap: 12px; padding: 12px; background: #0d1117; width: 100%; }
-.tc-chart-box { background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 8px; }
-.tc-chart-box h4 { font-size: 15px; color: #8b949e; margin: 0 0 6px 0; }
-.tc-chart-box canvas { max-height: 300px; }
-.expand-icon { display: inline-block; width: 14px; font-size: 10px; transition: transform 0.2s; }
-/* 测试结果列（精度列起）：等宽 + 居中，数字等宽；宽度容纳最长结果数字，数字不换行 */
-.col-uniform { width: 76px; min-width: 76px; text-align: center; white-space: normal; overflow-wrap: anywhere; word-break: break-all; font-variant-numeric: tabular-nums; }
-/* 配置列（组网/卡数/序列长度/prefix/数据集）：等宽 + 居中 */
-.col-config { width: 44px; text-align: center; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
-/* 组网列单独：比其它配置列稍宽（PD分离两行显示） */
-.col-topology { width: 64px; text-align: center; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
-/* 左侧元数据列宽度：尽量一致 */
-th.col-meta { width: 64px; }
-td.col-meta { width: 64px; }
-th.col-model { width: 104px; }
-td.col-model { width: 104px; }
-th.col-tc-id { width: 224px; }
-td.col-tc-id { width: 224px; }
-th.col-script { width: 74px; }
-td.col-script { width: 74px; }
-th.col-note, td.col-note { width: 220px; }
-th.col-baseline { width: 100px; }
-td.col-baseline { width: 100px; }
-/* 左侧元数据列锁定：横向滚动时固定不滚动（锁定到基线列，含基线） */
-.sticky-col, thead th.sticky-col { position: sticky; z-index: 3; background: #21262d; }
-tbody td.sticky-col { background: #161b22; }
-tbody tr:hover td.sticky-col { background: #1c2128; }
-tbody tr.selected td.sticky-col { background: #1f3a5f !important; }
-tbody tr.selected:hover td.sticky-col { background: #254070 !important; }
-.col-l0 { left: 0; }
-.col-l1 { left: 104px; }
-.col-l2 { left: 328px; }
-.col-l3 { left: 392px; }
-.col-l4 { left: 456px; }
-.col-l5 { left: 530px; }
-.col-l6 { left: 594px; }
-.col-l7 { left: 773px; }
-/* 表头 sticky（垂直滚动时表头固定） */
-thead th { position: sticky; top: 0; z-index: 4; }
-thead th.sticky-col { z-index: 5; }
-</style>
-</head>
-<body>
-<div class="header">
-  <h1>SGLang Benchmark 性能分析平台</h1>
-  <div class="info"><span id="dataSource"></span> | <span id="updateTime"></span></div>
-</div>
-<div class="filters">
-  <div class="filter-group">
-    <label>模型</label>
-    <select id="modelFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>日期</label>
-    <select id="dateFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>来源</label>
-    <select id="sourceFilter" multiple onchange="onFilterChange()">
-      <option value="__all__" selected>全部</option>
-      <option value="fulltest">fulltest</option>
-      <option value="nightly">nightly</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <label>分支</label>
-    <select id="branchFilter" multiple onchange="onFilterChange()"></select>
-  </div>
-  <div class="filter-group">
-    <label>状态</label>
-    <select id="statusFilter" multiple onchange="onFilterChange()">
-      <option value="__all__" selected>全部</option>
-      <option value="PASS">PASS</option>
-      <option value="FAILED">FAILED</option>
-    </select>
-  </div>
-  <div class="filter-group">
-    <label>历史天数</label>
-    <input type="number" id="historyDays" value="7" min="1" max="365" onchange="applyHistoryFilter()" style="width:70px;padding:5px;background:#161b22;color:#e6edf3;border:1px solid #30363d;border-radius:6px;">
-  </div>
-  <button class="btn btn-reset" onclick="resetFilters()">重置筛选</button>
-  <button class="btn" onclick="exportToExcel()">导出Excel</button>
-</div>
-<div class="table-container">
-  <h3>详细数据 <span style="font-weight:normal;font-size:12px;color:#8b949e" id="tableCount"></span></h3>
-  <div class="table-wrap">
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th class="col-model sticky-col col-l0">模型</th>
-        <th class="col-tc-id sticky-col col-l1">测试用例ID</th>
-        <th class="col-meta sticky-col col-l2">日期</th>
-        <th class="col-meta sticky-col col-l3">状态</th>
-        <th class="col-script sticky-col col-l4">用例脚本</th>
-        <th class="col-meta sticky-col col-l5">任务</th>
-        <th class="col-note sticky-col col-l6">备注</th>
-        <th class="col-baseline sticky-col col-l7">基线</th>
-        <th class="col-topology">组网</th>
-        <th class="col-config">卡数</th>
-        <th class="col-config">序列</th>
-        <th class="col-config">prefix</th>
-        <th class="col-config">数据集</th>
-        <th class="col-uniform">精度</th>
-        <th class="col-uniform">总请求数</th>
-        <th class="col-uniform">最大并发数</th>
-        <th class="col-uniform">系统并发数</th>
-        <th class="col-uniform">请求频率<br>(req/s)</th>
-        <th class="col-uniform">TTFT<br>(ms)</th>
-        <th class="col-uniform">TTFT P90<br>(ms)</th>
-        <th class="col-uniform">TPOT<br>(ms)</th>
-        <th class="col-uniform">TPOT P90<br>(ms)</th>
-        <th class="col-uniform">E2E时间<br>(ms)</th>
-        <th class="col-uniform">输出吞吐<br>(tps)</th>
-        <th class="col-uniform">单卡<br>输出吞吐<br>(tps)</th>
-        <th class="col-uniform">E2E 吞吐<br>(tps)</th>
-        <th class="col-uniform">单卡<br>E2E 吞吐<br>(tps)</th>
-        <th class="col-uniform">QPS</th>
-        <th class="col-uniform">QPM</th>
-      </tr>
-    </thead>
-    <tbody id="tableBody"></tbody>
-  </table>
-  </div>
-</div>
-
-<!-- 备注编辑弹窗 -->
-<div id="noteModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.55);z-index:1000;align-items:center;justify-content:center;">
-  <div style="background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px;width:480px;max-width:92vw;">
-    <h4 style="margin:0 0 6px;color:#e6edf3;">填写执行结果备注</h4>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:4px;word-break:break-all;" id="noteModalTc"></div>
-    <div style="font-size:12px;color:#8b949e;margin-bottom:10px;" id="noteModalExec"></div>
-    <textarea id="noteInput" rows="4" placeholder="输入该执行结果的备注..." style="width:100%;box-sizing:border-box;background:#0d1117;color:#e6edf3;border:1px solid #30363d;border-radius:6px;padding:8px;font-size:13px;"></textarea>
-    <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;">
-      <button class="btn btn-danger" onclick="clearCaseNotes()">清理该用例所有历史备注</button>
-      <span>
-        <button class="btn btn-reset" onclick="closeNoteEditor()">取消</button>
-        <button class="btn" onclick="saveNote()">保存</button>
-      </span>
-    </div>
-  </div>
-</div>
-
-<!-- 历史趋势折线图悬浮面板：固定于视口右下角，脱离表格滚动容器，横向滚动不影响 -->
-<div id="chartPanel" style="display:none;position:fixed;right:16px;bottom:16px;z-index:1000;width:min(1140px,calc(100vw - 32px));max-height:70vh;overflow:auto;background:#161b22;border:1px solid #30363d;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.45);">
-  <div id="chartPanelHeader" style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid #30363d;position:sticky;top:0;background:#161b22;z-index:1;cursor:move;user-select:none;" title="拖动标题栏可移动面板">
-    <span id="chartPanelTitle" style="font-size:14px;color:#58a6ff;font-family:Consolas,monospace;word-break:break-all;padding-right:8px;"></span>
-    <span id="chartPanelClose" style="cursor:pointer;color:#8b949e;font-size:16px;flex-shrink:0;line-height:1;" title="关闭">✕</span>
-  </div>
-  <div id="chartPanelBody" style="padding:12px;"></div>
-</div>
-
-<script>
-let allData = [];
-let charts = {};
-let _expandedChartTc = null;  // 当前展开折线图（悬浮面板）的用例 yaml_name，null 表示无
-let _funcExpandedLevel = 0;   // 功能用例展开级别：0=折叠 1=L1历史天数展开 2=L2最新一天明细展开
-let _funcOpenedDates = [];    // 功能用例 L1 中已展开明细的具体日期（供轮询重绘后恢复）
-let _panelPos = null;         // 图表面板用户拖拽后的位置 {left,top}，null 表示使用默认右下角
-let _tcItemsCache = null;     // Map<tcId, 该用例全部记录(按日期升序)>，展开时避免重复 filter 全量数据
-let _allDataSnapshot = '';    // 上次渲染时的 allData 序列化快照，用于判断数据是否变化
-
-function buildTestCaseId(d) {
-  return d.yaml_name || '';
-}
-
-// 惰性构建用例→记录索引（按日期升序），展开折线图时避免每次 filter 全量数据；
-// allData 更新（loadData 数据变化）时置空重建。
-function getTcItems(tcId) {
-  if (!_tcItemsCache) {
-    const cache = new Map();
-    allData.forEach(d => {
-      const k = d._id;
-      if (!cache.has(k)) cache.set(k, []);
-      cache.get(k).push(d);
-    });
-    cache.forEach(arr => arr.sort((a, b) => a.date.localeCompare(b.date)));
-    _tcItemsCache = cache;
-  }
-  return _tcItemsCache.get(tcId) || null;
-}
-
-function initCharts() {
-  // Charts are created dynamically when a test case row is expanded
-}
-
-function showTestCaseChart(tcId, label) {
-  // 重新渲染前先销毁旧图表实例，避免 canvas 残留
-  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
-  charts = {};
-
-  // 仅保留有执行结果的条目：无结果日期不显示在折线图中，保证折线连续；
-  // 且仅显示「历史天数」窗口内的日期，与表格历史天数保持一致
-  const cutoff = getDateCutoff(parseInt(document.getElementById('historyDays').value) || 7);
-  const items = (getTcItems(tcId) || []).filter(d => hasData(d) && d.date >= cutoff);
-  const dates = items.map(d => d.date);
-
-  const panel = document.getElementById('chartPanel');
-  const panelBody = document.getElementById('chartPanelBody');
-  const panelTitle = document.getElementById('chartPanelTitle');
-  if (!panel || !panelBody) return;
-
-  // 应用拖拽位置：已拖拽过（含刷新后从 localStorage 恢复）→ 用上次位置；未拖拽 → 默认右下角
-  if (_panelPos) {
-    // 视口缩小导致保存的位置完全不可见时，重置为默认右下角并清空存储
-    if (_panelPos.left > window.innerWidth - 40 || _panelPos.top > window.innerHeight - 40) {
-      _panelPos = null;
-      savePanelPos(null);
-      panel.style.right = '16px';
-      panel.style.bottom = '16px';
-      panel.style.left = 'auto';
-      panel.style.top = 'auto';
-    } else {
-      panel.style.left = _panelPos.left + 'px';
-      panel.style.top = _panelPos.top + 'px';
-      panel.style.right = 'auto';
-      panel.style.bottom = 'auto';
-    }
-  } else {
-    panel.style.right = '16px';
-    panel.style.bottom = '16px';
-    panel.style.left = 'auto';
-    panel.style.top = 'auto';
-  }
-
-  // Chart.js 未加载（如内网无法访问 CDN）时给出提示而非静默失败
-  if (typeof Chart === 'undefined') {
-    panelTitle.textContent = label || '';
-    panelBody.innerHTML =
-      '<div style="padding:12px;color:#8b949e;font-size:13px;">图表库加载失败（无法访问 CDN），历史数据仍可在表格中查看。</div>';
-    panel.style.display = '';
-    return;
-  }
-
-  // Build chart definitions from baseline keys
-  const baselineMetricDefs = {
-    mean_ttft:     { key: 'mean_ttft', label: 'TTFT (ms)', color: '#f78166' },
-    mean_tpot:     { key: 'mean_tpot', label: 'TPOT (ms)', color: '#d2a8ff' },
-    mean_e2e_latency: { key: 'mean_e2e_latency', label: 'E2E时间 (ms)', color: '#ff7b72' },
-    output_token_throughput: { key: 'output_token_throughput', label: '输出吞吐 (tps)', color: '#7ee787' },
-    eval_score:    { key: 'eval_score', label: 'Accuracy', color: '#e3b341' },
-  };
-  // Get baselines from the first item that has them
-  const baseline = items.find(d => d.baselines && Object.keys(d.baselines).length > 0);
-  const metricDefs = [];
-  if (baseline) {
-    for (const [key, def] of Object.entries(baselineMetricDefs)) {
-      if (baseline.baselines[key] != null) {
-        metricDefs.push(def);
-      }
-    }
-  }
-
-  const commonOpts = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: false, // 关闭入场动画，显著加快展开渲染（多个图表时尤其明显）
-    plugins: {
-      legend: { display: false }
-    },
-    scales: {
-      x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } },
-      y: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#21262d' } }
-    },
-    interaction: { mode: 'index', intersect: false }
-  };
-
-  let html = '<div class="tc-charts">';
-  metricDefs.forEach((def, i) => {
-    const vals = items.map(d => d[def.key]);
-    if (vals.some(v => v != null)) {
-      const canvasId = 'chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_') + '_' + def.key;
-      html += `<div class="tc-chart-box"><h4>${def.label}</h4><canvas id="${canvasId}"></canvas></div>`;
-    }
-  });
-  html += '</div>';
-  panelTitle.textContent = label || '';
-  panelBody.innerHTML = html;
-  panel.style.display = '';
-
-  // Create charts after DOM is updated
-  setTimeout(() => {
-    metricDefs.forEach(def => {
-      const vals = items.map(d => d[def.key]);
-      if (vals.some(v => v != null)) {
-        const canvasId = 'chart_' + tcId.replace(/[^a-zA-Z0-9]/g, '_') + '_' + def.key;
-        const canvas = document.getElementById(canvasId);
-        if (canvas) {
-          charts[canvasId] = new Chart(canvas, {
-            type: 'line',
-            data: {
-              labels: dates,
-              datasets: [{
-                label: def.label,
-                data: vals,
-                borderColor: def.color,
-                backgroundColor: def.color + '30',
-                borderWidth: 2,
-                pointRadius: 3,
-                pointHoverRadius: 5,
-                tension: 0.1,
-                spanGaps: false,
-              }]
-            },
-            options: commonOpts
-          });
-        }
-      }
-    });
-  }, 10);
-}
-
-function destroyCharts() {
-  // 销毁全部图表实例并隐藏悬浮面板；同时清空展开记录，保证状态一致
-  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
-  charts = {};
-  _expandedChartTc = null;
-  const panel = document.getElementById('chartPanel');
-  if (panel) panel.style.display = 'none';
-  const panelBody = document.getElementById('chartPanelBody');
-  if (panelBody) panelBody.innerHTML = '';
-}
-
-// 图表面板位置持久化：用 localStorage 保存/读取拖拽位置，刷新页面后仍能保持
-const PANEL_POS_KEY = 'sglang_dashboard_chart_panel_pos';
-function loadPanelPos() {
-  try {
-    const raw = localStorage.getItem(PANEL_POS_KEY);
-    if (!raw) return null;
-    const p = JSON.parse(raw);
-    if (typeof p === 'object' && p !== null && typeof p.left === 'number' && typeof p.top === 'number') {
-      return { left: p.left, top: p.top };
-    }
-  } catch (e) {}
-  return null;
-}
-function savePanelPos(p) {
-  try {
-    if (p) localStorage.setItem(PANEL_POS_KEY, JSON.stringify(p));
-    else localStorage.removeItem(PANEL_POS_KEY);
-  } catch (e) {}
-}
-
-// 图表面板拖拽移动：按住标题栏拖动面板，位置保存在 _panelPos（关闭后重开保持位置）
-function initPanelDrag() {
-  const panel = document.getElementById('chartPanel');
-  const header = document.getElementById('chartPanelHeader');
-  if (!panel || !header) return;
-  let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
-  header.addEventListener('mousedown', function(e) {
-    if (e.target.closest('#chartPanelClose')) return; // 不拦截关闭按钮
-    dragging = true;
-    startX = e.clientX;
-    startY = e.clientY;
-    // 未拖拽过时把当前（右下角定位）转成 left/top 坐标，作为拖拽起点
-    if (!_panelPos) {
-      const rect = panel.getBoundingClientRect();
-      _panelPos = { left: rect.left, top: rect.top };
-    }
-    startLeft = _panelPos.left;
-    startTop = _panelPos.top;
-    panel.style.left = startLeft + 'px';
-    panel.style.top = startTop + 'px';
-    panel.style.right = 'auto';
-    panel.style.bottom = 'auto';
-    panel.style.cursor = 'move';
-    e.preventDefault();
-  });
-  document.addEventListener('mousemove', function(e) {
-    if (!dragging) return;
-    let left = startLeft + (e.clientX - startX);
-    let top = startTop + (e.clientY - startY);
-    // 限制面板至少保留一部分在视口内
-    left = Math.max(-panel.offsetWidth + 80, Math.min(left, window.innerWidth - 80));
-    top = Math.max(0, Math.min(top, window.innerHeight - 40));
-    panel.style.left = left + 'px';
-    panel.style.top = top + 'px';
-    _panelPos = { left, top };
-  });
-  document.addEventListener('mouseup', function() {
-    if (!dragging) return;
-    dragging = false;
-    panel.style.cursor = '';
-    // 拖拽结束：持久化位置，刷新页面后仍保持
-    savePanelPos(_panelPos);
-  });
-}
-
-// ===== 执行结果备注编辑 =====
-let _noteEditingKey = null;   // 当前编辑的执行结果复合键
-let _noteEditingTc = null;    // 当前编辑的用例 yaml_name
-
-// HTML 转义（备注文本/历史记录渲染通用）
-function escHtml(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-// JS 字符串转义（用于 HTML onclick 属性内的单引号字符串参数，如 openNoteEditorFromRow）。
-// 先转义反斜杠（防止后续转义符被二次转义），再转义单引号（JS 字符串边界），
-// 最后转义 HTML 属性特殊字符（双引号等），保证属性与 JS 两层解析都不越界。
-function escJsAttr(s) {
-  return String(s == null ? '' : s)
-    .replace(/\\/g, '\\\\')
-    .replace(/'/g, "\\'")
-    .replace(/&/g, '&amp;')
-    .replace(/"/g, '&quot;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/\r/g, '\\r')
-    .replace(/\n/g, '\\n');
-}
-
-// 构造执行结果复合键（与后端 note_key_for 一致）
-function buildNoteKey(d) {
-  return [d.yaml_name || '', d.date || '', d.branch || '', d.run_id || ''].join('|');
-}
-
-// 从表格行打开备注编辑（按 yaml_name+date+branch+run_id 定位执行结果）
-function openNoteEditorFromRow(tcId, date, branch, runId) {
-  const item = allData.find(d =>
-    d._id === tcId && d.date === date && (d.branch || '') === branch && (d.run_id || '') === runId);
-  if (!item) return;
-  openNoteEditor(item);
-}
-
-function openNoteEditor(d) {
-  _noteEditingTc = d.yaml_name || '';
-  _noteEditingKey = buildNoteKey(d);
-  document.getElementById('noteModalTc').textContent = '用例: ' + _noteEditingTc;
-  document.getElementById('noteModalExec').textContent =
-    '执行结果: 日期=' + (d.date || '--') + '  分支=' + (d.branch || '--') + '  run_id=' + (d.run_id || '--');
-  document.getElementById('noteInput').value = d.note || '';
-  const modal = document.getElementById('noteModal');
-  modal.style.display = 'flex';
-  document.getElementById('noteInput').focus();
-}
-
-function closeNoteEditor() {
-  document.getElementById('noteModal').style.display = 'none';
-  _noteEditingKey = null;
-  _noteEditingTc = null;
-}
-
-async function saveNote() {
-  if (!_noteEditingTc || !_noteEditingKey) return;
-  const note = document.getElementById('noteInput').value || '';
-  const parts = _noteEditingKey.split('|');
-  try {
-    const resp = await fetch('/api/note', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        yaml_name: parts[0], date: parts[1], branch: parts[2], run_id: parts[3], note: note
-      })
-    });
-    const res = await resp.json();
-    if (res.ok) {
-      // 更新本地对应执行结果的数据，重新渲染表格
-      allData.forEach(d => { if (buildNoteKey(d) === _noteEditingKey) d.note = note; });
-      closeNoteEditor();
-      onFilterChange();
-    } else {
-      alert('保存失败: ' + (res.error || '未知错误'));
-    }
-  } catch (e) {
-    alert('保存失败: ' + e);
-  }
-}
-
-// 一键清理该用例的所有历史备注（含纯键 + 所有复合键）
-async function clearCaseNotes() {
-  if (!_noteEditingTc) return;
-  if (!confirm(`确定清理用例「${_noteEditingTc}」的所有历史备注吗？此操作不可恢复。`)) return;
-  try {
-    const resp = await fetch('/api/notes/clear', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ yaml_name: _noteEditingTc })
-    });
-    const res = await resp.json();
-    if (res.ok) {
-      closeNoteEditor();
-      loadData(); // 重新拉取数据并刷新表格
-    } else {
-      alert('清理失败: ' + (res.error || '未知错误'));
-    }
-  } catch (e) {
-    alert('清理失败: ' + e);
-  }
-}
-
-// 点击弹窗背景关闭
-document.addEventListener('click', (e) => {
-  if (e.target && e.target.id === 'noteModal') closeNoteEditor();
-});
-// 按 Esc 关闭弹窗
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') closeNoteEditor();
-});
-
-async function loadData() {
-  const resp = await fetch('/api/data');
-  const newData = await resp.json();
-  newData.forEach(d => { d._id = buildTestCaseId(d); });
-  // 序列化比对：数据未变化时跳过 populateFilters/onFilterChange 的整体重绘，
-  // 避免每 60s 轮询都重建整张表格（也保留已展开的历史行/趋势图状态）
-  const snapshot = JSON.stringify(newData);
-  if (snapshot !== _allDataSnapshot) {
-    _allDataSnapshot = snapshot;
-    allData = newData;
-    _tcItemsCache = null; // 数据更新后重建用例索引
-    populateFilters();
-    onFilterChange();
-  }
-  document.getElementById('updateTime').textContent = '更新: ' + new Date().toLocaleTimeString();
-  // Fetch data source status
-  try {
-    const sr = await fetch('/api/status');
-    const st = await sr.json();
-    document.getElementById('dataSource').textContent = st.source;
-  } catch(e) {}
-}
-
-function populateMultiSelect(id, values, allLabel) {
-  const sel = document.getElementById(id);
-  const current = [...sel.selectedOptions].map(o => o.value);
-  sel.innerHTML = '';
-  if (allLabel) {
-    const o = document.createElement('option'); o.value = '__all__'; o.textContent = allLabel;
-    if (current.length === 0 || current.includes('__all__')) o.selected = true;
-    sel.appendChild(o);
-  }
-  values.forEach(v => {
-    const o = document.createElement('option'); o.value = v; o.textContent = v;
-    if (current.includes(v)) o.selected = true;
-    sel.appendChild(o);
-  });
-}
-
-function populateFilters() {
-  const keys = ['model','date','branch'];
-  const ids = ['modelFilter','dateFilter','branchFilter'];
-  keys.forEach((k, i) => {
-    const vals = [...new Set(allData.map(d => d[k]).filter(Boolean))];
-    // 日期倒序排列，最近的日期在最上面，方便快速筛选；模型/分支保持升序
-    if (k === 'date') {
-      vals.sort((a, b) => b.localeCompare(a));
-    } else {
-      vals.sort();
-    }
-    populateMultiSelect(ids[i], vals, '全部');
-  });
-}
-
-function getSelectedValues(id) {
-  const sel = document.getElementById(id);
-  const vals = [...sel.selectedOptions].map(o => o.value);
-  if (vals.includes('__all__') || vals.length === 0) return null;
-  return vals;
-}
-
-// Tolerance constants (matching test framework in sglang-plli-shequ)
-const TPOT_THRESHOLD = 50;
-const TPOT_TOLERANCE_LOW = 1.0;   // +1ms for small TPOT
-const TPOT_TOLERANCE_HIGH = 1.02; // +2% for large TPOT
-const TTFT_TOLERANCE = 1.02;      // +2%
-const E2E_TOLERANCE = 1.02;       // +2%
-const THROUGHPUT_TOLERANCE = 0.98; // -2%
-const ACCURACY_TOLERANCE = 0.99;  // -1% for general datasets
-
-function getAccuracyThreshold(baseline, dataset) {
-  // Dataset-specific absolute tolerance (question count based)
-  if (dataset === 'aime25' || dataset === 'aime26') {
-    return baseline - 2 / 30; // 2 questions out of 30
-  }
-  if (dataset === 'gpqa') {
-    return baseline - 5 / 198; // 5 questions out of 198
-  }
-  return baseline * ACCURACY_TOLERANCE;
-}
-
-// 结合 run_id 关联的 GitHub Actions job 状态，推断「无结果」的成因。
-// 仅当存在 run_id（分支模式数据）且已抓到 job 信息时才能区分：
-//   completed + conclusion ∈ {failure, timed_out, action_required, cancelled} → 已执行但失败
-//   completed + conclusion == success                                        → 执行成功但指标未上传（状态显示「成功(无结果)」，按 PASS 筛选）
-//   completed + conclusion ∈ {skipped, stale, neutral}（未实际运行）          → 未执行
-//   queued / in_progress / waiting / requested / pending                     → 执行中
-//   匹配到 job 列表但未命中本用例（no_job）                                  → 未执行
-// 无 run_id（旧格式）或 job 尚未抓取到时返回空串，保持原「FAILED(无结果)」显示。
-const FAIL_JOB_CONCLUSIONS = ['failure', 'timed_out', 'action_required', 'cancelled'];
-const SKIP_JOB_CONCLUSIONS = ['skipped', 'stale', 'neutral'];
-function jobRunLabel(d) {
-  if (!d.run_id) return '';
-  const s = String(d.job_status || '').toLowerCase();
-  const c = String(d.job_conclusion || '').toLowerCase();
-  if (s === 'no_job') return '未执行';
-  if (!s && !c) return ''; // job 信息尚未抓取到
-  if (s === 'completed') {
-    if (FAIL_JOB_CONCLUSIONS.includes(c)) return '已执行失败';
-    if (c === 'success') return '成功';
-    if (SKIP_JOB_CONCLUSIONS.includes(c)) return '未执行';
-    return ''; // completed 但结论未知（异常），保持原「无结果」显示
-  }
-  return '执行中'; // queued / in_progress / waiting / requested / pending
-}
-
-function computeStatus(d) {
-  // 状态优先取后端解析的 per-case 结果（func_status: pass/fail/running，来自聚合
-  // suite job 日志），功能与性能/精度用例统一适用，保证单用例状态与 GitHub
-  // 实际执行结果一致。未解析到时回退到 GitHub job 结论归因（suite 级，仅供参考）。
-  if (d.func_status === 'pass') return 'PASS';
-  if (d.func_status === 'fail') return 'FAILED';
-  if (d.func_status === 'running') return '执行中';
-  if (d.case_type === 'function') {
-    const runLabel = jobRunLabel(d);
-    if (runLabel === '成功') return 'PASS';
-    if (runLabel === '已执行失败') return 'FAILED';
-    if (runLabel === '执行中') return '执行中';
-    if (runLabel === '未执行') return 'FAILED(无结果)';
-    return 'FAILED(无结果)'; // 无 run_id 或 job 信息尚未抓取到
-  }
-  const b = d.baselines || {};
-  const hasPerf = d.mean_ttft != null;
-  const hasEval = d.eval_score != null;
-  const hasBaseline = Object.keys(b).length > 0;
-  if (!hasPerf && !hasEval) {
-    // 无执行结果：结合 run_id 关联的 CI job 状态归因（已执行失败/执行中/未执行）
-    const runLabel = jobRunLabel(d);
-    return runLabel ? runLabel + '(无结果)' : 'FAILED(无结果)';
-  }
-  if (!hasBaseline) return '';
-  // 性能类基线仅在该用例有性能数据时校验
-  // （避免 accuracy-only 用例因合并了同名 perf 脚本基线而被误判）
-  // TPOT: baseline < 50 → +1ms absolute; baseline >= 50 → +2% relative
-  if (hasPerf && b.mean_tpot != null) {
-    if (d.mean_tpot == null) return 'FAILED';
-    const tpotLimit = b.mean_tpot < TPOT_THRESHOLD
-      ? b.mean_tpot + TPOT_TOLERANCE_LOW
-      : b.mean_tpot * TPOT_TOLERANCE_HIGH;
-    if (d.mean_tpot > tpotLimit) return 'FAILED';
-  }
-  // TTFT: +2% tolerance
-  if (hasPerf && b.mean_ttft != null) {
-    if (d.mean_ttft == null) return 'FAILED';
-    if (d.mean_ttft > b.mean_ttft * TTFT_TOLERANCE) return 'FAILED';
-  }
-  // E2E Latency: +2% tolerance
-  if (hasPerf && b.mean_e2e_latency != null) {
-    if (d.mean_e2e_latency == null) return 'FAILED';
-    if (d.mean_e2e_latency > b.mean_e2e_latency * E2E_TOLERANCE) return 'FAILED';
-  }
-  // Output Token Throughput: -2% tolerance
-  if (hasPerf && b.output_token_throughput != null) {
-    if (d.output_token_throughput == null) return 'FAILED';
-    if (d.output_token_throughput < b.output_token_throughput * THROUGHPUT_TOLERANCE) return 'FAILED';
-  }
-  // Accuracy: dataset-specific tolerance
-  if (b.eval_score != null) {
-    if (d.eval_score == null) return 'FAILED';
-    const threshold = getAccuracyThreshold(b.eval_score, d.dataset);
-    if (d.eval_score < threshold) return 'FAILED';
-  }
-  return 'PASS';
-}
-
-// 功能用例聚合状态：统计一组（同日期）功能用例的通过/失败/执行中/未执行数量。
-// 状态取自 computeStatus（功能用例仅依据 GitHub job 结论判定）。
-function aggregateFuncStatus(items) {
-  const counts = { pass: 0, fail: 0, run: 0, nores: 0 };
-  items.forEach(d => {
-    const s = computeStatus(d);
-    if (s === 'PASS') counts.pass++;
-    else if (s === '执行中') counts.run++;
-    else if (s === 'FAILED') counts.fail++;
-    else counts.nores++; // FAILED(无结果) 等 → 未执行
-  });
-  const parts = [];
-  if (counts.pass) parts.push('通过 ' + counts.pass);
-  if (counts.fail) parts.push('失败 ' + counts.fail);
-  if (counts.run) parts.push('执行中 ' + counts.run);
-  if (counts.nores) parts.push('未执行 ' + counts.nores);
-  return parts.join(' / ') || '--';
-}
-
-// 收起指定日期（fdate 为空则全部）已展开的功能用例明细行（L2）
-function collapseFuncAggregates(root, fdate) {
-  const sel = fdate
-    ? `tr.func-date-row.func-open[data-fdate="${fdate}"]`
-    : 'tr.func-date-row.func-open';
-  root.querySelectorAll(sel).forEach(r => {
-    const od = r.getAttribute('data-fdate');
-    root.querySelectorAll(`tr[data-fdet="1"][data-fdate="${od}"]`).forEach(dr => { dr.style.display = 'none'; });
-    r.classList.remove('func-open');
-    const ic = r.querySelector('.expand-icon');
-    if (ic) ic.textContent = '▶';
-  });
-}
-
-// 收起顶层"功能用例"行展开的历史天数（L1 日期行及其已展开的 L2 明细），重置图标
-function collapseFuncHistory(root) {
-  root.querySelectorAll('tr.func-top-row.func-top-open').forEach(r => {
-    const ic = r.querySelector('.expand-icon');
-    if (ic) ic.textContent = '▶';
-    r.classList.remove('func-top-open');
-  });
-  root.querySelectorAll('tr.func-date-row').forEach(r => { r.style.display = 'none'; });
-  root.querySelectorAll('tr.func-date-row.func-open').forEach(r => {
-    const od = r.getAttribute('data-fdate');
-    root.querySelectorAll(`tr[data-fdet="1"][data-fdate="${od}"]`).forEach(dr => { dr.style.display = 'none'; });
-    r.classList.remove('func-open');
-    const ic = r.querySelector('.expand-icon');
-    if (ic) ic.textContent = '▶';
-  });
-}
-
-function getTestCaseStatus(items) {
-  if (items.length === 0) return 'FAILED(无结果)';
-  // 取时间段内最新一次有结果的执行；全部无结果时取最后一项
-  const withData = items.filter(d => hasData(d));
-  const latest = withData.length > 0 ? withData[withData.length - 1] : items[items.length - 1];
-  return computeStatus(latest);
-}
-
-// 判断是否为「成功(无结果)」状态：CI job 执行成功但无指标数据。
-// 该状态视为通过（按 PASS 筛选/统计），只是缺少结果数据。
-function isSuccessNoResult(d) {
-  const b = d.baselines || {};
-  const hasPerf = d.mean_ttft != null;
-  const hasEval = d.eval_score != null;
-  if (hasPerf || hasEval) return false;
-  const runLabel = jobRunLabel(d);
-  return runLabel === '成功';
-}
-
-function hasData(d) {
-  return d.mean_ttft != null || d.eval_score != null;
-}
-
-function onFilterChange() {
-  const filters = {
-    source: getSelectedValues('sourceFilter'),
-    model: getSelectedValues('modelFilter'),
-    date: getSelectedValues('dateFilter'),
-    branch: getSelectedValues('branchFilter'),
-  };
-  const statusFilter = getSelectedValues('statusFilter');
-
-  let filtered = allData;
-  Object.entries(filters).forEach(([key, vals]) => {
-    if (vals !== null) {
-      if (key === 'source') {
-        // source 可能为逗号分隔的多来源（如 "fulltest,nightly"），任一匹配即通过
-        filtered = filtered.filter(d => String(d.source || '').split(',').some(s => vals.includes(s)));
-      } else {
-        filtered = filtered.filter(d => vals.includes(d[key]));
-      }
-    }
-  });
-
-  if (statusFilter !== null) {
-    const groups = {};
-    filtered.forEach(d => {
-      if (!groups[d._id]) groups[d._id] = [];
-      groups[d._id].push(d);
-    });
-    const keepIds = new Set();
-      Object.entries(groups).forEach(([id, items]) => {
-        items.sort((a, b) => a.date.localeCompare(b.date));
-        const status = getTestCaseStatus(items);
-        const hasSuccessNoResult = items.some(d => isSuccessNoResult(d));
-        // 成功(无结果) 视为通过：勾选 PASS 时保留
-        if (statusFilter.includes('PASS') && (status === 'PASS' || hasSuccessNoResult)) keepIds.add(id);
-        // FAILED 过滤：排除「成功(无结果)」（其以"(无结果)"结尾，但仍属通过），仅保留真正失败/执行失败/执行中/未执行/缺省
-        if (statusFilter.includes('FAILED') && (status === 'FAILED' || (status.endsWith('(无结果)') && !status.startsWith('成功')))) keepIds.add(id);
-      });
-    filtered = filtered.filter(d => keepIds.has(d._id));
-  }
-
-  updateTable(filtered);
-}
-
-function resetFilters() {
-  ['sourceFilter','modelFilter','dateFilter','branchFilter','statusFilter'].forEach(id => {
-    const sel = document.getElementById(id);
-    [...sel.options].forEach(o => o.selected = o.value === '__all__');
-  });
-  // 历史天数一并重置为默认 7 天
-  document.getElementById('historyDays').value = 7;
-  onFilterChange();
-  applyHistoryFilter();
-}
-
-function updateTable(data) {
-  const tbody = document.getElementById('tableBody');
-  if (data.length === 0) {
-    document.getElementById('tableCount').textContent = '(0 条)';
-    tbody.innerHTML = '<tr><td colspan="29" class="no-data">无匹配数据</td></tr>';
-    return;
-  }
-
-  // 分离功能用例：不解析模型名、整体按日期聚合成一组（见下方聚合渲染），
-  // 不参与普通用例分组；其余用例维持原分组逻辑。
-  const funcRows = data.filter(d => d.case_type === 'function');
-  const normalData = data.filter(d => d.case_type !== 'function');
-
-  // Group by test case, sort by date within each group（普通用例）
-  const groups = {};
-  normalData.forEach(d => {
-    if (!groups[d._id]) groups[d._id] = [];
-    groups[d._id].push(d);
-  });
-  Object.values(groups).forEach(g => {
-    g.sort((a, b) => a.date.localeCompare(b.date));
-    // 勾选多日期时显示时间段内最新一次有结果的执行：
-    // 无结果的占位符排前，有结果的按日期升序排后，isLatest 即最新有结果条目
-    g.sort((a, b) => (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
-  });
-
-  // Sort groups by test case ID
-  const sortedGroups = Object.entries(groups).sort((a, b) => a[0].localeCompare(b[0]));
-
-  function fmtVal(v, digits) {
-    return v != null ? v.toFixed(digits) : '--';
-  }
-
-  function fmtInt(v) {
-    return v != null ? Math.round(v) : '--';
-  }
-  function getCardCount(d) {
-    const m = (d.card_count || '').match(/(\d+)/);
-    return m ? parseInt(m[1]) : 0;
-  }
-  function fmtSingleCard(val, d) {
-    if (val == null) return '--';
-    const n = getCardCount(d);
-    return n > 0 ? (val / n).toFixed(2) : '--';
-  }
-
-  function fmtBaseline(b, d) {
-    // 基线来自用例脚本，与是否有执行结果无关：
-    // accuracy-only 用例显示精度基线；performance 用例显示性能基线；unknown/混合显示全部。
-    // （避免无结果占位符条目因缺少数据而误显示为空）
-    const parts = [];
-    const t = d != null ? d.case_type : 'unknown';
-    if (t === 'accuracy') {
-      if (b.eval_score != null) parts.push(`精度≥${b.eval_score}`);
-    } else if (t === 'performance') {
-      if (b.mean_ttft != null) parts.push(`TTFT≤${b.mean_ttft}`);
-      if (b.mean_tpot != null) parts.push(`TPOT≤${b.mean_tpot}`);
-      if (b.mean_e2e_latency != null) parts.push(`E2E时间≤${b.mean_e2e_latency}`);
-      if (b.output_token_throughput != null) parts.push(`输出吞吐≥${b.output_token_throughput}`);
-    } else {
-      if (b.mean_ttft != null) parts.push(`TTFT≤${b.mean_ttft}`);
-      if (b.mean_tpot != null) parts.push(`TPOT≤${b.mean_tpot}`);
-      if (b.mean_e2e_latency != null) parts.push(`E2E时间≤${b.mean_e2e_latency}`);
-      if (b.output_token_throughput != null) parts.push(`输出吞吐≥${b.output_token_throughput}`);
-      if (b.eval_score != null) parts.push(`精度≥${b.eval_score}`);
-    }
-    return parts.length > 0 ? parts.join('<br>') : '--';
-  }
-
-  // Render metric value with red font if it fails baseline (with tolerance):
-  //   type: 'tpot'|'ttft'|'e2e'|'throughput'|'accuracy'
-  //   Tolerances match test framework: TPOT (+1ms or +2%), TTFT/E2E (+2%), Throughput (-2%), Accuracy (dataset-specific)
-  function fmtMetric(val, digits, baseline, type, dataset) {
-    if (val == null) return '--';
-    const v = val.toFixed(digits);
-    if (baseline != null) {
-      let fail = false;
-      switch (type) {
-        case 'tpot':
-          if (baseline < TPOT_THRESHOLD) {
-            fail = val > baseline + TPOT_TOLERANCE_LOW;
-          } else {
-            fail = val > baseline * TPOT_TOLERANCE_HIGH;
-          }
-          break;
-        case 'ttft':
-          fail = val > baseline * TTFT_TOLERANCE;
-          break;
-        case 'e2e':
-          fail = val > baseline * E2E_TOLERANCE;
-          break;
-        case 'throughput':
-          fail = val < baseline * THROUGHPUT_TOLERANCE;
-          break;
-        case 'accuracy':
-          fail = val < getAccuracyThreshold(baseline, dataset);
-          break;
-      }
-      if (fail) {
-        return `<span class="metric-fail">${v}</span>`;
-      }
-    }
-    return v;
-  }
-
-  // 渲染用例脚本在 Git 平台的链接（可能来自多个来源仓）
-  // 渲染来源 + 用例脚本链接（合并展示）：
-  // 有脚本链接 → 链接标签即来源名（如 fulltest↗ / nightly↗）；
-  // 无链接但有来源 → 显示来源文本；都无 → '--'
-  function fmtScriptLinks(d) {
-    const urls = d.script_urls || [];
-    const src = d.source || '';
-    if (urls.length > 0) {
-      // 多个来源链接（如 fulltest/nightly 同用例）换行显示，每个链接一行
-      return urls.map(u =>
-        `<a class="script-link" href="${escHtml(u.url)}" target="_blank" rel="noopener" title="${escHtml(u.url)}">${escHtml(u.source)}↗</a>`
-      ).join('<br>');
-    }
-    return escHtml(src) || '--';
-  }
-
-  // 渲染 CI 运行/任务链接：有具体 job 链接时优先显示，否则回退到 run 链接
-  function fmtRunLink(d) {
-    if (d.job_url) {
-      return `<a class="script-link" href="${escHtml(d.job_url)}" target="_blank" rel="noopener" title="${escHtml(d.job_url)}">job↗</a>`;
-    }
-    if (d.run_url) {
-      return `<a class="script-link" href="${escHtml(d.run_url)}" target="_blank" rel="noopener" title="${escHtml(d.run_url)}">运行↗</a>`;
-    }
-    return '--';
-  }
-
-  // 渲染执行结果备注：显示文本 + 编辑按钮（点击弹窗编辑，备注按执行结果复合键对应该条记录）
-  // note_date 存在时表示该备注为回填的历史备注，额外显示其对应日期
-  function fmtNote(d) {
-    const note = d.note || '';
-    const noteDate = d.note_date || '';
-    // 编辑按钮参数处于 HTML onclick 属性的 JS 单引号字符串中，需用 escJsAttr 双层转义
-    const editBtn = `<span class="note-edit" onclick="openNoteEditorFromRow('${escJsAttr(d._id)}','${escJsAttr(d.date)}','${escJsAttr(d.branch || '')}','${escJsAttr(d.run_id || '')}')" title="填写备注">✏️</span>`;
-    let text = '';
-    if (note) {
-      const tip = noteDate ? `${note}（${noteDate}）` : note;
-      const dateTag = noteDate ? `<span class="note-date">（${escHtml(noteDate)}）</span>` : '';
-      text = `<span class="note-text" title="${escHtml(tip)}">${escHtml(note)}</span>${dateTag}`;
-    }
-    return `<span class="note-cell">${editBtn}${text}</span>`;
-  }
-
-  // 组网列显示：PD分离/1p1d → 拆成两行（PD分离 + 1p1d）；其他保持不变
-  function fmtTopology(t) {
-    if (!t) return '--';
-    if (t.indexOf('PD分离/') === 0) {
-      return `PD分离<br>${escHtml(t.substring('PD分离/'.length))}`;
-    }
-    return escHtml(t);
-  }
-
-  // 序列长度列显示：in3k5_out1k5 → 拆成两行（in3k5 + out1k5）；只有 in/out 单段时保持原样
-  function fmtSeqLength(s) {
-    if (!s) return '--';
-    const m = s.match(/^(.+)_out(.+)$/);
-    if (m) {
-      return `${escHtml(m[1])}<br>out${escHtml(m[2])}`;
-    }
-    return escHtml(s);
-  }
-
-  let rows = '';
-  let visibleCount = 0;
-  // 预计算每个分组在 collapsed 视图中是否应显示模型名
-  // 规则：分组间按 latest 行比较，模型变了才显示
-  const groupShowModel = [];
-  let prevLatestModel = null;
-  sortedGroups.forEach(([tcId, items]) => {
-    const latestModel = items[items.length - 1].model;
-    groupShowModel.push(latestModel !== prevLatestModel);
-    prevLatestModel = latestModel;
-  });
-  sortedGroups.forEach(([tcId, items], gIdx) => {
-    const safeId = tcId.replace(/[^a-zA-Z0-9]/g, '_');
-    items.forEach((d, i) => {
-      const isLatest = i === items.length - 1;
-      const status = computeStatus(d);
-      // 状态样式：PASS/成功(无结果) → 绿；无基线(空) → 红；其余(FAILED等) → 红
-      const statusCls = status === 'PASS' || status.indexOf('成功') === 0
-        ? (status === 'PASS' ? 'status-pass' : 'status-success-nr')
-        : (status === '' ? 'status-none' : 'status-fail');
-      const b = d.baselines || {};
-      const bl = (key, sym) => b[key] != null ? `<br><span class="baseline-val">${sym}${b[key]}</span>` : '';
-      const expandIcon = isLatest && items.length > 1
-        ? `<span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;" title="点击展开历史">▶</span>`
-        : '';
-      const rowStyle = isLatest ? '' : 'style="display:none"';
-      if (isLatest) visibleCount++;
-      const modelDisplay = isLatest && groupShowModel[gIdx] ? d.model : '';
-      rows += `<tr class="data-row" data-tc="${safeId}" data-date="${escHtml(d.date)}" data-hasdata="${hasData(d) ? '1' : '0'}" ${rowStyle}>
-        <td class="col-model sticky-col col-l0">${escHtml(modelDisplay)}</td>
-        <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" title="${escHtml(tcId)}">${expandIcon}${escHtml(tcId)}</span></td>
-        <td class="col-meta sticky-col col-l2">${escHtml(d.date)}</td>
-        <td class="col-meta sticky-col col-l3"><span class="${statusCls}">${escHtml(status)}</span></td>
-        <td class="col-script sticky-col col-l4">${fmtScriptLinks(d)}</td>
-        <td class="col-meta sticky-col col-l5">${fmtRunLink(d)}</td>
-        <td class="col-note sticky-col col-l6">${fmtNote(d)}</td>
-        <td class="col-baseline sticky-col col-l7"><span class="baseline-col" title="${fmtBaseline(b, d)}">${fmtBaseline(b, d)}</span></td>
-        <td class="col-topology">${fmtTopology(d.topology)}</td>
-        <td class="col-config">${escHtml(d.card_count || '--')}</td>
-        <td class="col-config">${fmtSeqLength(d.seq_length)}</td>
-        <td class="col-config">${escHtml((d.prefix || '').replace('prefix', '') || '0')}</td>
-        <td class="col-config">${escHtml(d.dataset || '--')}</td>
-        <td class="col-uniform">${fmtMetric(d.eval_score, 4, b.eval_score, 'accuracy', d.dataset)}</td>
-        <td class="col-uniform">${fmtInt(d.total_requests)}</td>
-        <td class="col-uniform">${fmtInt(d.max_concurrency)}</td>
-        <td class="col-uniform">${fmtVal(d.system_concurrency, 2)}</td>
-        <td class="col-uniform">${fmtVal(d.request_throughput, 2)}</td>
-        <td class="col-uniform">${fmtMetric(d.mean_ttft, 2, b.mean_ttft, 'ttft')}</td>
-        <td class="col-uniform">${fmtVal(d.p90_ttft, 2)}</td>
-        <td class="col-uniform">${fmtMetric(d.mean_tpot, 2, b.mean_tpot, 'tpot')}</td>
-        <td class="col-uniform">${fmtVal(d.p90_tpot, 2)}</td>
-        <td class="col-uniform">${fmtMetric(d.mean_e2e_latency, 2, b.mean_e2e_latency, 'e2e')}</td>
-        <td class="col-uniform">${fmtMetric(d.output_token_throughput, 2, b.output_token_throughput, 'throughput')}</td>
-        <td class="col-uniform">${fmtSingleCard(d.output_token_throughput, d)}</td>
-        <td class="col-uniform">${fmtVal(d.total_token_throughput, 2)}</td>
-        <td class="col-uniform">${fmtSingleCard(d.total_token_throughput, d)}</td>
-        <td class="col-uniform">${fmtVal(d.request_throughput, 2)}</td>
-        <td class="col-uniform">${d.request_throughput != null ? (d.request_throughput * 60).toFixed(2) : '--'}</td>
-      </tr>`;
-    });
-  });
-
-  // ---- 功能用例聚合渲染（三层嵌套展开）----
-  // L0 顶层"功能用例"行：默认仅显示一行整体结果（最新一天聚合状态，不含明细）；
-  //    第1次点击 → 展开历史天数（L1 每日期聚合行）；
-  //    第2次点击 → 展开最新一天的具体用例明细（L2）；
-  //    第3次点击 → 全部收起回到默认单行。
-  // L1 历史日期聚合行：点击 → 展开该日期具体测试用例的执行结果（L2 明细行）。
-  const funcDateGroups = {};
-  funcRows.forEach(d => {
-    const fdate = d.date || '';
-    if (!funcDateGroups[fdate]) funcDateGroups[fdate] = [];
-    funcDateGroups[fdate].push(d);
-  });
-  // 日期倒序展示，最新日期在前
-  const sortedFuncDates = Object.keys(funcDateGroups).sort((a, b) => b.localeCompare(a));
-
-  // L2 功能用例明细行：显示具体测试用例的执行结果（visible=false 时默认隐藏）
-  function renderFuncDetailRow(d, visible) {
-    const status = computeStatus(d);
-    // PASS → 绿；执行中 → 黄；FAILED → 红；FAILED(无结果)/未执行 → 默认色
-    const statusCls2 = status === 'PASS' ? 'status-pass'
-      : (status === '执行中' ? 'status-running'
-        : (status === 'FAILED' ? 'status-fail' : ''));
-    return `<tr class="data-row func-detail-row" data-fdet="1" data-fdate="${escHtml(d.date)}" ${visible ? '' : 'style="display:none"'}>
-      <td class="col-model sticky-col col-l0"></td>
-      <td class="col-tc-id sticky-col col-l1" style="padding-left:52px;"><span class="testcase-id" title="${escHtml(d._id || '')}">${escHtml(d._id || '')}</span></td>
-      <td class="col-meta sticky-col col-l2">${escHtml(d.date)}</td>
-      <td class="col-meta sticky-col col-l3"><span class="${statusCls2}">${escHtml(status)}</span></td>
-      <td class="col-script sticky-col col-l4">${fmtScriptLinks(d)}</td>
-      <td class="col-meta sticky-col col-l5">${fmtRunLink(d)}</td>
-      <td class="col-note sticky-col col-l6">${fmtNote(d)}</td>
-      <td class="col-baseline sticky-col col-l7">--</td>
-      <td colspan="21">--</td>
-    </tr>`;
-  }
-
-  if (sortedFuncDates.length > 0) {
-    const latestDate = sortedFuncDates[0];
-    const latestItems = funcDateGroups[latestDate].slice()
-      .sort((a, b) => (a._id || '').localeCompare(b._id || ''));
-    const aggLatest = aggregateFuncStatus(latestItems);
-    // 全部通过 → 绿；无任何状态 → 红；其余（含失败/执行中/未执行）→ 红
-    const statusClsTop = /^通过 \d+$/.test(aggLatest) ? 'status-pass'
-      : (aggLatest === '--' ? 'status-none' : 'status-fail');
-    visibleCount++;
-    // L0 顶层行：默认只显示最新一天的执行结果
-    rows += `<tr class="data-row func-top-row" data-fdate="${escHtml(latestDate)}">
-      <td class="col-model sticky-col col-l0">功能用例</td>
-      <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" style="cursor:pointer;" title="点击展开/收起历史天数执行结果"><span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;">▶</span>功能用例</span></td>
-      <td class="col-meta sticky-col col-l2">${escHtml(latestDate)}<span class="baseline-val">（最新）</span></td>
-      <td class="col-meta sticky-col col-l3"><span class="${statusClsTop}">${escHtml(aggLatest)}</span></td>
-      <td class="col-script sticky-col col-l4">--</td>
-      <td class="col-meta sticky-col col-l5">--</td>
-      <td class="col-note sticky-col col-l6">--</td>
-      <td class="col-baseline sticky-col col-l7">--</td>
-      <td colspan="21">--</td>
-    </tr>`;
-    // 最新一天的具体用例明细默认隐藏；第2次点击顶层行时展开（L2）
-    latestItems.forEach(d => { rows += renderFuncDetailRow(d, false); });
-
-    // L1 历史天数聚合行（默认隐藏），点击展开对应日期的具体用例明细
-    sortedFuncDates.forEach(fdate => {
-      if (fdate === latestDate) return;
-      const items = funcDateGroups[fdate].slice()
-        .sort((a, b) => (a._id || '').localeCompare(b._id || ''));
-      const aggStatus = aggregateFuncStatus(items);
-      const statusCls = /^通过 \d+$/.test(aggStatus) ? 'status-pass'
-        : (aggStatus === '--' ? 'status-none' : 'status-fail');
-      rows += `<tr class="data-row func-date-row" data-fdate="${escHtml(fdate)}" style="display:none">
-        <td class="col-model sticky-col col-l0"></td>
-        <td class="col-tc-id sticky-col col-l1" style="padding-left:26px;"><span class="testcase-id" style="cursor:pointer;" title="点击展开/收起该日期功能用例明细"><span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;">▶</span>功能用例</span></td>
-        <td class="col-meta sticky-col col-l2">${escHtml(fdate)}</td>
-        <td class="col-meta sticky-col col-l3"><span class="${statusCls}">${escHtml(aggStatus)}</span></td>
-        <td class="col-script sticky-col col-l4">--</td>
-        <td class="col-meta sticky-col col-l5">--</td>
-        <td class="col-note sticky-col col-l6">--</td>
-        <td class="col-baseline sticky-col col-l7">--</td>
-        <td colspan="21">--</td>
-      </tr>`;
-      items.forEach(d => { rows += renderFuncDetailRow(d, false); });
-    });
-  }
-
-  document.getElementById('tableCount').textContent = `(${visibleCount} 条)`;
-  tbody.innerHTML = rows;
-  // 表格重建后恢复此前的展开状态（历史执行结果行 + 折线图悬浮面板 / 功能用例层级），
-  // 避免 60s 定时轮询触发重绘后自动折叠
-  restoreExpandedState();
-}
-
-// 轮询/筛选重绘后恢复此前展开的展开状态：
-//   普通用例：按"历史天数"窗口恢复历史执行结果行 + 折线图悬浮面板（_expandedChartTc）；
-//   功能用例：恢复顶层展开级别（_funcExpandedLevel）与已展开明细的日期（_funcOpenedDates）。
-function restoreExpandedState() {
-  const tbody = document.getElementById('tableBody');
-  // ---- 普通用例：历史执行结果行 + 折线图悬浮面板 ----
-  if (_expandedChartTc) {
-    const safeId = _expandedChartTc.replace(/[^a-zA-Z0-9]/g, '_');
-    const allRows = tbody.querySelectorAll(`tr[data-tc="${safeId}"].data-row`);
-    if (allRows.length > 0) {
-      const histDays = parseInt(document.getElementById('historyDays').value) || 7;
-      const cutoff = getDateCutoff(histDays);
-      allRows.forEach((r, i) => {
-        const isLast = i === allRows.length - 1;
-        const rd = r.getAttribute('data-date');
-        const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
-        r.style.display = show ? '' : 'none';
-        if (show) r.classList.add('selected');
-      });
-      showTestCaseChart(_expandedChartTc, _expandedChartTc);
-      const latestRow = allRows[allRows.length - 1];
-      if (latestRow) {
-        const icon = latestRow.querySelector('.expand-icon');
-        if (icon) icon.textContent = '▼';
-      }
-    } else {
-      // 用例被筛选掉或已不存在：关闭图表面板并清空记录
-      destroyCharts();
-    }
-  }
-  // ---- 功能用例：恢复顶层展开级别与已展开明细的日期 ----
-  if (_funcExpandedLevel > 0) {
-    const top = tbody.querySelector('tr.func-top-row');
-    if (top) {
-      top.classList.add('func-top-open');
-      if (_funcExpandedLevel >= 2) top.classList.add('func-open');
-      const ic = top.querySelector('.expand-icon');
-      if (ic) ic.textContent = '▼';
-      applyFuncHistoryCutoff(tbody); // 展开历史天数行（仅窗口内日期）
-      if (_funcExpandedLevel >= 2) {
-        const latestDate = top.getAttribute('data-fdate');
-        tbody.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = ''; });
-      }
-      // 恢复 L1 内用户点开的日期明细
-      _funcOpenedDates.forEach(fd => {
-        const row = tbody.querySelector(`tr.func-date-row[data-fdate="${fd}"]`);
-        if (row) {
-          row.classList.add('func-open');
-          const ic2 = row.querySelector('.expand-icon');
-          if (ic2) ic2.textContent = '▼';
-          tbody.querySelectorAll(`tr[data-fdet="1"][data-fdate="${fd}"]`).forEach(dr => { dr.style.display = ''; });
-        }
-      });
-    } else {
-      // 功能用例被筛选掉：重置记录
-      _funcExpandedLevel = 0;
-      _funcOpenedDates = [];
-    }
-  }
-}
-
-// 日期辅助：YYYYMMDD 纯日期字符串（date 标签已拆分，格式固定）
-function pad2(n) { return String(n).padStart(2, '0'); }
-function getDateCutoff(days) {
-  // 最近 N 天 → 今天往前推 (N-1) 天；如 7 天 = 今天+前6天
-  const t = new Date();
-  t.setDate(t.getDate() - (days - 1));
-  return `${t.getFullYear()}${pad2(t.getMonth() + 1)}${pad2(t.getDate())}`;
-}
-
-// 修改历史天数配置后，对当前展开的用例重新应用过滤
-function applyHistoryFilter() {
-  const histDays = parseInt(document.getElementById('historyDays').value) || 7;
-  const cutoff = getDateCutoff(histDays);
-  // 依据 _expandedChartTc 定位当前展开的用例（图表面板），对历史行重新过滤
-  if (_expandedChartTc) {
-    const safeId = _expandedChartTc.replace(/[^a-zA-Z0-9]/g, '_');
-    const allRows = document.querySelectorAll(`tr[data-tc="${safeId}"].data-row`);
-    if (allRows.length > 0) {
-      allRows.forEach((r, i) => {
-        const isLast = i === allRows.length - 1;
-        const rd = r.getAttribute('data-date');
-        const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
-        r.style.display = show ? '' : 'none';
-        if (show) r.classList.add('selected');
-      });
-      // 历史天数变更后重新渲染趋势图，使折线图只显示窗口内数据
-      const latestRow = allRows[allRows.length - 1];
-      const label = latestRow ? latestRow.querySelector('.testcase-id')?.getAttribute('title') : '';
-      if (label) {
-        _expandedChartTc = label;
-        showTestCaseChart(label, label);
-      }
-    }
-  }
-  // 功能用例：按"历史天数"窗口重新过滤 L1 历史日期行（仅显示窗口内天数）
-  applyFuncHistoryCutoff(document.getElementById('tableBody'));
-}
-
-// 功能用例 L1 历史日期行按"历史天数"窗口过滤：仅显示窗口内日期；
-// 顶层行未展开时全部隐藏（与 collapseFuncHistory 的收起语义一致）
-function applyFuncHistoryCutoff(root) {
-  const cutoff = getDateCutoff(parseInt(document.getElementById('historyDays').value) || 7);
-  const top = root.querySelector('tr.func-top-row');
-  const expanded = !!top && (top.classList.contains('func-top-open') || top.classList.contains('func-open'));
-  root.querySelectorAll('tr.func-date-row').forEach(r => {
-    const fd = r.getAttribute('data-fdate');
-    const inWin = fd != null && fd >= cutoff;
-    r.style.display = (expanded && inWin) ? '' : 'none';
-    if (!inWin) {
-      // 超出窗口：收起该日期已展开的明细并重置图标
-      root.querySelectorAll(`tr[data-fdet="1"][data-fdate="${fd}"]`).forEach(dr => { dr.style.display = 'none'; });
-      r.classList.remove('func-open');
-      const ic = r.querySelector('.expand-icon');
-      if (ic) ic.textContent = '▶';
-    }
-  });
-}
-
-// 点击测试用例ID列 → 展开/收起历史直接结果与图表；
-// 点击行其它位置 → 仅高亮该条结果（选中），不展开；
-// 点击链接/按钮（脚本/任务/备注等交互元素）不触发以上行为。
-document.getElementById('tableBody').addEventListener('click', function(e) {
-  const tr = e.target.closest('tr');
-  if (!tr || tr.querySelector('.no-data')) return;
-  // 顶层"功能用例"行：渐进展开
-  //   第1次点击 → 展开历史天数聚合行（L1）；第2次点击 → 展开最新一天明细（L2）；
-  //   第3次点击 → 全部收起回到默认单行。
-  const fTop = tr.closest('tr.func-top-row');
-  if (fTop) {
-    const latestDate = fTop.getAttribute('data-fdate');
-    if (fTop.classList.contains('func-open')) {
-      // 第3次点击：收起最新一天明细 + 历史天数，回到默认单行
-      collapseFuncHistory(this);
-      this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = 'none'; });
-      fTop.classList.remove('func-open');
-      _funcExpandedLevel = 0;
-      _funcOpenedDates = [];
-    } else if (fTop.classList.contains('func-top-open')) {
-      // 第2次点击：展开最新一天的具体用例明细（L2）
-      collapseFuncAggregates(this); // 先收起其它已展开的日期明细
-      this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${latestDate}"]`).forEach(dr => { dr.style.display = ''; });
-      fTop.classList.add('func-open');
-      _funcExpandedLevel = 2;
-      _funcOpenedDates = [];
-    } else {
-      // 第1次点击：展开历史天数聚合行（L1，仅显示"历史天数"窗口内的日期）
-      collapseFuncHistory(this); // 先收起已展开的历史天数
-      fTop.classList.add('func-top-open');
-      applyFuncHistoryCutoff(this); // 只显示与历史天数栏相同天数的记录
-      _funcExpandedLevel = 1;
-      _funcOpenedDates = [];
-    }
-    const ic = fTop.querySelector('.expand-icon');
-    if (ic) ic.textContent = (fTop.classList.contains('func-open') || fTop.classList.contains('func-top-open')) ? '▼' : '▶';
-    return;
-  }
-  // 历史日期聚合行：点击任意位置 → 展开/收起该日具体用例明细（L2）
-  const fDateRow = tr.closest('tr.func-date-row');
-  if (fDateRow) {
-    const fdate = fDateRow.getAttribute('data-fdate');
-    if (fDateRow.classList.contains('func-open')) {
-      collapseFuncAggregates(this, fdate); // 收起本日期明细
-      _funcOpenedDates = _funcOpenedDates.filter(x => x !== fdate);
-    } else {
-      collapseFuncAggregates(this); // 先收起其它已展开的日期明细
-      this.querySelectorAll(`tr[data-fdet="1"][data-fdate="${fdate}"]`).forEach(dr => { dr.style.display = ''; });
-      fDateRow.classList.add('func-open');
-      const ic = fDateRow.querySelector('.expand-icon');
-      if (ic) ic.textContent = '▼';
-      _funcOpenedDates = [fdate];
-    }
-    return;
-  }
-  // 交互元素（链接、备注按钮、展开图标）点击不触发行选中/展开
-  if (e.target.closest('a') || e.target.closest('.note-edit') || e.target.closest('.expand-icon')) return;
-  const tcId = tr.getAttribute('data-tc');
-  if (!tcId) return;
-
-  const isTcIdClick = !!e.target.closest('.col-tc-id');
-
-  if (!isTcIdClick) {
-    // 非用例ID列：仅切换该行选中高亮
-    tr.classList.toggle('selected');
-    return;
-  }
-
-  const allRows = this.querySelectorAll(`tr[data-tc="${tcId}"].data-row`);
-  // 展开状态统一以 _expandedChartTc 为准（图表已改画到悬浮面板，表格内不再有占位行）
-  const isExpanded = _expandedChartTc != null && _expandedChartTc.replace(/[^a-zA-Z0-9]/g, '_') === tcId;
-
-  if (isExpanded) {
-    // Collapse: hide all rows except the latest, hide chart panel
-    allRows.forEach((r, i) => {
-      if (i < allRows.length - 1) r.style.display = 'none';
-    });
-    allRows.forEach(r => r.classList.remove('selected'));
-    destroyCharts(); // 销毁图表、隐藏面板并清空 _expandedChartTc
-    // Reset expand icon
-    const latestRow = allRows[allRows.length - 1];
-    if (latestRow) {
-      const icon = latestRow.querySelector('.expand-icon');
-      if (icon) icon.textContent = '▶';
-    }
-  } else {
-    // Collapse other expanded groups first
-    this.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
-    this.querySelectorAll('.expand-icon').forEach(icon => { icon.textContent = '▶'; });
-    // Hide all non-latest rows globally
-    this.querySelectorAll('tr.data-row').forEach(r => {
-      const tc = r.getAttribute('data-tc');
-      const siblings = this.querySelectorAll(`tr[data-tc="${tc}"].data-row`);
-      if (siblings.length > 1 && r !== siblings[siblings.length - 1]) {
-        r.style.display = 'none';
-      }
-    });
-
-    // Expand: show history rows within the configured day range, highlight, show chart
-    const histDays = parseInt(document.getElementById('historyDays').value) || 7;
-    const cutoff = getDateCutoff(histDays);
-    allRows.forEach((r, i) => {
-      // 最新行始终显示；历史行仅显示配置天数内且有执行结果的行（无结果日期不显示）
-      const isLast = i === allRows.length - 1;
-      const rd = r.getAttribute('data-date');
-      const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
-      r.style.display = show ? '' : 'none';
-      if (show) r.classList.add('selected');
-    });
-    const latestRow = allRows[allRows.length - 1];
-    if (latestRow) {
-      const icon = latestRow.querySelector('.expand-icon');
-      if (icon) icon.textContent = '▼';
-    }
-    const label = latestRow ? latestRow.querySelector('.testcase-id')?.getAttribute('title') : '';
-    if (label) {
-      _expandedChartTc = label;
-      showTestCaseChart(label, label);
-    }
-  }
-});
-
-function exportToExcel() {
-  try {
-    if (typeof XLSX === 'undefined') {
-      alert('Excel导出库加载失败，请检查网络连接后刷新页面重试。');
-      return;
-    }
-    if (!allData || allData.length === 0) {
-      alert('暂无数据可导出。');
-      return;
-    }
-
-    // Recompute filtered data matching current table display
-    const sourceVals = getSelectedValues('sourceFilter');
-    const modelVals = getSelectedValues('modelFilter');
-    const dateVals = getSelectedValues('dateFilter');
-    const branchVals = getSelectedValues('branchFilter');
-    const statusVals = getSelectedValues('statusFilter');
-
-    let filtered = allData;
-    // source 可能为逗号分隔的多来源（如 "fulltest,nightly"），任一匹配即通过
-    if (sourceVals !== null) filtered = filtered.filter(d => String(d.source || '').split(',').some(s => sourceVals.includes(s)));
-    if (modelVals !== null) filtered = filtered.filter(d => modelVals.includes(d.model));
-    if (dateVals !== null) filtered = filtered.filter(d => dateVals.includes(d.date));
-    if (branchVals !== null) filtered = filtered.filter(d => branchVals.includes(d.branch));
-
-    // Group by test case ID, keep latest only
-    const groups = {};
-    filtered.forEach(d => {
-      if (!groups[d._id]) groups[d._id] = [];
-      groups[d._id].push(d);
-    });
-
-    let rows = [];
-    Object.entries(groups).forEach(([id, items]) => {
-      items.sort((a, b) => a.date.localeCompare(b.date));
-      // 最新有结果优先：无结果占位符排前，有结果的按日期升序排后
-      items.sort((a, b) => (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
-      if (statusVals !== null) {
-        const status = getTestCaseStatus(items);
-        const hasSuccessNoResult = items.some(d => isSuccessNoResult(d));
-        const keep = (statusVals.includes('PASS') && (status === 'PASS' || hasSuccessNoResult)) ||
-                     (statusVals.includes('FAILED') && (status === 'FAILED' || (status.endsWith('(无结果)') && !status.startsWith('成功'))));
-        if (!keep) return;
-      }
-      rows.push(items[items.length - 1]);
-    });
-
-    if (rows.length === 0) {
-      alert('当前筛选条件下无数据可导出。');
-      return;
-    }
-
-    // Build Excel data
-    const headers = [
-      '模型', '测试用例ID', '日期', '状态', '用例脚本', '任务', '备注', '基线',
-      '组网', '卡数', '序列长度', 'PREFIX', '数据集',
-      '精度', '总请求数', '最大并发数', '系统并发数', '请求频率',
-      'TTFT(ms)', 'TTFT P90(ms)', 'TPOT(ms)', 'TPOT P90(ms)',
-      'E2E时间(ms)', '输出吞吐(TPS)', '单卡输出吞吐(TPS)',
-      'E2E吞吐(TPS)', '单卡E2E吞吐(TPS)', 'QPS', 'QPM'
-    ];
-
-    const getCardCount = (d) => {
-      const m = (d.card_count || '').match(/(\d+)/);
-      return m ? parseInt(m[1]) : 0;
-    };
-
-    const dataRows = rows.map(d => {
-      const b = d.baselines || {};
-      const n = getCardCount(d);
-      // 基线来自用例脚本，与是否有执行结果无关；按用例类型过滤
-      // （accuracy-only 只显示精度基线，performance 只显示性能基线）
-      const t = d.case_type;
-      const blParts = [];
-      if (t === 'accuracy') {
-        if (b.eval_score != null) blParts.push('精度≥' + b.eval_score);
-      } else if (t === 'performance') {
-        if (b.mean_ttft != null) blParts.push('TTFT≤' + b.mean_ttft);
-        if (b.mean_tpot != null) blParts.push('TPOT≤' + b.mean_tpot);
-        if (b.mean_e2e_latency != null) blParts.push('E2E≤' + b.mean_e2e_latency);
-        if (b.output_token_throughput != null) blParts.push('吞吐≥' + b.output_token_throughput);
-      } else {
-        if (b.mean_ttft != null) blParts.push('TTFT≤' + b.mean_ttft);
-        if (b.mean_tpot != null) blParts.push('TPOT≤' + b.mean_tpot);
-        if (b.mean_e2e_latency != null) blParts.push('E2E≤' + b.mean_e2e_latency);
-        if (b.output_token_throughput != null) blParts.push('吞吐≥' + b.output_token_throughput);
-        if (b.eval_score != null) blParts.push('精度≥' + b.eval_score);
-      }
-      return [
-        d.model || '', d._id || '', d.date || '', computeStatus(d),
-        // 用例脚本列（合并来源）：有脚本链接时显示 来源(URL)，否则显示来源
-        (d.script_urls || []).map(u => u.source + '(' + u.url + ')').join('; ') || d.source || '',
-        d.job_url || d.run_url || '',
-        d.note || '',
-        blParts.join(', '),
-        d.topology || '', d.card_count || '', d.seq_length || '',
-        (d.prefix || '').replace('prefix', '') || '0', d.dataset || '',
-        d.eval_score != null ? d.eval_score : '',
-        d.total_requests != null ? d.total_requests : '',
-        d.max_concurrency != null ? d.max_concurrency : '',
-        d.system_concurrency != null ? d.system_concurrency.toFixed(2) : '',
-        d.request_throughput != null ? d.request_throughput.toFixed(2) : '',
-        d.mean_ttft != null ? d.mean_ttft.toFixed(2) : '',
-        d.p90_ttft != null ? d.p90_ttft.toFixed(2) : '',
-        d.mean_tpot != null ? d.mean_tpot.toFixed(2) : '',
-        d.p90_tpot != null ? d.p90_tpot.toFixed(2) : '',
-        d.mean_e2e_latency != null ? d.mean_e2e_latency.toFixed(2) : '',
-        d.output_token_throughput != null ? d.output_token_throughput.toFixed(2) : '',
-        n > 0 && d.output_token_throughput != null ? (d.output_token_throughput / n).toFixed(2) : '',
-        d.total_token_throughput != null ? d.total_token_throughput.toFixed(2) : '',
-        n > 0 && d.total_token_throughput != null ? (d.total_token_throughput / n).toFixed(2) : '',
-        d.request_throughput != null ? d.request_throughput.toFixed(2) : '',
-        d.request_throughput != null ? (d.request_throughput * 60).toFixed(2) : ''
-      ];
-    });
-
-    const wsData = [headers, ...dataRows];
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    ws['!cols'] = headers.map(() => ({ wch: 18 }));
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '性能数据');
-    XLSX.writeFile(wb, 'sglang_benchmark_' + new Date().toISOString().slice(0, 10) + '.xlsx');
-  } catch (e) {
-    console.error('导出失败:', e);
-    alert('导出失败: ' + e.message);
-  }
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-  initCharts();
-  // 恢复持久化的图表面板位置（刷新页面后仍保持上次拖拽位置）
-  _panelPos = loadPanelPos();
-  initPanelDrag();
-  loadData();
-  // 轮询间隔 60s：与后端 DATA_CACHE_TTL(30s) + jobs 后台刷新配合，
-  // 保证「执行中/已执行失败/成功(无结果)」等 job 状态与任务链接及时更新。
-  // loadData 内部做了数据序列化比对，仅当数据真正变化时才重绘表格
-  setInterval(loadData, 60000);
-
-  // 悬浮面板关闭按钮：与点击用例ID折叠行为一致（收起历史行 + 重置图标 + 关面板）
-  document.getElementById('chartPanelClose').addEventListener('click', function() {
-    if (!_expandedChartTc) { destroyCharts(); return; }
-    const safeId = _expandedChartTc.replace(/[^a-zA-Z0-9]/g, '_');
-    const tbody = document.getElementById('tableBody');
-    const allRows = tbody.querySelectorAll(`tr[data-tc="${safeId}"].data-row`);
-    allRows.forEach((r, i) => { if (i < allRows.length - 1) r.style.display = 'none'; });
-    allRows.forEach(r => r.classList.remove('selected'));
-    const latestRow = allRows[allRows.length - 1];
-    if (latestRow) {
-      const icon = latestRow.querySelector('.expand-icon');
-      if (icon) icon.textContent = '▶';
-    }
-    destroyCharts(); // 销毁图表、隐藏面板并清空 _expandedChartTc
-  });
-});
-</script>
-</body>
-</html>"""
+# ============================================================
+# 前端页面模板（自包含部署：不再内嵌 HTML/CSS/JS，改从独立模板文件读取）
+# dashboard.html 独立成文件后，前端代码可获得编辑器语法高亮、lint 与
+# 单元测试支持；模板中的 __CHART_JS_SRC__ / __XLSX_SRC__ 占位符在
+# do_GET 中替换为实际资源地址（本地 static/ 优先，缺失回退 CDN）。
+# ============================================================
+TEMPLATE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "templates")
+_dashboard_html_cache = None  # 模板文件内容缓存（进程内只读一次，与原先模块级常量行为一致）
+
+
+def _load_dashboard_html():
+    """读取前端模板文件并缓存，避免每请求磁盘 I/O。
+
+    模板文件缺失时打印错误并返回 None，由调用方（do_GET）返回 503 明确提示，
+    而不是静默 500。
+    """
+    global _dashboard_html_cache
+    if _dashboard_html_cache is not None:
+        return _dashboard_html_cache
+    template_path = os.path.join(TEMPLATE_DIR, "dashboard.html")
+    try:
+        with open(template_path, "r", encoding="utf-8") as f:
+            _dashboard_html_cache = f.read()
+    except FileNotFoundError:
+        print(f"[web] 前端模板文件缺失: {template_path}")
+        return None
+    return _dashboard_html_cache
 
 
 def parse_yaml_test_name(name):
@@ -3893,10 +2372,18 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         # 剥离 query 串（如 /api/data?x=1），避免带参数请求被 404
         path = urllib.parse.urlsplit(self.path).path
         if path == "/" or path == "/index.html":
+            template = _load_dashboard_html()
+            if template is None:
+                # 模板文件缺失：明确 503 提示，而非静默 500
+                self.send_response(503)
+                self.send_header("Content-Type", "text/plain; charset=utf-8")
+                self.end_headers()
+                self.wfile.write("Dashboard template missing: templates/dashboard.html".encode("utf-8"))
+                return
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            html = HTML_TEMPLATE.replace(
+            html = template.replace(
                 "__CHART_JS_SRC__", _asset_url("chart.umd.min.js", CDN_CHART_JS)
             ).replace(
                 "__XLSX_SRC__", _asset_url("xlsx.full.min.js", CDN_XLSX)
