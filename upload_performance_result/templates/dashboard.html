@@ -136,8 +136,8 @@ thead th.sticky-col { z-index: 5; }
     <label>状态</label>
     <select id="statusFilter" multiple onchange="onFilterChange()">
       <option value="__all__" selected>全部</option>
-      <option value="PASS">PASS</option>
-      <option value="FAILED">FAILED</option>
+      <option value="通过">通过</option>
+      <option value="失败">失败</option>
       <option value="未执行">未执行</option>
     </select>
   </div>
@@ -650,7 +650,7 @@ function getAccuracyThreshold(baseline, dataset) {
 // 结合 run_id 关联的 GitHub Actions job 状态，推断「无结果」的成因。
 // 仅当存在 run_id（分支模式数据）且已抓到 job 信息时才能区分：
 //   completed + conclusion ∈ {failure, timed_out, action_required, cancelled} → 已执行但失败
-//   completed + conclusion == success                                        → 执行成功但指标未上传（视为 PASS）
+//   completed + conclusion == success                                        → 执行成功但指标未上传（视为通过）
 //   completed + conclusion ∈ {skipped, stale, neutral}（未实际运行）          → 未执行
 //   queued / in_progress / waiting / requested / pending                     → 执行中
 //   匹配到 job 列表但未命中本用例（no_job）                                  → 未执行
@@ -673,14 +673,14 @@ function jobRunLabel(d) {
 }
 
 function computeStatus(d) {
-  // 统一四态：PASS / FAILED / 未执行 / 执行中
+  // 统一四态：通过 / 失败 / 未执行 / 执行中
   // 1) per-case 日志解析结果最准确（功能/性能/精度统一）
-  if (d.func_status === 'pass') return 'PASS';
-  if (d.func_status === 'fail') return 'FAILED';
+  if (d.func_status === 'pass') return '通过';
+  if (d.func_status === 'fail') return '失败';
   if (d.func_status === 'running') return '执行中';
-  // 2) CI job 结论归因：执行失败优先级最高（不管有无指标都归 FAILED）
+  // 2) CI job 结论归因：执行失败优先级最高（不管有无指标都归失败）
   const runLabel = jobRunLabel(d);
-  if (runLabel === '已执行失败') return 'FAILED';
+  if (runLabel === '已执行失败') return '失败';
   if (runLabel === '未执行') return '未执行';
   if (runLabel === '执行中') return '执行中';
   // 3) 功能用例：无 per-case、无明确 job 结论时归「未执行」兜底
@@ -691,46 +691,46 @@ function computeStatus(d) {
   const hasEval = d.eval_score != null;
   const hasBaseline = Object.keys(b).length > 0;
   if (!hasPerf && !hasEval) {
-    // 无指标：job 成功归 PASS（执行成功但未上传指标），否则未执行
-    return runLabel === '成功' ? 'PASS' : '未执行';
+    // 无指标：job 成功归通过（执行成功但未上传指标），否则未执行
+    return runLabel === '成功' ? '通过' : '未执行';
   }
-  if (!hasBaseline) return 'FAILED';
+  if (!hasBaseline) return '失败';
   // TPOT: baseline < 50 → +1ms absolute; baseline >= 50 → +2% relative
   if (hasPerf && b.mean_tpot != null) {
-    if (d.mean_tpot == null) return 'FAILED';
+    if (d.mean_tpot == null) return '失败';
     const tpotLimit = b.mean_tpot < TPOT_THRESHOLD
       ? b.mean_tpot + TPOT_TOLERANCE_LOW
       : b.mean_tpot * TPOT_TOLERANCE_HIGH;
-    if (d.mean_tpot > tpotLimit) return 'FAILED';
+    if (d.mean_tpot > tpotLimit) return '失败';
   }
   // TTFT: +2% tolerance
   if (hasPerf && b.mean_ttft != null) {
-    if (d.mean_ttft == null) return 'FAILED';
-    if (d.mean_ttft > b.mean_ttft * TTFT_TOLERANCE) return 'FAILED';
+    if (d.mean_ttft == null) return '失败';
+    if (d.mean_ttft > b.mean_ttft * TTFT_TOLERANCE) return '失败';
   }
   // E2E Latency: +2% tolerance
   if (hasPerf && b.mean_e2e_latency != null) {
-    if (d.mean_e2e_latency == null) return 'FAILED';
-    if (d.mean_e2e_latency > b.mean_e2e_latency * E2E_TOLERANCE) return 'FAILED';
+    if (d.mean_e2e_latency == null) return '失败';
+    if (d.mean_e2e_latency > b.mean_e2e_latency * E2E_TOLERANCE) return '失败';
   }
   // Output Token Throughput: -2% tolerance
   if (hasPerf && b.output_token_throughput != null) {
-    if (d.output_token_throughput == null) return 'FAILED';
-    if (d.output_token_throughput < b.output_token_throughput * THROUGHPUT_TOLERANCE) return 'FAILED';
+    if (d.output_token_throughput == null) return '失败';
+    if (d.output_token_throughput < b.output_token_throughput * THROUGHPUT_TOLERANCE) return '失败';
   }
   // Accuracy: dataset-specific tolerance
   if (b.eval_score != null) {
-    if (d.eval_score == null) return 'FAILED';
+    if (d.eval_score == null) return '失败';
     const threshold = getAccuracyThreshold(b.eval_score, d.dataset);
-    if (d.eval_score < threshold) return 'FAILED';
+    if (d.eval_score < threshold) return '失败';
   }
-  return 'PASS';
+  return '通过';
 }
 
-// 状态 → 样式类：PASS 绿 / FAILED 红 / 执行中 黄 / 未执行 默认灰
+// 状态 → 样式类：通过 绿 / 失败 红 / 执行中 黄 / 未执行 默认灰
 function statusCss(status) {
-  if (status === 'PASS') return 'status-pass';
-  if (status === 'FAILED') return 'status-fail';
+  if (status === '通过') return 'status-pass';
+  if (status === '失败') return 'status-fail';
   if (status === '执行中') return 'status-running';
   return '';
 }
@@ -741,8 +741,8 @@ function aggregateFuncStatus(items) {
   const counts = { pass: 0, fail: 0, nores: 0 };
   items.forEach(d => {
     const s = computeStatus(d);
-    if (s === 'PASS') counts.pass++;
-    else if (s === 'FAILED') counts.fail++;
+    if (s === '通过') counts.pass++;
+    else if (s === '失败') counts.fail++;
     else counts.nores++; // 未执行 / 执行中
   });
   const parts = [];
@@ -826,8 +826,8 @@ function onFilterChange() {
       Object.entries(groups).forEach(([id, items]) => {
         items.sort((a, b) => a.date.localeCompare(b.date));
         const status = getTestCaseStatus(items);
-        if (statusFilter.includes('PASS') && status === 'PASS') keepIds.add(id);
-        if (statusFilter.includes('FAILED') && status === 'FAILED') keepIds.add(id);
+        if (statusFilter.includes('通过') && status === '通过') keepIds.add(id);
+        if (statusFilter.includes('失败') && status === '失败') keepIds.add(id);
         if (statusFilter.includes('未执行') && (status === '未执行' || status === '执行中')) keepIds.add(id);
       });
     filtered = filtered.filter(d => keepIds.has(d._id));
@@ -1439,8 +1439,8 @@ function exportToExcel() {
       items.sort((a, b) => (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
       if (statusVals !== null) {
         const status = getTestCaseStatus(items);
-        const keep = (statusVals.includes('PASS') && status === 'PASS') ||
-                     (statusVals.includes('FAILED') && status === 'FAILED') ||
+        const keep = (statusVals.includes('通过') && status === '通过') ||
+                     (statusVals.includes('失败') && status === '失败') ||
                      (statusVals.includes('未执行') && (status === '未执行' || status === '执行中'));
         if (!keep) return;
       }
