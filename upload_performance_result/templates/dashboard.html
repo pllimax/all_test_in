@@ -678,53 +678,63 @@ function computeStatus(d) {
   if (d.func_status === 'pass') return '通过';
   if (d.func_status === 'fail') return '失败';
   if (d.func_status === 'running') return '执行中';
-  // 2) CI job 结论归因：执行失败优先级最高（不管有无指标都归失败）
+
   const runLabel = jobRunLabel(d);
-  if (runLabel === '已执行失败') return '失败';
-  if (runLabel === '未执行') return '未执行';
-  if (runLabel === '执行中') return '执行中';
-  // 3) 功能用例：无 per-case、无明确 job 结论时归「未执行」兜底
-  if (d.case_type === 'function') return '未执行';
-  // 4) 性能/精度用例：按指标阈值判定
   const b = d.baselines || {};
   const hasPerf = d.mean_ttft != null;
   const hasEval = d.eval_score != null;
   const hasBaseline = Object.keys(b).length > 0;
-  if (!hasPerf && !hasEval) {
-    // 无指标：job 成功归通过（执行成功但未上传指标），否则未执行
-    return runLabel === '成功' ? '通过' : '未执行';
+
+  // 2) 功能用例无指标：只能靠 job 结论归因
+  if (d.case_type === 'function') {
+    if (runLabel === '已执行失败') return '失败';
+    if (runLabel === '未执行') return '未执行';
+    if (runLabel === '执行中') return '执行中';
+    return '未执行'; // 无 per-case、无明确 job 结论
   }
-  if (!hasBaseline) return '失败';
-  // TPOT: baseline < 50 → +1ms absolute; baseline >= 50 → +2% relative
-  if (hasPerf && b.mean_tpot != null) {
-    if (d.mean_tpot == null) return '失败';
-    const tpotLimit = b.mean_tpot < TPOT_THRESHOLD
-      ? b.mean_tpot + TPOT_TOLERANCE_LOW
-      : b.mean_tpot * TPOT_TOLERANCE_HIGH;
-    if (d.mean_tpot > tpotLimit) return '失败';
+
+  // 3) 性能/精度用例有指标：指标阈值判定优先
+  //    （指标已上传说明本用例实际执行成功；suite 级 job conclusion 是聚合结论，
+  //     可能由套件内其他用例失败导致，不能代表本用例，故不再据此判失败）
+  if (hasPerf || hasEval) {
+    if (!hasBaseline) return '失败';
+    // TPOT: baseline < 50 → +1ms absolute; baseline >= 50 → +2% relative
+    if (hasPerf && b.mean_tpot != null) {
+      if (d.mean_tpot == null) return '失败';
+      const tpotLimit = b.mean_tpot < TPOT_THRESHOLD
+        ? b.mean_tpot + TPOT_TOLERANCE_LOW
+        : b.mean_tpot * TPOT_TOLERANCE_HIGH;
+      if (d.mean_tpot > tpotLimit) return '失败';
+    }
+    // TTFT: +2% tolerance
+    if (hasPerf && b.mean_ttft != null) {
+      if (d.mean_ttft == null) return '失败';
+      if (d.mean_ttft > b.mean_ttft * TTFT_TOLERANCE) return '失败';
+    }
+    // E2E Latency: +2% tolerance
+    if (hasPerf && b.mean_e2e_latency != null) {
+      if (d.mean_e2e_latency == null) return '失败';
+      if (d.mean_e2e_latency > b.mean_e2e_latency * E2E_TOLERANCE) return '失败';
+    }
+    // Output Token Throughput: -2% tolerance
+    if (hasPerf && b.output_token_throughput != null) {
+      if (d.output_token_throughput == null) return '失败';
+      if (d.output_token_throughput < b.output_token_throughput * THROUGHPUT_TOLERANCE) return '失败';
+    }
+    // Accuracy: dataset-specific tolerance
+    if (b.eval_score != null) {
+      if (d.eval_score == null) return '失败';
+      const threshold = getAccuracyThreshold(b.eval_score, d.dataset);
+      if (d.eval_score < threshold) return '失败';
+    }
+    return '通过';
   }
-  // TTFT: +2% tolerance
-  if (hasPerf && b.mean_ttft != null) {
-    if (d.mean_ttft == null) return '失败';
-    if (d.mean_ttft > b.mean_ttft * TTFT_TOLERANCE) return '失败';
-  }
-  // E2E Latency: +2% tolerance
-  if (hasPerf && b.mean_e2e_latency != null) {
-    if (d.mean_e2e_latency == null) return '失败';
-    if (d.mean_e2e_latency > b.mean_e2e_latency * E2E_TOLERANCE) return '失败';
-  }
-  // Output Token Throughput: -2% tolerance
-  if (hasPerf && b.output_token_throughput != null) {
-    if (d.output_token_throughput == null) return '失败';
-    if (d.output_token_throughput < b.output_token_throughput * THROUGHPUT_TOLERANCE) return '失败';
-  }
-  // Accuracy: dataset-specific tolerance
-  if (b.eval_score != null) {
-    if (d.eval_score == null) return '失败';
-    const threshold = getAccuracyThreshold(b.eval_score, d.dataset);
-    if (d.eval_score < threshold) return '失败';
-  }
-  return '通过';
+
+  // 4) 性能/精度用例无指标：靠 job 结论归因（执行失败不管有无结果都归失败）
+  if (runLabel === '已执行失败') return '失败';
+  if (runLabel === '未执行') return '未执行';
+  if (runLabel === '执行中') return '执行中';
+  return runLabel === '成功' ? '通过' : '未执行';
 }
 
 // 状态 → 样式类：通过 绿 / 失败 红 / 执行中 黄 / 未执行 默认灰
