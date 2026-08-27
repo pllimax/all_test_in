@@ -24,6 +24,18 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .btn-reset:hover { background: #30363d; }
 .btn-danger { background: #21262d; color: #f85149; border: 1px solid #f85149; }
 .btn-danger:hover { background: #da3633; color: #fff; border-color: #da3633; }
+/* 当日 Nightly 执行总结看板：位于导出Excel按钮右侧空白区域 */
+.summary-board { margin-left: auto; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 6px 12px; }
+.summary-board-title { font-size: 11px; color: #8b949e; font-weight: 600; margin-bottom: 4px; }
+.summary-board-date { color: #58a6ff; font-weight: 400; }
+.summary-row { display: flex; gap: 20px; }
+.summary-group { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+.summary-label { color: #8b949e; font-weight: 600; white-space: nowrap; }
+.summary-item { color: #c9d1d9; white-space: nowrap; }
+.summary-item b { font-variant-numeric: tabular-nums; }
+.summary-pass b { color: #7ee787; }
+.summary-fail b { color: #ff7b72; }
+.summary-noexec b { color: #8b949e; }
 .table-container { padding: 0 24px 20px; }
 .table-container h3 { font-size: 14px; color: #8b949e; margin-bottom: 12px; }
 .table-wrap { overflow: auto; max-height: calc(100vh - 320px); min-height: 300px; border: 1px solid #30363d; border-radius: 8px; }
@@ -147,6 +159,26 @@ thead th.sticky-col { z-index: 5; }
   </div>
   <button class="btn btn-reset" onclick="resetFilters()">重置筛选</button>
   <button class="btn" onclick="exportToExcel()">导出Excel</button>
+  <!-- 当日 Nightly 执行总结看板：位于导出Excel按钮右侧空白区域 -->
+  <div class="summary-board" id="summaryBoard" style="display:none;">
+    <div class="summary-board-title">当日 Nightly 执行总结 <span class="summary-board-date" id="summaryBoardDate"></span></div>
+    <div class="summary-row">
+      <div class="summary-group">
+        <span class="summary-label">功能</span>
+        <span class="summary-item summary-pass">通过 <b id="sumFuncPass">-</b></span>
+        <span class="summary-item summary-fail">失败 <b id="sumFuncFail">-</b></span>
+        <span class="summary-item summary-noexec">未执行 <b id="sumFuncNoexec">-</b></span>
+        <span class="summary-item">合计 <b id="sumFuncTotal">-</b></span>
+      </div>
+      <div class="summary-group">
+        <span class="summary-label">性能+精度</span>
+        <span class="summary-item summary-pass">通过 <b id="sumPerfPass">-</b></span>
+        <span class="summary-item summary-fail">失败 <b id="sumPerfFail">-</b></span>
+        <span class="summary-item summary-noexec">未执行 <b id="sumPerfNoexec">-</b></span>
+        <span class="summary-item">合计 <b id="sumPerfTotal">-</b></span>
+      </div>
+    </div>
+  </div>
 </div>
 <div class="table-container">
   <h3>详细数据 <span style="font-weight:normal;font-size:12px;color:#8b949e" id="tableCount"></span></h3>
@@ -581,6 +613,8 @@ async function loadData() {
     onFilterChange();
   }
   document.getElementById('updateTime').textContent = '更新: ' + new Date().toLocaleTimeString();
+  // 当日 Nightly 执行总结看板（依赖 allData，数据未变化时跳过重绘也需刷新显示）
+  renderSummaryBoard();
   // Fetch data source status
   try {
     const sr = await fetch('/api/status');
@@ -1536,6 +1570,66 @@ function exportToExcel() {
     console.error('导出失败:', e);
     alert('导出失败: ' + e.message);
   }
+}
+
+// 总结看板：统计"当天"（数据中最新日期）nightly 用例执行情况。
+// 约定：同一天同用例多次执行，任一次通过则记为通过（成功优先）；
+//       执行中并入未执行统计。
+function aggregateCaseStatus(items) {
+  const caseMap = new Map();
+  items.forEach(d => {
+    const key = d._id || d.yaml_name;
+    if (!caseMap.has(key)) caseMap.set(key, null);
+    const cur = caseMap.get(key);
+    if (cur === '通过') return; // 已通过，成功优先不再覆盖
+    let s = computeStatus(d);
+    if (s === '执行中') s = '未执行'; // 执行中并入未执行
+    if (s === '通过') {
+      caseMap.set(key, '通过');
+    } else if (s === '失败') {
+      caseMap.set(key, '失败');
+    } else if (cur == null) {
+      caseMap.set(key, '未执行');
+    }
+  });
+  const result = { pass: 0, fail: 0, noexec: 0, total: caseMap.size };
+  caseMap.forEach(v => {
+    if (v === '通过') result.pass++;
+    else if (v === '失败') result.fail++;
+    else result.noexec++;
+  });
+  return result;
+}
+
+function renderSummaryBoard() {
+  const board = document.getElementById('summaryBoard');
+  if (!board) return;
+  if (!allData || allData.length === 0) { board.style.display = 'none'; return; }
+
+  // 当天 = 数据中最新日期
+  const dates = allData.map(d => d.date).filter(Boolean);
+  if (dates.length === 0) { board.style.display = 'none'; return; }
+  const latestDate = dates.slice().sort((a, b) => b.localeCompare(a))[0];
+
+  // 仅统计最新日期 + source 含 nightly 的用例
+  const nightlyData = allData.filter(d =>
+    d.date === latestDate && String(d.source || '').split(',').includes('nightly')
+  );
+  if (nightlyData.length === 0) { board.style.display = 'none'; return; }
+
+  const funcAgg = aggregateCaseStatus(nightlyData.filter(d => d.case_type === 'function'));
+  const perfAgg = aggregateCaseStatus(nightlyData.filter(d => d.case_type !== 'function'));
+
+  board.style.display = '';
+  document.getElementById('summaryBoardDate').textContent = '(' + latestDate + ')';
+  document.getElementById('sumFuncPass').textContent = funcAgg.pass;
+  document.getElementById('sumFuncFail').textContent = funcAgg.fail;
+  document.getElementById('sumFuncNoexec').textContent = funcAgg.noexec;
+  document.getElementById('sumFuncTotal').textContent = funcAgg.total;
+  document.getElementById('sumPerfPass').textContent = perfAgg.pass;
+  document.getElementById('sumPerfFail').textContent = perfAgg.fail;
+  document.getElementById('sumPerfNoexec').textContent = perfAgg.noexec;
+  document.getElementById('sumPerfTotal').textContent = perfAgg.total;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
