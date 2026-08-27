@@ -1,0 +1,118 @@
+can not use command: npu-smi info
+2026-08-27 09:46:58,870 - INFO - get env NAMESPACE = sgl-project
+2026-08-27 09:46:58,870 - INFO - get env KUBE_CONFIG_MAP = sglang-configmap-ab34bcd7zq4itvfb
+2026-08-27 09:46:58,871 - INFO - The nic name matched is enp23s0f3
+2026-08-27 09:46:58,871 - INFO - PYTHON_FOR_TEST_TOOL: python3
+2026-08-27 09:46:58,877 - INFO - get env POD_IP = 172.22.3.79
+2026-08-27 09:46:58,877 - INFO - get env HOSTNAME = ascend-sglang-perf-test-ab34bcd7zq4itvfb-sglang-router-0
+2026-08-27 09:46:58,877 - INFO - Init 172.22.3.79 cls.role='router'!
+2026-08-27 09:46:58,877 - INFO - The current node is router, skip this function start_pd_server.
+2026-08-27 09:46:59,038 - INFO - get env KUBECONFIG = /root/.cache/.cache/kb.yaml
+2026-08-27 09:46:59,086 - INFO - Successfully queried ConfigMap sglang-configmap-ab34bcd7zq4itvfb in namespace sgl-project
+2026-08-27 09:46:59,122 - INFO - Upserted ConfigMap sglang-configmap-ab34bcd7zq4itvfb: active-test-class=TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1k_TTFT_5s
+2026-08-27 09:46:59,124 - INFO - active-test-class set for the first time (TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1k_TTFT_5s)
+2026-08-27 09:46:59,124 - INFO - Starting router in thread...
+2026-08-27 09:46:59,125 - INFO - launch_router start ......
+2026-08-27 09:46:59,125 - INFO - Waiting for router to be ready at http://172.22.3.79:6677/health
+2026-08-27 09:46:59,125 - INFO - Waiting for the server to start at http://172.22.3.79:6677/health...
+2026-08-27 09:46:59,198 - INFO - Discovered 2 worker nodes (prefill: 1, decode: 1)
+2026-08-27 09:46:59,233 - INFO - Successfully queried ConfigMap sglang-configmap-ab34bcd7zq4itvfb in namespace sgl-project
+2026-08-27 09:46:59,235 - INFO - Retrieved ConfigMap data: {'active-test-class': 'TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1k_TTFT_5s', 'ascend-sglang-perf-test-ab34bcd7zq4itvfb-sglang-decode-0': '172.22.3.166', 'ascend-sglang-perf-test-ab34bcd7zq4itvfb-sglang-prefill-0': '172.22.3.71', 'ascend-sglang-perf-test-ab34bcd7zq4itvfb-sglang-router-0': '172.22.3.79'}
+2026-08-27 09:46:59,235 - INFO - Skipping ConfigMap entry with non-numeric suffix: active-test-class
+2026-08-27 09:46:59,235 - INFO - ConfigMap monitoring complete: prefill_url=['172.22.3.71:8000'], decode_url=['172.22.3.166:8000'], bootstrap_ports=['8995'], node_ip_list=['172.22.3.166', '172.22.3.71']
+2026-08-27 09:53:14,259 - INFO - Node 172.22.3.166:8000 is ready
+2026-08-27 09:53:14,260 - INFO - Waiting for 1 more nodes to be ready...
+2026-08-27 09:56:59,274 - INFO - Node 172.22.3.71:8000 is ready
+2026-08-27 09:56:59,274 - INFO - All 2 nodes' ports are ready!
+2026-08-27 09:56:59,274 - INFO - Starting router with command: python3 -u -m sglang_router.launch_router --host 0.0.0.0 --port 6677 --pd-disaggregation --policy cache_aware --health-check-interval-secs 3600 --mini-lb --prefill http://172.22.3.71:8000 8995 --decode http://172.22.3.166:8000
+2026-08-27 09:56:59,275 - INFO - Router process started with PID: 367
+/usr/local/python3.11.15/lib/python3.11/subprocess.py:1127: ResourceWarning: subprocess 367 is still running
+  _warn("subprocess %s is still running" % self.pid,
+can not use command: npu-smi info
+[33mMiniLB is only for debugging purposes, it only supports random policy![0m
+[MiniLB] Overriding policy to random
+INFO:     Started server process [367]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:6677 (Press CTRL+C to quit)
+INFO:     172.22.3.79:54072 - "GET /health HTTP/1.1" 200 OK
+2026-08-27 09:57:09,250 - INFO - Server http://172.22.3.79:6677/health is ready!
+2026-08-27 09:57:09,251 - INFO - Waiting 120 seconds for the server to fully initialize...
+[CI Test Method] TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1k_TTFT_5s.test_npu_mimo_v2_flash_1p1d_16p_in16k_out1k_tpot_20ms
+2026-08-27 09:59:09,251 - INFO - get env SGLANG_TEST_MAX_RETRY = 0
+2026-08-27 09:59:09,251 - INFO - Executing test attempt 1/2
+2026-08-27 09:59:09,251 - INFO - Starting benchmark with parameters: {'host': '172.22.3.79', 'port': '6677', 'model_path': '/root/.cache/modelscope/hub/models/iridiumine/MiMo-V2-Flash-W8A8', 'backend': 'sglang', 'dataset_name': 'random', 'dataset_path': '/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', 'request_rate': inf, 'repeat_rate': None, 'max_concurrency': 32, 'num_prompts': 128, 'input_len': 16000, 'output_len': 1000, 'random_range_ratio': 1, 'image_resolution': None, 'image_count': None, 'warmup_requests': None, 'seed': 1, 'temperature': None, 'top_p': None}
+2026-08-27 09:59:09,251 - INFO - get env METRICS_DATA_FILE = /root/.cache/tests/output/main-20260827-0031-32988894074-1/Nightly_Test_NPU/perf/test_npu_mimo_v2_flash_1p1d_12p_in16k_out1k_tpot_20ms
+2026-08-27 09:59:09,251 - INFO - The metrics result file: /root/.cache/tests/output/main-20260827-0031-32988894074-1/Nightly_Test_NPU/perf/test_npu_mimo_v2_flash_1p1d_12p_in16k_out1k_tpot_20ms/bench_serving_metrics.txt
+2026-08-27 09:59:09,786 - INFO - memfabric_hybrid          1.0.8
+2026-08-27 09:59:09,786 - INFO - sgl_kernel_npu            2026.6.1
+2026-08-27 09:59:09,786 - INFO - sglang                    0.5.19.dev462+gc8b56b1f4       /sgl-workspace/sglang/python
+2026-08-27 09:59:09,786 - INFO - sglang-router             0.3.2
+2026-08-27 09:59:09,786 - INFO - torch                     2.10.0+cpu
+2026-08-27 09:59:09,786 - INFO - torch_npu                 2.10.0
+2026-08-27 09:59:09,786 - INFO - torchaudio                2.10.0+cpu
+2026-08-27 09:59:09,786 - INFO - torchvision               0.25.0+cpu
+2026-08-27 09:59:09,786 - INFO - CANN: 9.0.0
+2026-08-27 09:59:09,786 - INFO - transformers: 5.12.1
+
+2026-08-27 09:59:09,789 - INFO - Command: python3 -m sglang.bench_serving --host 172.22.3.79 --port 6677 --model /root/.cache/modelscope/hub/models/iridiumine/MiMo-V2-Flash-W8A8 --backend sglang --dataset-name random --dataset-path /tmp/ShareGPT_V3_unfiltered_cleaned_split.json --request-rate inf --max-concurrency 32 --num-prompts 128 --random-input-len 16000 --random-output-len 1000 --random-range-ratio 1 --seed 1
+can not use command: npu-smi info
+/sgl-workspace/sglang/python/sglang/bench_serving.py:13: FutureWarning: `sglang.bench_serving` is deprecated and will be removed in a future release; use `sglang.benchmark.serving` instead (e.g. `python -m sglang.benchmark.serving`).
+  warnings.warn(
+/usr/local/python3.11.15/lib/python3.11/site-packages/fastapi/routing.py:352: FastAPIDeprecationWarning: ORJSONResponse is deprecated, FastAPI now serializes data directly to JSON bytes via Pydantic when a return type or response model is set, which is faster and doesn't need a custom response class. Read more in the FastAPI docs: https://fastapi.tiangolo.com/advanced/custom-response/#orjson-or-response-model and https://fastapi.tiangolo.com/tutorial/response-model/
+  return await dependant.call(**values)
+INFO:     172.22.3.79:39514 - "GET /v1/models HTTP/1.1" 200 OK
+[transformers] You are using a model of type `mimo_v2_flash` to instantiate a model of type ``. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.
+/usr/local/python3.11.15/lib/python3.11/site-packages/transformers/modeling_rope_utils.py:1036: FutureWarning: `rope_config_validation` is deprecated and has been removed. Its functionality has been moved to RotaryEmbeddingConfigMixin.validate_rope method. PreTrainedConfig inherits this class, so please call self.validate_rope() instead. Also, make sure to use the new rope_parameters syntax. You can call self.standardize_rope_params() in the meantime.
+  warnings.warn(
+/usr/local/python3.11.15/lib/python3.11/site-packages/sglang_router/mini_lb.py:379: FastAPIDeprecationWarning: ORJSONResponse is deprecated, FastAPI now serializes data directly to JSON bytes via Pydantic when a return type or response model is set, which is faster and doesn't need a custom response class. Read more in the FastAPI docs: https://fastapi.tiangolo.com/advanced/custom-response/#orjson-or-response-model and https://fastapi.tiangolo.com/tutorial/response-model/
+  return await _get_model_info_impl()
+INFO:     172.22.3.79:39524 - "GET /model_info HTTP/1.1" 200 OK
+[transformers] You are using a model of type `mimo_v2_flash` to instantiate a model of type ``. This may be expected if you are loading a checkpoint that shares a subset of the architecture (e.g., loading a `sam2_video` checkpoint into `Sam2Model`), but is otherwise not supported and can yield errors. Please verify that the checkpoint is compatible with the model you are instantiating.
+INFO:     172.22.3.79:39540 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40174 - "POST /flush_cache?timeout=60.0 HTTP/1.1" 200 OK
+benchmark_args=Namespace(backend='sglang', base_url=None, host='172.22.3.79', port=6677, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/iridiumine/MiMo-V2-Flash-W8A8', served_model_name=None, tokenizer=None, num_prompts=128, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=16000, random_output_len=1000, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=32, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+Waiting up to 60s for http://172.22.3.79:6677/v1/models to become ready...
+Server ready in 0.0s.
+Namespace(backend='sglang', base_url=None, host='172.22.3.79', port=6677, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/iridiumine/MiMo-V2-Flash-W8A8', served_model_name=None, tokenizer=None, num_prompts=128, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=16000, random_output_len=1000, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=32, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+#Input tokens: 2048000
+#Output tokens: 128000
+Starting warmup with 1 sequences...
+Warmup completed with 1 sequences. Starting main benchmark run...
+INFO:     172.22.3.79:40186 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40202 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40212 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40218 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40232 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40248 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40256 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40262 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40264 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40276 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40290 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40300 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40316 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40328 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40336 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40352 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40366 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40372 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40384 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40396 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40406 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40444 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40448 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40454 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40298 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40320 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40376 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40390 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40422 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40424 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40430 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:40452 - "POST /generate HTTP/1.1" 200 OK
+  0%|          | 0/128 [00:00<?, ?it/s]
+INFO:     172.22.3.79:38778 - "POST /generate HTTP/1.1" 200 OK
+INFO:     172.22.3.79:38788 - "POST /generate HTTP/1.1" 200 OK
+  1%|          | 1/128 [00:43<1:31:22, 43.17s/it]
+INFO:     172.22.3.79:38790 - "POST /generate HTTP/1.1" 200 OK
