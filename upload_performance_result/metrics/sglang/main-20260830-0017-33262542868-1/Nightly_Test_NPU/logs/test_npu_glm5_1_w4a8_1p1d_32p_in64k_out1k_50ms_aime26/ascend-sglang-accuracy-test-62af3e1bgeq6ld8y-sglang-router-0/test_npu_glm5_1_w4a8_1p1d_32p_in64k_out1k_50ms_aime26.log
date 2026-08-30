@@ -691,3 +691,279 @@ Running[eval]:   0%|          | 0/1 [27:06<?, ?benchmark/s]
 Evaluating[aime26]:  60%|██████    | 18/30 [27:06<17:18, 86.52s/it][A
 [A2026-08-30 13:59:20 - evalscope - [32mINFO[0m: Evaluating[aime26]  60%| 18/30 [Elapsed: 28:06 < Remaining: 17:18, 86.52s/it][0m
 Running[eval]:   0%|          | 0/1 [28:06<?, ?benchmark/s]
+Evaluating[aime26]:  60%|██████    | 18/30 [28:06<17:18, 86.52s/it][A
+[A2026-08-30 14:00:20 - evalscope - [32mINFO[0m: Evaluating[aime26]  60%| 18/30 [Elapsed: 29:06 < Remaining: 17:18, 86.52s/it][0m
+Running[eval]:   0%|          | 0/1 [29:06<?, ?benchmark/s]
+Evaluating[aime26]:  60%|██████    | 18/30 [29:06<17:18, 86.52s/it][A
+[A2026-08-30 14:01:14 - evalscope - [31mERROR[0m: Processing item in subset='default' failed: peer closed connection without sending complete message body (incomplete chunked read)
+Traceback:
+Traceback (most recent call last):
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 127, in __iter__
+    for part in self._httpcore_stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 407, in __iter__
+    raise exc from None
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 403, in __iter__
+    for part in self._stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 342, in __iter__
+    raise exc
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 334, in __iter__
+    for chunk in self._connection._receive_response_body(**kwargs):
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 203, in _receive_response_body
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 213, in _receive_event
+    with map_exceptions({h11.RemoteProtocolError: RemoteProtocolError}):
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 422, in run_in_threads_with_progress
+    result = fut.result()
+             ^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 377, in _worker_with_loop_cleanup
+    return worker(item)
+           ^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 292, in worker
+    return self._process_work_item(item, context.model_prediction_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 336, in _process_work_item
+    self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 454, in _predict_sample
+    task_state = self.benchmark.run_inference(model=self.model, sample=sample, output_dir=model_prediction_dir)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 546, in run_inference
+    result = self._on_inference(model, sample)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 433, in _on_inference
+    model_output = model.generate(input=sample.input, tools=sample.tools)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/model/model.py", line 196, in generate
+    output = self.api.generate(
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/openai_compatible.py", line 155, in generate
+    completion, ttft = collect_stream_response(completion, request_start=t_start)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/utils/openai.py", line 717, in collect_stream_response
+    for chunk in response_stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 49, in __iter__
+    for item in self._iterator:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 62, in __stream__
+    for sse in iterator:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 53, in _iter_events
+    yield from self._decoder.iter_bytes(self.response.iter_bytes())
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 297, in iter_bytes
+    for chunk in self._iter_chunks(iterator):
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 308, in _iter_chunks
+    for chunk in iterator:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 897, in iter_bytes
+    for raw_bytes in self.iter_raw():
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 951, in iter_raw
+    for raw_stream_bytes in self.stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_client.py", line 153, in __iter__
+    for chunk in self._stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 126, in __iter__
+    with map_httpcore_exceptions():
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+[0m
+Running[eval]:   0%|          | 0/1 [30:00<?, ?benchmark/s]
+Evaluating[aime26]:  60%|██████    | 18/30 [30:00<17:18, 86.52s/it][A
+Evaluating[aime26]:  63%|██████▎   | 19/30 [30:00<24:19, 132.65s/it][A
+[A2026-08-30 14:01:14 - evalscope - [32mINFO[0m: Evaluating[aime26]  63%| 19/30 [Elapsed: 30:00 < Remaining: 24:19, 132.65s/it][0m
+Running[eval]:   0%|          | 0/1 [30:00<?, ?benchmark/s]
+Evaluating[aime26]:  63%|██████▎   | 19/30 [30:00<24:19, 132.65s/it][A
+Evaluating[aime26]:  63%|██████▎   | 19/30 [30:00<17:22, 94.77s/it] 
+2026-08-30 14:01:14 - evalscope - [32mINFO[0m: Running[eval]   0%| 0/1 [Elapsed: 30:00 < Remaining: ?, ?benchmark/s][0m
+Running[eval]:   0%|          | 0/1 [30:00<?, ?benchmark/s]
+Running[eval]:   0%|          | 0/1 [30:00<?, ?benchmark/s]
+Traceback (most recent call last):
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 127, in __iter__
+    for part in self._httpcore_stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 407, in __iter__
+    raise exc from None
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/connection_pool.py", line 403, in __iter__
+    for part in self._stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 342, in __iter__
+    raise exc
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 334, in __iter__
+    for chunk in self._connection._receive_response_body(**kwargs):
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 203, in _receive_response_body
+    event = self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_sync/http11.py", line 213, in _receive_event
+    with map_exceptions({h11.RemoteProtocolError: RemoteProtocolError}):
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+The above exception was the direct cause of the following exception:
+Traceback (most recent call last):
+  File "/tmp/evalscope_run_GLM-5.1-w4a8_aime26.py", line 22, in <module>
+    run_task(task_cfg=task_cfg)
+  File "/root/.cache/.cache/evalscope/evalscope/run.py", line 26, in run_task
+    return run_single_task(task_cfg)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/run.py", line 40, in run_single_task
+    result = evaluate_model(task_cfg, outputs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/run.py", line 164, in evaluate_model
+    res_dict = evaluator.eval()
+               ^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 179, in eval
+    results_by_subset = self._run_pool(context)
+                        ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 306, in _run_pool
+    run_in_threads_with_progress(
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 429, in run_in_threads_with_progress
+    on_error(items[item_index], error)  # may re-raise
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 304, in on_error
+    raise exc
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 422, in run_in_threads_with_progress
+    result = fut.result()
+             ^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/usr/local/python3.11.15/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/utils/function_utils.py", line 377, in _worker_with_loop_cleanup
+    return worker(item)
+           ^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 292, in worker
+    return self._process_work_item(item, context.model_prediction_dir)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 336, in _process_work_item
+    self._predict_sample(item.sample, model_prediction_dir) if item.needs_predict else item.task_state
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/evaluator/evaluator.py", line 454, in _predict_sample
+    task_state = self.benchmark.run_inference(model=self.model, sample=sample, output_dir=model_prediction_dir)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 546, in run_inference
+    result = self._on_inference(model, sample)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/benchmark/adapters/default_data_adapter.py", line 433, in _on_inference
+    model_output = model.generate(input=sample.input, tools=sample.tools)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/api/model/model.py", line 196, in generate
+    output = self.api.generate(
+             ^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/openai_compatible.py", line 155, in generate
+    completion, ttft = collect_stream_response(completion, request_start=t_start)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/.cache/.cache/evalscope/evalscope/models/utils/openai.py", line 717, in collect_stream_response
+    for chunk in response_stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 49, in __iter__
+    for item in self._iterator:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 62, in __stream__
+    for sse in iterator:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 53, in _iter_events
+    yield from self._decoder.iter_bytes(self.response.iter_bytes())
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 297, in iter_bytes
+    for chunk in self._iter_chunks(iterator):
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/openai/_streaming.py", line 308, in _iter_chunks
+    for chunk in iterator:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 897, in iter_bytes
+    for raw_bytes in self.iter_raw():
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_models.py", line 951, in iter_raw
+    for raw_stream_bytes in self.stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_client.py", line 153, in __iter__
+    for chunk in self._stream:
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 126, in __iter__
+    with map_httpcore_exceptions():
+  File "/usr/local/python3.11.15/lib/python3.11/contextlib.py", line 158, in __exit__
+    self.gen.throw(typ, value, traceback)
+  File "/workspace/test_env_evalscope/lib/python3.11/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.RemoteProtocolError: peer closed connection without sending complete message body (incomplete chunked read)
+2026-08-30 14:01:29,418 - INFO - run_evalscope finished: pid=536 returncode=1
+2026-08-30 14:01:29,418 - INFO - process group pgid=536 already gone
+2026-08-30 14:01:29,418 - ERROR - Command failed with return code: 1
+2026-08-30 14:01:29,418 - ERROR - Error executing command: Command 'test_env_evalscope/bin/python /tmp/evalscope_run_GLM-5.1-w4a8_aime26.py' returned non-zero exit status 1.
+2026-08-30 14:01:29,418 - INFO - process group pgid=536 already gone
+Traceback (most recent call last):
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/common.py", line 3410, in retry
+    return fn()
+           ^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/test_utils.py", line 2171, in <lambda>
+    lambda: super(CustomTestCase, self)._callTestMethod(method),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/unittest/case.py", line 579, in _callTestMethod
+    if method() is not None:
+       ^^^^^^^^
+  File "/root/sglang/test/registered/npu/accuracy/glm5_1/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26.py", line 178, in test_npu_glm5_1_w4a8_pd_sep_aime2026
+    self.run_accuracy()
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_multi_node_utils.py", line 414, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 757, in run_accuracy
+    metrics = run_evalscope(
+              ^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 207, in run_evalscope
+    raise subprocess.CalledProcessError(process.returncode, cmd)
+subprocess.CalledProcessError: Command 'test_env_evalscope/bin/python /tmp/evalscope_run_GLM-5.1-w4a8_aime26.py' returned non-zero exit status 1.
+E/usr/local/python3.11.15/lib/python3.11/unittest/case.py:622: ResourceWarning: unclosed file <_io.TextIOWrapper name=8 encoding='UTF-8'>
+  with outcome.testPartExecutor(self):
+
+======================================================================
+ERROR: test_npu_glm5_1_w4a8_pd_sep_aime2026 (__main__.TestNPUGLM5_1_W4A8_PD_SEP_AIME2026.test_npu_glm5_1_w4a8_pd_sep_aime2026)
+Run NPU accuracy test for GLM-5.1-w4a8 PD separation on AIME2026
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/common.py", line 3410, in retry
+    return fn()
+           ^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/test_utils.py", line 2171, in <lambda>
+    lambda: super(CustomTestCase, self)._callTestMethod(method),
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/python3.11.15/lib/python3.11/unittest/case.py", line 579, in _callTestMethod
+    if method() is not None:
+       ^^^^^^^^
+  File "/root/sglang/test/registered/npu/accuracy/glm5_1/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26.py", line 178, in test_npu_glm5_1_w4a8_pd_sep_aime2026
+    self.run_accuracy()
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_multi_node_utils.py", line 414, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 757, in run_accuracy
+    metrics = run_evalscope(
+              ^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 207, in run_evalscope
+    raise subprocess.CalledProcessError(process.returncode, cmd)
+subprocess.CalledProcessError: Command 'test_env_evalscope/bin/python /tmp/evalscope_run_GLM-5.1-w4a8_aime26.py' returned non-zero exit status 1.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/sgl-workspace/sglang/python/sglang/test/test_utils.py", line 2170, in _callTestMethod
+    retry(
+  File "/sgl-workspace/sglang/python/sglang/srt/utils/common.py", line 3425, in retry
+    raise Exception(f"retry() exceed maximum number of retries.")
+Exception: retry() exceed maximum number of retries.
+
+----------------------------------------------------------------------
+Ran 1 test in 2465.808s
+
+FAILED (errors=1)
