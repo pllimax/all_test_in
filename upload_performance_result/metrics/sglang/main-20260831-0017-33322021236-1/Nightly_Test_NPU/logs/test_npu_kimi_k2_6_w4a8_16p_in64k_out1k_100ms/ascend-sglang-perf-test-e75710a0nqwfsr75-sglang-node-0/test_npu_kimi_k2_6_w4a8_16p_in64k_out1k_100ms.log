@@ -1504,3 +1504,399 @@ Thread 724 (idle): "Thread-1 (_watchdog_thread)"
 2026-08-31 19:02:17,005 - INFO - Server http://172.22.3.71:6677/health is ready!
 2026-08-31 19:02:17,005 - INFO - Wait 120s, starting run benchmark ......
 [2026-08-31 19:02:17] INFO:     172.22.3.71:39086 - "GET /health_generate HTTP/1.1" 200 OK
+2026-08-31 19:04:17,005 - INFO - The current node is master, skip this function start_pd_mix_worker_node.
+[CI Test Method] TestNPUKimiK2_6_W4A8_16P_In64k_Out1k_100ms.test_npu_kimi_k2_6_w4a8_16p_in64k_out1k_100ms
+2026-08-31 19:04:17,005 - INFO - get env SGLANG_TEST_MAX_RETRY = 0
+2026-08-31 19:04:17,005 - INFO - Executing test attempt 1/2
+2026-08-31 19:04:17,005 - INFO - Starting benchmark with parameters: {'host': '172.22.3.71', 'port': '6677', 'model_path': '/root/.cache/modelscope/hub/models/Eco-Tech/Kimi-K2.6-w4a8', 'backend': 'sglang', 'dataset_name': 'random', 'dataset_path': '/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', 'request_rate': None, 'repeat_rate': None, 'max_concurrency': 32, 'num_prompts': 32, 'input_len': 64000, 'output_len': 1000, 'random_range_ratio': 1, 'image_resolution': None, 'image_count': None, 'warmup_requests': None, 'seed': 1, 'temperature': None, 'top_p': None}
+2026-08-31 19:04:17,006 - INFO - get env METRICS_DATA_FILE = /root/.cache/tests/output/main-20260831-0017-33322021236-1/Nightly_Test_NPU/perf/test_npu_kimi_k2_6_w4a8_16p_in64k_out1k_100ms
+2026-08-31 19:04:17,006 - INFO - The metrics result file: /root/.cache/tests/output/main-20260831-0017-33322021236-1/Nightly_Test_NPU/perf/test_npu_kimi_k2_6_w4a8_16p_in64k_out1k_100ms/bench_serving_metrics.txt
+2026-08-31 19:04:17,497 - INFO - memfabric_hybrid          1.0.8
+2026-08-31 19:04:17,497 - INFO - sgl_kernel_npu            2026.6.1
+2026-08-31 19:04:17,497 - INFO - sglang                    0.5.19.dev684+gfe694986a       /sgl-workspace/sglang/python
+2026-08-31 19:04:17,497 - INFO - sglang-router             0.3.2
+2026-08-31 19:04:17,497 - INFO - torch                     2.10.0+cpu
+2026-08-31 19:04:17,497 - INFO - torch_npu                 2.10.0
+2026-08-31 19:04:17,498 - INFO - torchaudio                2.10.0+cpu
+2026-08-31 19:04:17,498 - INFO - torchvision               0.25.0+cpu
+2026-08-31 19:04:17,498 - INFO - CANN: 9.0.0
+2026-08-31 19:04:17,498 - INFO - transformers: 5.12.1
+
+2026-08-31 19:04:17,502 - INFO - Command: python3 -m sglang.bench_serving --host 172.22.3.71 --port 6677 --model /root/.cache/modelscope/hub/models/Eco-Tech/Kimi-K2.6-w4a8 --backend sglang --dataset-name random --dataset-path /tmp/ShareGPT_V3_unfiltered_cleaned_split.json --max-concurrency 32 --num-prompts 32 --random-input-len 64000 --random-output-len 1000 --random-range-ratio 1 --seed 1
+/sgl-workspace/sglang/python/sglang/bench_serving.py:13: FutureWarning: `sglang.bench_serving` is deprecated and will be removed in a future release; use `sglang.benchmark.serving` instead (e.g. `python -m sglang.benchmark.serving`).
+  warnings.warn(
+/sgl-workspace/sglang/python/sglang/srt/entrypoints/http_server.py:454: FastAPIDeprecationWarning: ORJSONResponse is deprecated, FastAPI now serializes data directly to JSON bytes via Pydantic when a return type or response model is set, which is faster and doesn't need a custom response class. Read more in the FastAPI docs: https://fastapi.tiangolo.com/advanced/custom-response/#orjson-or-response-model and https://fastapi.tiangolo.com/tutorial/response-model/
+  return await original_handler(ORJSONRequest(request.scope, request.receive))
+[2026-08-31 19:04:28] INFO:     172.22.3.71:50422 - "GET /v1/models HTTP/1.1" 200 OK
+[2026-08-31 19:04:28] INFO:     172.22.3.71:50428 - "GET /model_info HTTP/1.1" 200 OK
+[2026-08-31 19:04:33] INFO:     172.22.3.71:40020 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:04:40 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 51.29
+[2026-08-31 19:04:45 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 1444.77
+[2026-08-31 19:04:53 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 1105.11
+[2026-08-31 19:05:02 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 903.80
+[2026-08-31 19:05:13 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 762.99
+[2026-08-31 19:05:25 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 653.56
+[2026-08-31 19:05:37 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 708.22
+[rank3]:[W831 19:05:37.307137515 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[2026-08-31 19:05:37 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.89, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 27140.43
+[2026-08-31 19:05:38 DP8 TP8 EP8] Cache flushed successfully!
+[2026-08-31 19:05:38 DP4 TP4 EP4] Cache flushed successfully!
+[2026-08-31 19:05:38 DP12 TP12 EP12] Cache flushed successfully!
+[2026-08-31 19:05:38 DP10 TP10 EP10] Cache flushed successfully!
+[2026-08-31 19:05:38 DP14 TP14 EP14] Cache flushed successfully!
+[2026-08-31 19:05:38 DP2 TP2 EP2] Cache flushed successfully!
+[2026-08-31 19:05:38 DP0 TP0 EP0] Cache flushed successfully!
+[2026-08-31 19:05:38 DP1 TP1 EP1] Cache flushed successfully!
+[2026-08-31 19:05:38 DP3 TP3 EP3] Cache flushed successfully!
+[2026-08-31 19:05:38 DP9 TP9 EP9] Cache flushed successfully!
+[2026-08-31 19:05:38 DP13 TP13 EP13] Cache flushed successfully!
+[2026-08-31 19:05:38 DP5 TP5 EP5] Cache flushed successfully!
+[2026-08-31 19:05:38 DP11 TP11 EP11] Cache flushed successfully!
+[2026-08-31 19:05:38 DP15 TP15 EP15] Cache flushed successfully!
+[2026-08-31 19:05:38 DP6 TP6 EP6] Cache flushed successfully!
+[2026-08-31 19:05:38 DP7 TP7 EP7] Cache flushed successfully!
+[2026-08-31 19:05:38] INFO:     172.22.3.71:40094 - "POST /flush_cache?timeout=60.0 HTTP/1.1" 200 OK
+benchmark_args=Namespace(backend='sglang', base_url=None, host='172.22.3.71', port=6677, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Eco-Tech/Kimi-K2.6-w4a8', served_model_name=None, tokenizer=None, num_prompts=32, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=64000, random_output_len=1000, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=32, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+Waiting up to 60s for http://172.22.3.71:6677/v1/models to become ready...
+Server ready in 0.0s.
+Namespace(backend='sglang', base_url=None, host='172.22.3.71', port=6677, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Eco-Tech/Kimi-K2.6-w4a8', served_model_name=None, tokenizer=None, num_prompts=32, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=64000, random_output_len=1000, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=32, output_file=None, output_details=False, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None)
+#Input tokens: 2048000
+#Output tokens: 32000
+Starting warmup with 1 sequences...
+Warmup completed with 1 sequences. Starting main benchmark run...
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46712 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46702 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46722 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46736 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46752 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46766 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46776 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46800 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46816 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46834 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46884 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46930 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46972 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46784 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46804 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46828 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46830 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46836 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46850 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46866 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:39] INFO:     172.22.3.71:46880 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46890 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46896 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46912 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46918 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46940 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46948 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46952 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46958 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46984 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46988 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:40] INFO:     172.22.3.71:46998 - "POST /generate HTTP/1.1" 200 OK
+[2026-08-31 19:05:49 DP4 TP4 EP4] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 35.84
+[2026-08-31 19:05:58 DP0 TP0 EP0] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55514, npu graph: False, input throughput (token/s): 35.54
+[2026-08-31 19:05:58 DP1 TP1 EP1] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55703, npu graph: False, input throughput (token/s): 36.97
+[2026-08-31 19:05:58 DP2 TP2 EP2] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55672, npu graph: False, input throughput (token/s): 34.47
+[2026-08-31 19:05:58 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 395.85
+[2026-08-31 19:05:58 DP4 TP4 EP4] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 901.13
+[2026-08-31 19:05:58 DP13 TP13 EP13] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 34.52
+[2026-08-31 19:05:58 DP5 TP5 EP5] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 34.47
+[2026-08-31 19:05:58 DP12 TP12 EP12] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 34.51
+[2026-08-31 19:05:58 DP14 TP14 EP14] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 34.55
+[2026-08-31 19:05:58 DP15 TP15 EP15] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 34.54
+[2026-08-31 19:05:58 DP6 TP6 EP6] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 34.51
+[2026-08-31 19:05:58 DP7 TP7 EP7] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 56282, npu graph: False, input throughput (token/s): 34.56
+[2026-08-31 19:05:58 DP9 TP9 EP9] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 34.53
+[2026-08-31 19:05:58 DP8 TP8 EP8] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 34.52
+[2026-08-31 19:05:58 DP10 TP10 EP10] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55580, npu graph: False, input throughput (token/s): 34.52
+[2026-08-31 19:05:58 DP11 TP11 EP11] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.23, #running-req: 0, #queue-req: 0, #pending-token: 55808, npu graph: False, input throughput (token/s): 34.57
+  0%|          | 0/32 [00:00<?, ?it/s]
+[2026-08-31 19:06:09 DP0 TP0 EP0] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47322, npu graph: False, input throughput (token/s): 746.52
+[2026-08-31 19:06:09 DP1 TP1 EP1] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47511, npu graph: False, input throughput (token/s): 746.52
+[2026-08-31 19:06:09 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.51
+[2026-08-31 19:06:09 DP2 TP2 EP2] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47480, npu graph: False, input throughput (token/s): 746.50
+[2026-08-31 19:06:09 DP4 TP4 EP4] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 746.51
+[2026-08-31 19:06:09 DP8 TP8 EP8] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.53
+[2026-08-31 19:06:09 DP9 TP9 EP9] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.53
+[2026-08-31 19:06:09 DP12 TP12 EP12] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.52
+[2026-08-31 19:06:09 DP13 TP13 EP13] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.51
+[2026-08-31 19:06:09 DP7 TP7 EP7] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 48090, npu graph: False, input throughput (token/s): 746.53
+[2026-08-31 19:06:09 DP6 TP6 EP6] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.53
+[2026-08-31 19:06:09 DP10 TP10 EP10] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47388, npu graph: False, input throughput (token/s): 746.52
+[2026-08-31 19:06:09 DP11 TP11 EP11] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.52
+[2026-08-31 19:06:09 DP14 TP14 EP14] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.50
+[2026-08-31 19:06:09 DP15 TP15 EP15] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.50
+[2026-08-31 19:06:09 DP5 TP5 EP5] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.34, #running-req: 0, #queue-req: 0, #pending-token: 47616, npu graph: False, input throughput (token/s): 746.47
+[2026-08-31 19:06:21 DP1 TP1 EP1] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39319, npu graph: False, input throughput (token/s): 641.27
+[2026-08-31 19:06:21 DP0 TP0 EP0] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39130, npu graph: False, input throughput (token/s): 641.27
+[2026-08-31 19:06:21 DP4 TP4 EP4] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 641.28
+[2026-08-31 19:06:21 DP5 TP5 EP5] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.31
+[2026-08-31 19:06:21 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.28
+[2026-08-31 19:06:21 DP13 TP13 EP13] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.28
+[2026-08-31 19:06:21 DP2 TP2 EP2] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39288, npu graph: False, input throughput (token/s): 641.28
+[2026-08-31 19:06:21 DP8 TP8 EP8] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.28
+[2026-08-31 19:06:21 DP12 TP12 EP12] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.28
+[2026-08-31 19:06:21 DP9 TP9 EP9] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.27
+[2026-08-31 19:06:21 DP14 TP14 EP14] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.28
+[2026-08-31 19:06:21 DP15 TP15 EP15] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.28
+[2026-08-31 19:06:21 DP7 TP7 EP7] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39898, npu graph: False, input throughput (token/s): 641.27
+[2026-08-31 19:06:21 DP6 TP6 EP6] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.27
+[2026-08-31 19:06:21 DP11 TP11 EP11] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39424, npu graph: False, input throughput (token/s): 641.28
+[2026-08-31 19:06:21 DP10 TP10 EP10] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.45, #running-req: 0, #queue-req: 0, #pending-token: 39196, npu graph: False, input throughput (token/s): 641.27
+[2026-08-31 19:06:36 DP1 TP1 EP1] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31127, npu graph: False, input throughput (token/s): 563.49
+[2026-08-31 19:06:36 DP5 TP5 EP5] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP4 TP4 EP4] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP0 TP0 EP0] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 30938, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP8 TP8 EP8] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP11 TP11 EP11] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.49
+[2026-08-31 19:06:36 DP10 TP10 EP10] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31004, npu graph: False, input throughput (token/s): 563.49
+[2026-08-31 19:06:36 DP7 TP7 EP7] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31706, npu graph: False, input throughput (token/s): 563.49
+[2026-08-31 19:06:36 DP6 TP6 EP6] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.49
+[2026-08-31 19:06:36 DP9 TP9 EP9] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP2 TP2 EP2] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31096, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP14 TP14 EP14] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP15 TP15 EP15] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP13 TP13 EP13] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:36 DP12 TP12 EP12] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.57, #running-req: 0, #queue-req: 0, #pending-token: 31232, npu graph: False, input throughput (token/s): 563.48
+[2026-08-31 19:06:52 DP1 TP1 EP1] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 22935, npu graph: False, input throughput (token/s): 504.84
+[2026-08-31 19:06:52 DP0 TP0 EP0] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 22746, npu graph: False, input throughput (token/s): 504.84
+[2026-08-31 19:06:52 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.84
+[2026-08-31 19:06:52 DP2 TP2 EP2] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 22904, npu graph: False, input throughput (token/s): 504.84
+[2026-08-31 19:06:52 DP4 TP4 EP4] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 504.83
+[2026-08-31 19:06:52 DP8 TP8 EP8] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.83
+[2026-08-31 19:06:52 DP9 TP9 EP9] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.84
+[2026-08-31 19:06:52 DP7 TP7 EP7] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23514, npu graph: False, input throughput (token/s): 504.84
+[2026-08-31 19:06:52 DP6 TP6 EP6] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.84
+[2026-08-31 19:06:52 DP14 TP14 EP14] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.84
+[2026-08-31 19:06:52 DP15 TP15 EP15] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.84
+[2026-08-31 19:06:52 DP10 TP10 EP10] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 22812, npu graph: False, input throughput (token/s): 504.83
+[2026-08-31 19:06:52 DP11 TP11 EP11] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.83
+[2026-08-31 19:06:52 DP12 TP12 EP12] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.83
+[2026-08-31 19:06:52 DP13 TP13 EP13] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.83
+[2026-08-31 19:06:52 DP5 TP5 EP5] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.68, #running-req: 0, #queue-req: 0, #pending-token: 23040, npu graph: False, input throughput (token/s): 504.82
+[2026-08-31 19:07:09 DP1 TP1 EP1] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14743, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP0 TP0 EP0] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14554, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP5 TP5 EP5] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.38
+[2026-08-31 19:07:09 DP13 TP13 EP13] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.37
+[2026-08-31 19:07:09 DP12 TP12 EP12] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.37
+[2026-08-31 19:07:09 DP9 TP9 EP9] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP8 TP8 EP8] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP2 TP2 EP2] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14712, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP7 TP7 EP7] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 15322, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP6 TP6 EP6] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP15 TP15 EP15] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP14 TP14 EP14] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP10 TP10 EP10] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14620, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP11 TP11 EP11] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.79, #running-req: 0, #queue-req: 0, #pending-token: 14848, npu graph: False, input throughput (token/s): 493.36
+[2026-08-31 19:07:09 DP4 TP4 EP4] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 493.33
+[2026-08-31 19:07:26 DP4 TP4 EP4] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 389.74
+[2026-08-31 19:07:26 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.57
+[2026-08-31 19:07:26 DP1 TP1 EP1] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6551, npu graph: False, input throughput (token/s): 479.55
+[2026-08-31 19:07:26 DP0 TP0 EP0] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6362, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP5 TP5 EP5] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP2 TP2 EP2] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6520, npu graph: False, input throughput (token/s): 479.55
+[2026-08-31 19:07:26 DP12 TP12 EP12] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP13 TP13 EP13] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP8 TP8 EP8] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP9 TP9 EP9] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP7 TP7 EP7] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.89, #running-req: 0, #queue-req: 0, #pending-token: 7130, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP6 TP6 EP6] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP15 TP15 EP15] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP14 TP14 EP14] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP10 TP10 EP10] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6428, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:26 DP11 TP11 EP11] Prefill batch, #new-seq: 1, #new-token: 8192, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 6656, npu graph: False, input throughput (token/s): 479.54
+[2026-08-31 19:07:33 DP3 TP3 EP3] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.19
+[2026-08-31 19:07:33 DP1 TP1 EP1] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.28
+[2026-08-31 19:07:33 DP0 TP0 EP0] Prefill batch, #new-seq: 1, #new-token: 6400, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 903.17
+[2026-08-31 19:07:33 DP2 TP2 EP2] Prefill batch, #new-seq: 1, #new-token: 6528, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 921.24
+[2026-08-31 19:07:33 DP5 TP5 EP5] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.29
+[2026-08-31 19:07:33 DP9 TP9 EP9] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.29
+[2026-08-31 19:07:33 DP8 TP8 EP8] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.29
+[2026-08-31 19:07:33 DP12 TP12 EP12] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.28
+[2026-08-31 19:07:33 DP13 TP13 EP13] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.28
+[2026-08-31 19:07:33 DP7 TP7 EP7] Prefill batch, #new-seq: 1, #new-token: 7168, #cached-token: 0, token usage: 0.89, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 1011.55
+[2026-08-31 19:07:33 DP6 TP6 EP6] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.30
+[2026-08-31 19:07:33 DP10 TP10 EP10] Prefill batch, #new-seq: 1, #new-token: 6528, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 921.26
+[2026-08-31 19:07:33 DP15 TP15 EP15] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.30
+[2026-08-31 19:07:33 DP14 TP14 EP14] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.30
+[2026-08-31 19:07:33 DP11 TP11 EP11] Prefill batch, #new-seq: 1, #new-token: 6656, #cached-token: 0, token usage: 0.88, #running-req: 0, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 939.33
+[rank5]:[W831 19:07:33.640681259 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank4]:[W831 19:07:33.641177341 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank2]:[W831 19:07:33.642877539 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank12]:[W831 19:07:33.642891639 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank13]:[W831 19:07:33.643037000 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank6]:[W831 19:07:33.643065360 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank7]:[W831 19:07:33.643234380 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank15]:[W831 19:07:33.643521502 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank14]:[W831 19:07:33.643521532 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank10]:[W831 19:07:33.643819653 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank11]:[W831 19:07:33.643828383 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank8]:[W831 19:07:33.644285465 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[rank9]:[W831 19:07:33.644291115 VariableFallbackKernel.cpp:250] Warning: CAUTION: The operator 'aten::_assert_async' is not currently supported on the NPU backend and will fall back to run on the CPU. This may have performance implications. (function npu_cpu_fallback)
+[2026-08-31 19:07:36 DP13 TP13 EP13] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 3.60, accept rate: 0.87, npu graph: True, gen throughput (token/s): 0.43, #queue-req: 0
+[2026-08-31 19:07:36 DP10 TP10 EP10] Decode batch, #running-req: 1, #token: 64000, token usage: 0.88, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 0.47, #queue-req: 0
+[2026-08-31 19:07:36 DP1 TP1 EP1] Decode batch, #running-req: 1, #token: 64128, token usage: 0.89, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 0.47, #queue-req: 0
+[2026-08-31 19:07:36 DP15 TP15 EP15] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 0.48, #queue-req: 0
+[2026-08-31 19:07:36 DP7 TP7 EP7] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.62, accept rate: 0.88, npu graph: True, gen throughput (token/s): 0.43, #queue-req: 0
+[2026-08-31 19:07:36 DP11 TP11 EP11] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 3.88, accept rate: 0.96, npu graph: True, gen throughput (token/s): 0.46, #queue-req: 0
+[2026-08-31 19:07:36 DP3 TP3 EP3] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 0.47, #queue-req: 0
+[2026-08-31 19:07:36 DP12 TP12 EP12] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 3.60, accept rate: 0.87, npu graph: True, gen throughput (token/s): 0.43, #queue-req: 0
+[2026-08-31 19:07:36 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 63872, token usage: 0.88, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 0.47, #queue-req: 0
+[2026-08-31 19:07:36 DP8 TP8 EP8] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 3.75, accept rate: 0.92, npu graph: True, gen throughput (token/s): 0.45, #queue-req: 0
+[2026-08-31 19:07:36 DP5 TP5 EP5] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 3.75, accept rate: 0.92, npu graph: True, gen throughput (token/s): 0.45, #queue-req: 0
+[2026-08-31 19:07:36 DP9 TP9 EP9] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 0.48, #queue-req: 0
+[2026-08-31 19:07:36 DP2 TP2 EP2] Decode batch, #running-req: 1, #token: 64128, token usage: 0.89, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 0.47, #queue-req: 0
+[2026-08-31 19:07:36 DP14 TP14 EP14] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 3.85, accept rate: 0.95, npu graph: True, gen throughput (token/s): 0.46, #queue-req: 0
+[2026-08-31 19:07:36 DP4 TP4 EP4] Decode batch, #running-req: 1, #token: 64128, token usage: 0.89, accept len: 2.88, accept rate: 0.62, npu graph: True, gen throughput (token/s): 0.34, #queue-req: 0
+[2026-08-31 19:07:36 DP6 TP6 EP6] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 0.48, #queue-req: 0
+[2026-08-31 19:07:39 DP13 TP13 EP13] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 3.60, accept rate: 0.87, npu graph: True, gen throughput (token/s): 46.96, #queue-req: 0
+[2026-08-31 19:07:39 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64128, token usage: 0.89, accept len: 3.92, accept rate: 0.97, npu graph: True, gen throughput (token/s): 51.22, #queue-req: 0
+[2026-08-31 19:07:39 DP1 TP1 EP1] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.18, #queue-req: 0
+[2026-08-31 19:07:39 DP10 TP10 EP10] Decode batch, #running-req: 1, #token: 64128, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.18, #queue-req: 0
+[2026-08-31 19:07:39 DP11 TP11 EP11] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 3.85, accept rate: 0.95, npu graph: True, gen throughput (token/s): 50.22, #queue-req: 0
+[2026-08-31 19:07:39 DP3 TP3 EP3] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 3.92, accept rate: 0.97, npu graph: True, gen throughput (token/s): 51.20, #queue-req: 0
+[2026-08-31 19:07:39 DP14 TP14 EP14] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.19, #queue-req: 0
+[2026-08-31 19:07:39 DP7 TP7 EP7] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 3.67, accept rate: 0.89, npu graph: True, gen throughput (token/s): 47.93, #queue-req: 0
+[2026-08-31 19:07:39 DP5 TP5 EP5] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 3.75, accept rate: 0.92, npu graph: True, gen throughput (token/s): 48.92, #queue-req: 0
+[2026-08-31 19:07:39 DP9 TP9 EP9] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.18, #queue-req: 0
+[2026-08-31 19:07:39 DP15 TP15 EP15] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.17, #queue-req: 0
+[2026-08-31 19:07:39 DP4 TP4 EP4] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 2.90, accept rate: 0.63, npu graph: True, gen throughput (token/s): 37.83, #queue-req: 0
+[2026-08-31 19:07:39 DP2 TP2 EP2] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.18, #queue-req: 0
+[2026-08-31 19:07:39 DP12 TP12 EP12] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 3.67, accept rate: 0.89, npu graph: True, gen throughput (token/s): 47.93, #queue-req: 0
+[2026-08-31 19:07:39 DP8 TP8 EP8] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.17, #queue-req: 0
+[2026-08-31 19:07:39 DP6 TP6 EP6] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.20, #queue-req: 0
+[2026-08-31 19:07:43 DP9 TP9 EP9] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.11, #queue-req: 0
+[2026-08-31 19:07:43 DP13 TP13 EP13] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 3.55, accept rate: 0.85, npu graph: True, gen throughput (token/s): 46.23, #queue-req: 0
+[2026-08-31 19:07:43 DP6 TP6 EP6] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.12, #queue-req: 0
+[2026-08-31 19:07:43 DP7 TP7 EP7] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 3.55, accept rate: 0.85, npu graph: True, gen throughput (token/s): 46.24, #queue-req: 0
+[2026-08-31 19:07:43 DP11 TP11 EP11] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 3.90, accept rate: 0.97, npu graph: True, gen throughput (token/s): 50.80, #queue-req: 0
+[2026-08-31 19:07:43 DP1 TP1 EP1] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.09, #queue-req: 0
+[2026-08-31 19:07:43 DP2 TP2 EP2] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.11, #queue-req: 0
+[2026-08-31 19:07:43 DP3 TP3 EP3] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 3.95, accept rate: 0.98, npu graph: True, gen throughput (token/s): 51.45, #queue-req: 0
+[2026-08-31 19:07:43 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 3.92, accept rate: 0.97, npu graph: True, gen throughput (token/s): 51.11, #queue-req: 0
+[2026-08-31 19:07:43 DP10 TP10 EP10] Decode batch, #running-req: 1, #token: 64256, token usage: 0.89, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 51.76, #queue-req: 0
+[2026-08-31 19:07:43 DP4 TP4 EP4] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 2.90, accept rate: 0.63, npu graph: True, gen throughput (token/s): 37.77, #queue-req: 0
+[2026-08-31 19:07:43 DP12 TP12 EP12] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 3.88, accept rate: 0.96, npu graph: True, gen throughput (token/s): 50.47, #queue-req: 0
+[2026-08-31 19:07:43 DP8 TP8 EP8] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 3.70, accept rate: 0.90, npu graph: True, gen throughput (token/s): 48.19, #queue-req: 0
+[2026-08-31 19:07:43 DP14 TP14 EP14] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 3.80, accept rate: 0.93, npu graph: True, gen throughput (token/s): 49.49, #queue-req: 0
+[2026-08-31 19:07:43 DP15 TP15 EP15] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.09, #queue-req: 0
+[2026-08-31 19:07:43 DP5 TP5 EP5] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 3.75, accept rate: 0.92, npu graph: True, gen throughput (token/s): 48.83, #queue-req: 0
+[2026-08-31 19:07:46 DP1 TP1 EP1] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 51.68, #queue-req: 0
+[2026-08-31 19:07:46 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64384, token usage: 0.89, accept len: 3.90, accept rate: 0.97, npu graph: True, gen throughput (token/s): 50.71, #queue-req: 0
+[2026-08-31 19:07:46 DP11 TP11 EP11] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.88, accept rate: 0.96, npu graph: True, gen throughput (token/s): 50.37, #queue-req: 0
+[2026-08-31 19:07:46 DP12 TP12 EP12] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.58, accept rate: 0.86, npu graph: True, gen throughput (token/s): 46.48, #queue-req: 0
+[2026-08-31 19:07:46 DP14 TP14 EP14] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 51.68, #queue-req: 0
+[2026-08-31 19:07:46 DP8 TP8 EP8] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.88, accept rate: 0.96, npu graph: True, gen throughput (token/s): 50.38, #queue-req: 0
+[2026-08-31 19:07:46 DP10 TP10 EP10] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.00, #queue-req: 0
+[2026-08-31 19:07:46 DP2 TP2 EP2] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 51.99, #queue-req: 0
+[2026-08-31 19:07:46 DP7 TP7 EP7] Decode batch, #running-req: 1, #token: 65152, token usage: 0.90, accept len: 3.73, accept rate: 0.91, npu graph: True, gen throughput (token/s): 48.42, #queue-req: 0
+[2026-08-31 19:07:46 DP6 TP6 EP6] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 3.95, accept rate: 0.98, npu graph: True, gen throughput (token/s): 51.34, #queue-req: 0
+[2026-08-31 19:07:46 DP15 TP15 EP15] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.00, #queue-req: 0
+[2026-08-31 19:07:46 DP13 TP13 EP13] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.62, accept rate: 0.88, npu graph: True, gen throughput (token/s): 47.11, #queue-req: 0
+[2026-08-31 19:07:46 DP9 TP9 EP9] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 51.98, #queue-req: 0
+[2026-08-31 19:07:46 DP3 TP3 EP3] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.95, accept rate: 0.98, npu graph: True, gen throughput (token/s): 51.34, #queue-req: 0
+[2026-08-31 19:07:46 DP4 TP4 EP4] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 2.90, accept rate: 0.63, npu graph: True, gen throughput (token/s): 37.69, #queue-req: 0
+[2026-08-31 19:07:46 DP5 TP5 EP5] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.75, accept rate: 0.92, npu graph: True, gen throughput (token/s): 48.72, #queue-req: 0
+[2026-08-31 19:07:49 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64512, token usage: 0.89, accept len: 3.95, accept rate: 0.98, npu graph: True, gen throughput (token/s): 51.37, #queue-req: 0
+[2026-08-31 19:07:49 DP8 TP8 EP8] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 3.92, accept rate: 0.97, npu graph: True, gen throughput (token/s): 51.06, #queue-req: 0
+[2026-08-31 19:07:49 DP7 TP7 EP7] Decode batch, #running-req: 1, #token: 65280, token usage: 0.90, accept len: 3.58, accept rate: 0.86, npu graph: True, gen throughput (token/s): 46.50, #queue-req: 0
+[2026-08-31 19:07:49 DP13 TP13 EP13] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 3.65, accept rate: 0.88, npu graph: True, gen throughput (token/s): 47.48, #queue-req: 0
+[2026-08-31 19:07:49 DP3 TP3 EP3] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 3.95, accept rate: 0.98, npu graph: True, gen throughput (token/s): 51.38, #queue-req: 0
+[2026-08-31 19:07:49 DP11 TP11 EP11] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 3.92, accept rate: 0.97, npu graph: True, gen throughput (token/s): 51.04, #queue-req: 0
+[2026-08-31 19:07:49 DP1 TP1 EP1] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.01, #queue-req: 0
+[2026-08-31 19:07:49 DP6 TP6 EP6] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.03, #queue-req: 0
+[2026-08-31 19:07:49 DP10 TP10 EP10] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 51.70, #queue-req: 0
+[2026-08-31 19:07:49 DP15 TP15 EP15] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.02, #queue-req: 0
+[2026-08-31 19:07:49 DP9 TP9 EP9] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.03, #queue-req: 0
+[2026-08-31 19:07:49 DP12 TP12 EP12] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 3.75, accept rate: 0.92, npu graph: True, gen throughput (token/s): 48.77, #queue-req: 0
+[2026-08-31 19:07:49 DP4 TP4 EP4] Decode batch, #running-req: 1, #token: 64640, token usage: 0.89, accept len: 2.90, accept rate: 0.63, npu graph: True, gen throughput (token/s): 37.72, #queue-req: 0
+[2026-08-31 19:07:49 DP5 TP5 EP5] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 3.75, accept rate: 0.92, npu graph: True, gen throughput (token/s): 48.80, #queue-req: 0
+[2026-08-31 19:07:49 DP14 TP14 EP14] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 3.83, accept rate: 0.94, npu graph: True, gen throughput (token/s): 49.74, #queue-req: 0
+[2026-08-31 19:07:49 DP2 TP2 EP2] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 52.01, #queue-req: 0
+[2026-08-31 19:07:52 DP8 TP8 EP8] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 51.84, #queue-req: 0
+[2026-08-31 19:07:52 DP1 TP1 EP1] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 51.84, #queue-req: 0
+[2026-08-31 19:07:52 DP0 TP0 EP0] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 3.92, accept rate: 0.97, npu graph: True, gen throughput (token/s): 50.86, #queue-req: 0
+[2026-08-31 19:07:52 DP7 TP7 EP7] Decode batch, #running-req: 1, #token: 65408, token usage: 0.90, accept len: 3.62, accept rate: 0.88, npu graph: True, gen throughput (token/s): 46.97, #queue-req: 0
+[2026-08-31 19:07:52 DP13 TP13 EP13] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 3.60, accept rate: 0.87, npu graph: True, gen throughput (token/s): 46.65, #queue-req: 0
+[2026-08-31 19:07:52 DP9 TP9 EP9] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 51.84, #queue-req: 0
+[2026-08-31 19:07:52 DP3 TP3 EP3] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 3.95, accept rate: 0.98, npu graph: True, gen throughput (token/s): 51.19, #queue-req: 0
+[2026-08-31 19:07:52 DP11 TP11 EP11] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 3.90, accept rate: 0.97, npu graph: True, gen throughput (token/s): 50.54, #queue-req: 0
+[2026-08-31 19:07:52 DP2 TP2 EP2] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 51.84, #queue-req: 0
+[2026-08-31 19:07:52 DP10 TP10 EP10] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 3.98, accept rate: 0.99, npu graph: True, gen throughput (token/s): 51.51, #queue-req: 0
+[2026-08-31 19:07:52 DP14 TP14 EP14] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 3.95, accept rate: 0.98, npu graph: True, gen throughput (token/s): 51.19, #queue-req: 0
+[2026-08-31 19:07:52 DP4 TP4 EP4] Decode batch, #running-req: 1, #token: 64768, token usage: 0.89, accept len: 2.90, accept rate: 0.63, npu graph: True, gen throughput (token/s): 37.58, #queue-req: 0
+[2026-08-31 19:07:52 DP12 TP12 EP12] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 3.62, accept rate: 0.88, npu graph: True, gen throughput (token/s): 46.96, #queue-req: 0
+[2026-08-31 19:07:52 DP5 TP5 EP5] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 3.75, accept rate: 0.92, npu graph: True, gen throughput (token/s): 48.59, #queue-req: 0
+[2026-08-31 19:07:52 DP6 TP6 EP6] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 51.81, #queue-req: 0
+[2026-08-31 19:07:52 DP15 TP15 EP15] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 4.00, accept rate: 1.00, npu graph: True, gen throughput (token/s): 51.80, #queue-req: 0
+  3%|▎         | 1/32 [00:19<09:50, 19.04s/it]
+  6%|▋         | 2/32 [02:13<37:43, 75.45s/it]
+ 41%|████      | 13/32 [02:14<02:20,  7.38s/it]
+ 66%|██████▌   | 21/32 [02:14<00:42,  3.83s/it]
+ 81%|████████▏ | 26/32 [02:15<00:16,  2.72s/it]
+[2026-08-31 19:07:55 DP13 TP13 EP13] Decode batch, #running-req: 1, #token: 0, token usage: 0.00, accept len: 3.45, accept rate: 0.82, npu graph: True, gen throughput (token/s): 45.47, #queue-req: 0
+[2026-08-31 19:07:55 DP4 TP4 EP4] Decode batch, #running-req: 1, #token: 64896, token usage: 0.90, accept len: 2.90, accept rate: 0.63, npu graph: True, gen throughput (token/s): 38.09, #queue-req: 0
+[2026-08-31 19:07:58 DP4 TP4 EP4] Decode batch, #running-req: 1, #token: 65024, token usage: 0.90, accept len: 2.90, accept rate: 0.63, npu graph: True, gen throughput (token/s): 39.12, #queue-req: 0
+ 91%|█████████ | 29/32 [02:16<00:06,  2.22s/it]
+ 97%|█████████▋| 31/32 [02:21<00:02,  2.26s/it]
+100%|██████████| 32/32 [02:25<00:00,  4.53s/it]
+[2026-08-31 19:08:04] INFO:     172.22.3.71:47402 - "GET /server_info HTTP/1.1" 200 OK
+[2026-08-31 19:08:04] INFO:     172.22.3.71:47418 - "GET /server_info HTTP/1.1" 200 OK
+============ Serving Benchmark Result ============
+Backend:                                 sglang    
+Traffic request rate:                    inf       
+Max request concurrency:                 32        
+Successful requests:                     32        
+Benchmark duration (s):                  145.23    
+Total input tokens:                      2048000   
+Total input text tokens:                 2048000   
+Total generated tokens:                  31001     
+Total generated tokens (retokenized):    31001     
+Request throughput (req/s):              0.22      
+Input token throughput (tok/s):          14102.17  
+Output token throughput (tok/s):         213.47    
+Peak output token throughput (tok/s):    1564.00   
+Peak concurrent requests:                32        
+Total token throughput (tok/s):          14315.64  
+Concurrency:                             28.97     
+Accept length:                           3.93      
+----------------End-to-End Latency----------------
+Mean E2E Latency (ms):                   131460.35 
+Median E2E Latency (ms):                 134298.62 
+P90 E2E Latency (ms):                    136136.01 
+P95 E2E Latency (ms):                    139146.37 
+P99 E2E Latency (ms):                    143829.78 
+---------------Time to First Token----------------
+Mean TTFT (ms):                          111130.91 
+Median TTFT (ms):                        114315.49 
+P90 TTFT (ms):                           114327.45 
+P95 TTFT (ms):                           114329.39 
+P99 TTFT (ms):                           114645.31 
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          21.01     
+Median TPOT (ms):                        20.05     
+P90 TPOT (ms):                           21.87     
+P95 TPOT (ms):                           27.04     
+P99 TPOT (ms):                           32.94     
+---------------Inter-Token Latency----------------
+Mean ITL (ms):                           21.01     
+Median ITL (ms):                         19.22     
+P90 ITL (ms):                            20.05     
+P95 ITL (ms):                            25.38     
+P99 ITL (ms):                            76.35     
+Max ITL (ms):                            1901.29   
+==================================================
+[METRIC] tpot=21.01 labels={"test_case": "TestNPUKimiK2_6_W4A8_16P_In64k_Out1k_100ms", "type": "perf"}
+[METRIC] tpot_baseline=100.0 labels={"test_case": "TestNPUKimiK2_6_W4A8_16P_In64k_Out1k_100ms", "type": "perf"}
+[METRIC] throughput=213.47 labels={"test_case": "TestNPUKimiK2_6_W4A8_16P_In64k_Out1k_100ms", "type": "perf"}
+[METRIC] throughput_baseline=160.0 labels={"test_case": "TestNPUKimiK2_6_W4A8_16P_In64k_Out1k_100ms", "type": "perf"}
+.
+----------------------------------------------------------------------
+Ran 1 test in 700.619s
+
+OK
