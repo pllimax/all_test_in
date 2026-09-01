@@ -722,6 +722,7 @@ function computeStatus(d) {
   // 2) 功能用例无指标：只能靠 job 结论归因
   if (d.case_type === 'function') {
     if (runLabel === '已执行失败') return '失败';
+    if (runLabel === '成功') return '通过';
     if (runLabel === '未执行') return '未执行';
     if (runLabel === '执行中') return '执行中';
     return '未执行'; // 无 per-case、无明确 job 结论
