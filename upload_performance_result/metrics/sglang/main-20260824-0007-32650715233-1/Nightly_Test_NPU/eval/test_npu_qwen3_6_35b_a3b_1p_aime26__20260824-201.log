@@ -1,0 +1,211 @@
+2026-08-23 18:47:51 - evalscope - INFO: Running with native backend
+2026-08-23 18:47:52 - evalscope - INFO: Dump task config to /root/.cache/tests/output/main-20260824-0007-32650715233-1/Nightly_Test_NPU/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_aime26/20260823_184751/configs/task_config.yaml
+2026-08-23 18:47:52 - evalscope - INFO: {
+    "model": "Qwen3.6-35B-A3B",
+    "model_id": "Qwen3.6-35B-A3B",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "aime26"
+    ],
+    "dataset_args": {
+        "aime26": {
+            "name": "aime26",
+            "dataset_id": "evalscope/aime26",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "default"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "test",
+            "prompt_template": "\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "AIME-2026",
+            "description": "\n## Overview\n\nAIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2026 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 4,
+        "stream": true,
+        "max_tokens": 131072,
+        "top_p": 0.95,
+        "temperature": 0.6,
+        "presence_penalty": 0.0,
+        "repetition_penalty": 1.08,
+        "top_k": 20,
+        "min_p": 0.0
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 4,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20260824-0007-32650715233-1/Nightly_Test_NPU/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_aime26/20260823_184751",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20166/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-08-23 18:47:52 - evalscope - INFO: Start loading benchmark dataset: aime26
+2026-08-23 18:47:52 - evalscope - INFO: Start evaluating 1 subsets of aime26: ['default']
+2026-08-23 18:47:52 - evalscope - INFO: Unified pool: 30 items to process, 0 already fully cached (30 total across all subsets).
+2026-08-23 18:47:52 - evalscope - INFO: Loading model for prediction...
+2026-08-23 18:47:52 - evalscope - INFO: Creating model Qwen3.6-35B-A3B with eval_type=openai_api base_url=http://127.0.0.1:20166/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 4, 'stream': True, 'max_tokens': 131072, 'top_p': 0.95, 'temperature': 0.6, 'presence_penalty': 0.0, 'repetition_penalty': 1.08, 'top_k': 20, 'min_p': 0.0}, model_args={}
+2026-08-23 18:47:52 - evalscope - INFO: Model loaded successfully.
+2026-08-23 18:48:52 - evalscope - INFO: Evaluating[aime26]   3%| 1/30 [Elapsed: 01:00 < Remaining: 27:35, 57.09s/it]
+2026-08-23 18:49:52 - evalscope - INFO: Evaluating[aime26]   3%| 1/30 [Elapsed: 02:00 < Remaining: 27:35, 57.09s/it]
+2026-08-23 18:50:52 - evalscope - INFO: Evaluating[aime26]  10%| 3/30 [Elapsed: 03:00 < Remaining: 22:32, 50.10s/it]
+2026-08-23 18:51:52 - evalscope - INFO: Evaluating[aime26]  13%| 4/30 [Elapsed: 04:00 < Remaining: 17:25, 40.21s/it]
+2026-08-23 18:52:53 - evalscope - INFO: Evaluating[aime26]  13%| 4/30 [Elapsed: 05:00 < Remaining: 17:25, 40.21s/it]
+2026-08-23 18:53:53 - evalscope - INFO: Evaluating[aime26]  17%| 5/30 [Elapsed: 06:00 < Remaining: 31:45, 76.21s/it]
+2026-08-23 18:54:53 - evalscope - INFO: Evaluating[aime26]  27%| 8/30 [Elapsed: 07:00 < Remaining: 12:01, 32.79s/it]
+2026-08-23 18:55:53 - evalscope - INFO: Evaluating[aime26]  27%| 8/30 [Elapsed: 08:00 < Remaining: 12:01, 32.79s/it]
+2026-08-23 18:56:53 - evalscope - INFO: Evaluating[aime26]  27%| 8/30 [Elapsed: 09:00 < Remaining: 12:01, 32.79s/it]
+2026-08-23 18:57:53 - evalscope - INFO: Evaluating[aime26]  30%| 9/30 [Elapsed: 10:00 < Remaining: 29:59, 85.70s/it]
+2026-08-23 18:58:53 - evalscope - INFO: Evaluating[aime26]  30%| 9/30 [Elapsed: 11:00 < Remaining: 29:59, 85.70s/it]
+2026-08-23 18:59:53 - evalscope - INFO: Evaluating[aime26]  33%| 10/30 [Elapsed: 12:00 < Remaining: 31:41, 95.07s/it]
+2026-08-23 19:00:53 - evalscope - INFO: Evaluating[aime26]  37%| 11/30 [Elapsed: 13:00 < Remaining: 23:07, 73.02s/it]
+2026-08-23 19:01:53 - evalscope - INFO: Evaluating[aime26]  40%| 12/30 [Elapsed: 14:00 < Remaining: 21:59, 73.33s/it]
+2026-08-23 19:02:53 - evalscope - INFO: Evaluating[aime26]  47%| 14/30 [Elapsed: 15:00 < Remaining: 15:36, 58.52s/it]
+2026-08-23 19:03:53 - evalscope - INFO: Evaluating[aime26]  47%| 14/30 [Elapsed: 16:00 < Remaining: 15:36, 58.52s/it]
+2026-08-23 19:04:53 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 17:00 < Remaining: 15:38, 62.59s/it]
+2026-08-23 19:05:53 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 18:00 < Remaining: 15:38, 62.59s/it]
+2026-08-23 19:06:53 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 19:00 < Remaining: 15:38, 62.59s/it]
+2026-08-23 19:07:53 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 20:00 < Remaining: 15:38, 62.59s/it]
+2026-08-23 19:08:53 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 21:00 < Remaining: 15:38, 62.59s/it]
+2026-08-23 19:09:53 - evalscope - INFO: Evaluating[aime26]  53%| 16/30 [Elapsed: 22:00 < Remaining: 34:48, 149.18s/it]
+2026-08-23 19:10:53 - evalscope - INFO: Evaluating[aime26]  57%| 17/30 [Elapsed: 23:00 < Remaining: 26:26, 122.07s/it]
+2026-08-23 19:11:53 - evalscope - INFO: Evaluating[aime26]  57%| 17/30 [Elapsed: 24:00 < Remaining: 26:26, 122.07s/it]
+2026-08-23 19:12:53 - evalscope - INFO: Evaluating[aime26]  57%| 17/30 [Elapsed: 25:00 < Remaining: 26:26, 122.07s/it]
+2026-08-23 19:13:53 - evalscope - INFO: Evaluating[aime26]  60%| 18/30 [Elapsed: 26:00 < Remaining: 26:41, 133.48s/it]
+2026-08-23 19:14:53 - evalscope - INFO: Evaluating[aime26]  60%| 18/30 [Elapsed: 27:00 < Remaining: 26:41, 133.48s/it]
+2026-08-23 19:15:53 - evalscope - INFO: Evaluating[aime26]  60%| 18/30 [Elapsed: 28:00 < Remaining: 26:41, 133.48s/it]
+2026-08-23 19:16:53 - evalscope - INFO: Evaluating[aime26]  63%| 19/30 [Elapsed: 29:00 < Remaining: 26:58, 147.17s/it]
+2026-08-23 19:17:53 - evalscope - INFO: Evaluating[aime26]  63%| 19/30 [Elapsed: 30:00 < Remaining: 26:58, 147.17s/it]
+2026-08-23 19:18:53 - evalscope - INFO: Evaluating[aime26]  67%| 20/30 [Elapsed: 31:00 < Remaining: 23:31, 141.13s/it]
+2026-08-23 19:19:54 - evalscope - INFO: Evaluating[aime26]  67%| 20/30 [Elapsed: 32:01 < Remaining: 23:31, 141.13s/it]
+2026-08-23 19:20:54 - evalscope - INFO: Evaluating[aime26]  70%| 21/30 [Elapsed: 33:01 < Remaining: 18:31, 123.51s/it]
+2026-08-23 19:21:54 - evalscope - INFO: Evaluating[aime26]  70%| 21/30 [Elapsed: 34:01 < Remaining: 18:31, 123.51s/it]
+2026-08-23 19:22:54 - evalscope - INFO: Evaluating[aime26]  73%| 22/30 [Elapsed: 35:01 < Remaining: 16:05, 120.67s/it]
+2026-08-23 19:23:54 - evalscope - INFO: Evaluating[aime26]  73%| 22/30 [Elapsed: 36:01 < Remaining: 16:05, 120.67s/it]
+2026-08-23 19:24:54 - evalscope - INFO: Evaluating[aime26]  77%| 23/30 [Elapsed: 37:01 < Remaining: 14:32, 124.68s/it]
+2026-08-23 19:25:54 - evalscope - INFO: Evaluating[aime26]  83%| 25/30 [Elapsed: 38:01 < Remaining: 06:41, 80.36s/it]
+2026-08-23 19:26:54 - evalscope - INFO: Evaluating[aime26]  83%| 25/30 [Elapsed: 39:01 < Remaining: 06:41, 80.36s/it]
+2026-08-23 19:27:54 - evalscope - INFO: Evaluating[aime26]  83%| 25/30 [Elapsed: 40:01 < Remaining: 06:41, 80.36s/it]
+2026-08-23 19:28:54 - evalscope - INFO: Evaluating[aime26]  87%| 26/30 [Elapsed: 41:01 < Remaining: 07:18, 109.68s/it]
+2026-08-23 19:29:54 - evalscope - INFO: Evaluating[aime26]  90%| 27/30 [Elapsed: 42:01 < Remaining: 04:18, 86.08s/it]
+2026-08-23 19:30:54 - evalscope - INFO: Evaluating[aime26]  90%| 27/30 [Elapsed: 43:01 < Remaining: 04:18, 86.08s/it]
+2026-08-23 19:31:54 - evalscope - INFO: Evaluating[aime26]  90%| 27/30 [Elapsed: 44:01 < Remaining: 04:18, 86.08s/it]
+2026-08-23 19:32:54 - evalscope - INFO: Evaluating[aime26]  90%| 27/30 [Elapsed: 45:01 < Remaining: 04:18, 86.08s/it]
+2026-08-23 19:33:54 - evalscope - INFO: Evaluating[aime26]  93%| 28/30 [Elapsed: 46:01 < Remaining: 04:38, 139.17s/it]
+2026-08-23 19:34:54 - evalscope - INFO: Evaluating[aime26]  93%| 28/30 [Elapsed: 47:01 < Remaining: 04:38, 139.17s/it]
+2026-08-23 19:35:54 - evalscope - INFO: Evaluating[aime26]  93%| 28/30 [Elapsed: 48:01 < Remaining: 04:38, 139.17s/it]
+2026-08-23 19:36:54 - evalscope - INFO: Evaluating[aime26]  93%| 28/30 [Elapsed: 49:01 < Remaining: 04:38, 139.17s/it]
+2026-08-23 19:37:54 - evalscope - INFO: Evaluating[aime26]  93%| 28/30 [Elapsed: 50:01 < Remaining: 04:38, 139.17s/it]
+2026-08-23 19:38:54 - evalscope - INFO: Evaluating[aime26]  93%| 28/30 [Elapsed: 51:01 < Remaining: 04:38, 139.17s/it]
+2026-08-23 19:39:54 - evalscope - INFO: Evaluating[aime26]  93%| 28/30 [Elapsed: 52:01 < Remaining: 04:38, 139.17s/it]
+2026-08-23 19:40:54 - evalscope - INFO: Evaluating[aime26]  93%| 28/30 [Elapsed: 53:01 < Remaining: 04:38, 139.17s/it]
+2026-08-23 19:41:54 - evalscope - INFO: Evaluating[aime26]  97%| 29/30 [Elapsed: 54:01 < Remaining: 04:01, 241.15s/it]
+2026-08-23 19:42:54 - evalscope - INFO: Evaluating[aime26]  97%| 29/30 [Elapsed: 55:01 < Remaining: 04:01, 241.15s/it]
+2026-08-23 19:43:54 - evalscope - INFO: Evaluating[aime26]  97%| 29/30 [Elapsed: 56:01 < Remaining: 04:01, 241.15s/it]
+2026-08-23 19:44:54 - evalscope - INFO: Evaluating[aime26]  97%| 29/30 [Elapsed: 57:01 < Remaining: 04:01, 241.15s/it]
+2026-08-23 19:45:51 - evalscope - INFO: Evaluating[aime26] 100%| 30/30 [Elapsed: 57:58 < Remaining: 00:00, 248.79s/it]
+2026-08-23 19:45:51 - evalscope - INFO: Unified pool finished for aime26.
+2026-08-23 19:45:51 - evalscope - INFO: Aggregating scores for subset: default
+2026-08-23 19:45:51 - evalscope - INFO: Generating report...
+2026-08-23 19:45:51 - evalscope - INFO: 
+aime26 report table:
+┌─────────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model           │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├─────────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Qwen3.6-35B-A3B │ aime26    │ mean_acc │ default  │    30 │  0.9667 │ default │
+└─────────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-08-23 19:45:51 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-08-23 19:45:51 - evalscope - INFO: Dump report to: /root/.cache/tests/output/main-20260824-0007-32650715233-1/Nightly_Test_NPU/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_aime26/20260823_184751/reports/Qwen3.6-35B-A3B/aime26.json 
+
+2026-08-23 19:45:51 - evalscope - INFO: 
+aime26 perf table:
+Model            Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                         (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+---------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Qwen3.6-35B-A3B  aime26        30    395.855         373       10.47       94.87   163.433    37553.2
+
+2026-08-23 19:45:51 - evalscope - INFO: Benchmark aime26 evaluation finished.
+2026-08-23 19:45:51 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 57:59 < Remaining: 00:00, 3479.03s/benchmark]
+2026-08-23 19:45:51 - evalscope - INFO: Overall report table: 
+┌─────────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model           │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├─────────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ Qwen3.6-35B-A3B │ aime26    │ mean_acc │ default  │    30 │  0.9667 │ default │
+└─────────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-08-23 19:45:51 - evalscope - INFO: Overall perf table: 
+Model            Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                         (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+---------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+Qwen3.6-35B-A3B  aime26        30    395.855         373       10.47       94.87   163.433    37553.2 
+
+2026-08-23 19:45:51 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/main-20260824-0007-32650715233-1/Nightly_Test_NPU/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_aime26/20260823_184751/reports/report.html
+2026-08-23 19:45:52 - evalscope - INFO: Finished evaluation for Qwen3.6-35B-A3B on ['aime26']
+2026-08-23 19:45:52 - evalscope - INFO: Output directory: /root/.cache/tests/output/main-20260824-0007-32650715233-1/Nightly_Test_NPU/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_aime26/20260823_184751
+
+# [collect_metrics] 文件原始修改时间: 2026-08-24 03:45:52
