@@ -708,6 +708,8 @@ function jobRunLabel(d) {
 
 function computeStatus(d) {
   // 统一四态：通过 / 失败 / 未执行 / 执行中
+  // 0) 多分支并集状态（unionMergeRows 预计算，通过优先），直接采用
+  if (d._unionStatus) return d._unionStatus;
   // 1) per-case 日志解析结果最准确（功能/性能/精度统一）
   if (d.func_status === 'pass') return '通过';
   if (d.func_status === 'fail') return '失败';
@@ -797,27 +799,45 @@ function aggregateFuncStatus(items) {
   return parts.join(' / ') || '--';
 }
 
-// 同一日期下同一功能用例可能来自多个分支（如 main 与 pllimax-npunightlycleanup），
-// 分支=全部 时会同时渲染出重复明细行。按 yaml_name 去重，仅保留一条代表行：
-//   优先有真实 per-case 日志结果(func_status)的行；
-//   其次优先有 job 执行证据(job_status=completed)的行（多个时优先 main 分支）；
-//   再次优先 main 分支行；最后取第一条。
-function dedupeFuncRows(rows) {
-  const byName = {};
+// ---- 多分支执行结果并集合并 ----
+// 同一天同一用例可能同时存在多个分支的执行记录（如 main 与 pllimax-npunightlycleanup）。
+// 分支=全部 时按 (yaml_name, date) 合并为一条：
+//   1) 展示指标/链接的代表记录：优先有指标数据的（main优先），其次有 per-case 结果的，
+//      再次 job 已执行的，最后取 main 记录；
+//   2) 显示状态取各分支执行状态的并集（通过优先）：任一分支通过 → 通过，
+//      否则任一失败 → 失败，否则任一执行中 → 执行中，否则未执行。
+//      并集状态写入 _unionStatus，由 computeStatus 优先采用。
+function unionMergeRows(rows) {
+  const byKey = {};
   rows.forEach(d => {
-    (byName[d.yaml_name] = byName[d.yaml_name] || []).push(d);
+    const k = (d.yaml_name || '') + '|' + (d.date || '');
+    if (!byKey[k]) byKey[k] = [];
+    byKey[k].push(d);
   });
-  const reps = Object.values(byName).map(group => {
-    const withFunc = group.find(d => d.func_status);
-    if (withFunc) return withFunc;
-    const completed = group.filter(d => d.job_status === 'completed');
-    if (completed.length > 0) {
-      return completed.find(d => d.branch === 'main') || completed[0];
+  const merged = [];
+  Object.values(byKey).forEach(group => {
+    if (group.length === 1) { merged.push(group[0]); return; }
+    // 代表记录打分：证据等级(数据4/per-case结果3/job已执行2/无0) * 2 + main分支加成1
+    const evScore = d => {
+      if (hasData(d)) return 4;
+      if (d.func_status === 'pass' || d.func_status === 'fail' || d.func_status === 'running') return 3;
+      if (d.job_status === 'completed') return 2;
+      return 0;
+    };
+    let rep = group[0], best = -1;
+    group.forEach(d => {
+      const s = evScore(d) * 2 + (d.branch === 'main' ? 1 : 0);
+      if (s > best) { best = s; rep = d; }
+    });
+    // 并集状态：通过 > 失败 > 执行中 > 未执行
+    const statuses = group.map(computeStatus);
+    let union = '未执行';
+    for (const s of ['通过', '失败', '执行中']) {
+      if (statuses.includes(s)) { union = s; break; }
     }
-    return group.find(d => d.branch === 'main') || group[0];
+    merged.push(Object.assign({}, rep, { _unionStatus: union }));
   });
-  reps.sort((a, b) => (a._id || '').localeCompare(b._id || ''));
-  return reps;
+  return merged;
 }
 
 // 收起指定日期（fdate 为空则全部）已展开的功能用例明细行（L2）
@@ -883,6 +903,9 @@ function onFilterChange() {
       }
     }
   });
+
+  // 同一天多分支执行结果取并集：按 (用例, 日期) 合并为一条（通过优先，见 unionMergeRows）
+  filtered = unionMergeRows(filtered);
 
   if (statusFilter !== null) {
     const groups = {};
@@ -1175,7 +1198,9 @@ function updateTable(data) {
 
   if (sortedFuncDates.length > 0) {
     const latestDate = sortedFuncDates[0];
-    const latestItems = dedupeFuncRows(funcDateGroups[latestDate]);
+    // 数据已在 onFilterChange 中按 (用例, 日期) 做过并集合并，此处仅排序
+    const latestItems = funcDateGroups[latestDate].slice()
+      .sort((a, b) => (a._id || '').localeCompare(b._id || ''));
     const aggLatest = aggregateFuncStatus(latestItems);
     // 全部通过 → 绿；无任何状态 → 红；其余（含失败/执行中/未执行）→ 红
     const statusClsTop = /^通过 \d+$/.test(aggLatest) ? 'status-pass'
@@ -1199,7 +1224,8 @@ function updateTable(data) {
     // L1 历史天数聚合行（默认隐藏），点击展开对应日期的具体用例明细
     sortedFuncDates.forEach(fdate => {
       if (fdate === latestDate) return;
-      const items = dedupeFuncRows(funcDateGroups[fdate]);
+      const items = funcDateGroups[fdate].slice()
+        .sort((a, b) => (a._id || '').localeCompare(b._id || ''));
       const aggStatus = aggregateFuncStatus(items);
       const statusCls = /^通过 \d+$/.test(aggStatus) ? 'status-pass'
         : (aggStatus === '--' ? 'status-none' : 'status-fail');
@@ -1490,6 +1516,9 @@ function exportToExcel() {
     if (modelVals !== null) filtered = filtered.filter(d => modelVals.includes(d.model));
     if (dateVals !== null) filtered = filtered.filter(d => dateVals.includes(d.date));
     if (branchVals !== null) filtered = filtered.filter(d => branchVals.includes(d.branch));
+
+    // 与表格一致：同一天多分支执行结果取并集（通过优先）
+    filtered = unionMergeRows(filtered);
 
     // Group by test case ID, keep latest only
     const groups = {};
