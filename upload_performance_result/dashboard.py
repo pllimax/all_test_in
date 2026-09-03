@@ -2034,6 +2034,8 @@ def collect_all_data(eval_data=None, accuracy_data=None):
             if alt in expected_tc_ids:
                 labels["yaml_name"] = alt
         labels.update(parsed)
+        # 执行时长（秒）：优先 benchmark 输出的总时长，无则回退 eval 日志时长
+        labels["exec_duration"] = parsed.get("bench_duration")
 
         # Strip __YYYYmmdd source date suffix for eval/baseline lookups
         base_name = filename[:-4]  # strip .txt
@@ -2042,7 +2044,13 @@ def collect_all_data(eval_data=None, accuracy_data=None):
 
         # Attach eval score: key is (test_case_name, date)
         eval_key = (test_case_name, date_folder)
-        labels["eval_score"] = eval_data.get(eval_key)
+        ev = eval_data.get(eval_key)
+        if isinstance(ev, dict):
+            labels["eval_score"] = ev.get("score")
+            if labels["exec_duration"] is None:
+                labels["exec_duration"] = ev.get("exec_duration")
+        else:
+            labels["eval_score"] = ev
         consumed_eval_keys.add(eval_key)
 
         # Attach baselines
@@ -2065,7 +2073,7 @@ def collect_all_data(eval_data=None, accuracy_data=None):
     # Append accuracy-only entries for eval/ scores not matched to benchmark results
     # (e.g., accuracy-only tests like qwen3_vl_8b_thinking_1p_mmmu whose results
     #  are in eval/ but have no matching .txt benchmark file)
-    for (test_case_name, date), score in eval_data.items():
+    for (test_case_name, date), ev in eval_data.items():
         if (test_case_name, date) not in consumed_eval_keys:
             labels = parse_filename(test_case_name + ".txt")
             date_part, branch_part, run_id, run_workflow = split_date_label(date)
@@ -2078,7 +2086,9 @@ def collect_all_data(eval_data=None, accuracy_data=None):
                 alt = "test_npu_" + labels["yaml_name"]
                 if alt in expected_tc_ids:
                     labels["yaml_name"] = alt
-            labels["eval_score"] = score
+            labels["eval_score"] = ev.get("score") if isinstance(ev, dict) else ev
+            if isinstance(ev, dict):
+                labels["exec_duration"] = ev.get("exec_duration")
             labels.update({k: None for k in PERF_ONLY_FIELDS})
             _match_baselines_for_item(labels, baselines)
             results.append(labels)
@@ -2382,6 +2392,8 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                 return
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
+            # 页面为动态渲染（模板/资源地址可能更新），禁止浏览器缓存旧页面
+            self.send_header("Cache-Control", "no-cache")
             self.end_headers()
             html = template.replace(
                 "__CHART_JS_SRC__", _asset_url("chart.umd.min.js", CDN_CHART_JS)

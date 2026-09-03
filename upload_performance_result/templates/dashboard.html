@@ -46,7 +46,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .table-wrap::-webkit-scrollbar-thumb:hover { background: #484f58; }
 .table-wrap::-webkit-scrollbar-corner { background: #161b22; }
 .table-wrap { scrollbar-width: thin; scrollbar-color: #30363d #161b22; }
-table { width: 2785px; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: #161b22; }
+table { width: 2861px; table-layout: fixed; border-collapse: separate; border-spacing: 0; background: #161b22; }
 th { background: #21262d; padding: 10px 4px; text-align: left; font-size: 12px; color: #8b949e; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #30363d; cursor: pointer; white-space: normal; overflow: hidden; text-overflow: ellipsis; display: table-cell; -webkit-line-clamp: 2; line-clamp: 2; }
 th:hover { color: #c9d1d9; }
 td { padding: 8px 4px; font-size: 13px; border-bottom: 1px solid #21262d; white-space: normal; overflow-wrap: anywhere; word-break: break-all; }
@@ -199,6 +199,7 @@ thead th.sticky-col { z-index: 5; }
         <th class="col-config">序列</th>
         <th class="col-config">prefix</th>
         <th class="col-config">数据集</th>
+        <th class="col-uniform">执行时长</th>
         <th class="col-uniform">精度</th>
         <th class="col-uniform">总请求数</th>
         <th class="col-uniform">最大并发数</th>
@@ -835,7 +836,11 @@ function unionMergeRows(rows) {
     for (const s of ['通过', '失败', '执行中']) {
       if (statuses.includes(s)) { union = s; break; }
     }
-    merged.push(Object.assign({}, rep, { _unionStatus: union }));
+    merged.push(Object.assign({}, rep, {
+      _unionStatus: union,
+      // 执行时长兜底：代表行无时长时取组内任一分支的时长
+      exec_duration: rep.exec_duration != null ? rep.exec_duration : group.map(d => d.exec_duration).find(v => v != null),
+    }));
   });
   return merged;
 }
@@ -881,6 +886,15 @@ function getTestCaseStatus(items) {
 
 function hasData(d) {
   return d.mean_ttft != null || d.eval_score != null;
+}
+
+// 执行时长（秒）格式化为 h:mm:ss / m:ss；无数据显示 '--'
+function fmtDuration(v) {
+  if (v == null) return '--';
+  const s = Math.round(v);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  const mm = String(m).padStart(2, '0'), ss = String(sec).padStart(2, '0');
+  return h > 0 ? h + ':' + mm + ':' + ss : m + ':' + ss;
 }
 
 function onFilterChange() {
@@ -942,7 +956,7 @@ function updateTable(data) {
   const tbody = document.getElementById('tableBody');
   if (data.length === 0) {
     document.getElementById('tableCount').textContent = '(0 条)';
-    tbody.innerHTML = '<tr><td colspan="29" class="no-data">无匹配数据</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="30" class="no-data">无匹配数据</td></tr>';
     return;
   }
 
@@ -1144,6 +1158,7 @@ function updateTable(data) {
         <td class="col-config">${fmtSeqLength(d.seq_length)}</td>
         <td class="col-config">${escHtml((d.prefix || '').replace('prefix', '') || '0')}</td>
         <td class="col-config">${escHtml(d.dataset || '--')}</td>
+        <td class="col-uniform">${fmtDuration(d.exec_duration)}</td>
         <td class="col-uniform">${fmtMetric(d.eval_score, 4, b.eval_score, 'accuracy', d.dataset)}</td>
         <td class="col-uniform">${fmtInt(d.total_requests)}</td>
         <td class="col-uniform">${fmtInt(d.max_concurrency)}</td>
@@ -1192,7 +1207,7 @@ function updateTable(data) {
       <td class="col-meta sticky-col col-l5">${fmtRunLink(d)}</td>
       <td class="col-note sticky-col col-l6">${fmtNote(d)}</td>
       <td class="col-baseline sticky-col col-l7">--</td>
-      <td colspan="21">--</td>
+      <td colspan="22">--</td>
     </tr>`;
   }
 
@@ -1216,7 +1231,7 @@ function updateTable(data) {
       <td class="col-meta sticky-col col-l5">--</td>
       <td class="col-note sticky-col col-l6">--</td>
       <td class="col-baseline sticky-col col-l7">--</td>
-      <td colspan="21">--</td>
+      <td colspan="22">--</td>
     </tr>`;
     // 最新一天的具体用例明细默认隐藏；第2次点击顶层行时展开（L2）
     latestItems.forEach(d => { rows += renderFuncDetailRow(d, false); });
@@ -1238,7 +1253,7 @@ function updateTable(data) {
         <td class="col-meta sticky-col col-l5">--</td>
         <td class="col-note sticky-col col-l6">--</td>
         <td class="col-baseline sticky-col col-l7">--</td>
-        <td colspan="21">--</td>
+        <td colspan="22">--</td>
       </tr>`;
       items.forEach(d => { rows += renderFuncDetailRow(d, false); });
     });
@@ -1550,7 +1565,7 @@ function exportToExcel() {
     // Build Excel data
     const headers = [
       '模型', '测试用例ID', '日期', '状态', '用例脚本', '任务', '备注', '基线',
-      '组网', '卡数', '序列长度', 'PREFIX', '数据集',
+      '组网', '卡数', '序列长度', 'PREFIX', '数据集', '执行时长',
       '精度', '总请求数', '最大并发数', '系统并发数', '请求频率',
       'TTFT(ms)', 'TTFT P90(ms)', 'TPOT(ms)', 'TPOT P90(ms)',
       'E2E时间(ms)', '输出吞吐(TPS)', '单卡输出吞吐(TPS)',
@@ -1592,6 +1607,7 @@ function exportToExcel() {
         blParts.join(', '),
         d.topology || '', d.card_count || '', d.seq_length || '',
         (d.prefix || '').replace('prefix', '') || '0', d.dataset || '',
+        d.exec_duration != null ? fmtDuration(d.exec_duration) : '',
         d.eval_score != null ? d.eval_score : '',
         d.total_requests != null ? d.total_requests : '',
         d.max_concurrency != null ? d.max_concurrency : '',
