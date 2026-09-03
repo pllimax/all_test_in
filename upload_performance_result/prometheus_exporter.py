@@ -10,6 +10,7 @@ import shutil
 import subprocess
 import threading
 import urllib.parse
+from datetime import datetime
 from prometheus_client import start_http_server, Gauge
 
 
@@ -381,6 +382,7 @@ def parse_benchmark_file(filepath):
 
     # Optional P90 and total throughput metrics
     optional_patterns = {
+        "bench_duration": r"Benchmark duration \(s\):\s+([\d.]+)",
         "p90_ttft": r"P90 TTFT \(ms\):\s+([\d.]+)",
         "p90_tpot": r"P90 TPOT \(ms\):\s+([\d.]+)",
         "total_token_throughput": r"Total token throughput \(tok/s\):\s+([\d.]+)",
@@ -407,16 +409,17 @@ PERF_ONLY_FIELDS = [
 ]
 
 
-def parse_eval_log(filepath):
+def parse_eval_log(filepath, content=None):
     """Parse an eval log file and extract the accuracy score.
     Handles both MMMU (multi-subset with OVERALL row) and non-MMMU (single row) formats.
     Returns the score as a float, or None if not found.
     """
-    try:
-        with open(filepath, "r", encoding="utf-8") as f:
-            content = f.read()
-    except Exception:
-        return None
+    if content is None:
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception:
+            return None
 
     # Pattern for a data row with OVERALL in the Subset column:
     # │ ... │ ... │ ... │ ...OVERALL... │ digits │ float │ ... │
@@ -455,6 +458,41 @@ def parse_eval_log(filepath):
     return None
 
 
+def _eval_log_duration(content):
+    """从 eval/accuracy 日志内容提取执行时长（秒）。
+
+    以 "YYYY-MM-DD HH:MM:SS" 时间戳序列按时间断裂（间隔超过 30 分钟）分段，
+    取跨度最长的一段作为真实执行时长：
+    - 覆盖率高于解析 Elapsed 行，且天然兼容 hh:mm:ss 进位；
+    - 可剔除日志首尾混入的异常时间戳（如 MMMU 多分片日志末尾由全局汇总
+      在数小时后统一写入的孤立时间戳，会把首尾差撑大到 8 小时以上）。
+    无有效时间戳时返回 None。
+    """
+    if not content:
+        return None
+    fmt = "%Y-%m-%d %H:%M:%S"
+    try:
+        stamps = sorted(
+            datetime.strptime(m.group(0), fmt)
+            for m in re.finditer(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}", content)
+        )
+    except Exception:
+        return None
+    if len(stamps) < 2:
+        return None
+
+    SESSION_GAP = 1800  # 秒，相邻时间戳间隔超过 30 分钟视为不同阶段
+    best = 0.0
+    start = prev = stamps[0]
+    for t in stamps[1:]:
+        if (t - prev).total_seconds() > SESSION_GAP:
+            best = max(best, (prev - start).total_seconds())
+            start = t
+        prev = t
+    best = max(best, (prev - start).total_seconds())
+    return best if best > 0 else None
+
+
 def _parse_eval_log_filename(base):
     """统一解析 eval 日志文件名（不含 .log 后缀），返回干净的用例名；无法解析时返回 None。
 
@@ -488,7 +526,9 @@ def _parse_eval_log_filename(base):
 def collect_eval_data():
     """Scan all date folders' eval/ subdirectories and collect accuracy scores.
     For the same test case on the same date, keep only the highest score.
-    Returns a dict: {(test_case_name, date): max_score}
+    Returns a dict: {(test_case_name, date): {"score": max_score, "exec_duration": seconds|None}}
+
+    exec_duration 为取得最高分的那份日志中首尾时间戳差（秒）。
     """
     eval_data = {}
     metrics_dir = get_metrics_dir()
@@ -504,12 +544,20 @@ def collect_eval_data():
         test_case_name = _parse_eval_log_filename(filename[:-4])  # strip .log
         if not test_case_name:
             continue
-        score = parse_eval_log(filepath)
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception:
+            continue
+        score = parse_eval_log(filepath, content=content)
 
         if score is not None:
             key = (test_case_name, date_folder)
-            if key not in eval_data or score > eval_data[key]:
-                eval_data[key] = score
+            if key not in eval_data or score > eval_data[key]["score"]:
+                eval_data[key] = {
+                    "score": score,
+                    "exec_duration": _eval_log_duration(content),
+                }
 
     return eval_data
 
@@ -533,18 +581,27 @@ def collect_accuracy_only_data():
         test_case_name = _parse_eval_log_filename(filename[:-4])
         if not test_case_name:
             continue
-        score = parse_eval_log(filepath)
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception:
+            continue
+        score = parse_eval_log(filepath, content=content)
 
         if score is not None:
             key = (test_case_name, date_folder)
-            if key not in best_scores or score > best_scores[key]:
-                best_scores[key] = score
+            if key not in best_scores or score > best_scores[key]["score"]:
+                best_scores[key] = {
+                    "score": score,
+                    "exec_duration": _eval_log_duration(content),
+                }
 
     # Build result entries
-    for (test_case_name, date), score in best_scores.items():
+    for (test_case_name, date), item in best_scores.items():
         labels = parse_filename(test_case_name + ".txt")
         labels["date"] = date
-        labels["eval_score"] = score
+        labels["eval_score"] = item["score"]
+        labels["exec_duration"] = item["exec_duration"]
         # Derive yaml name from test_case_name
         yaml_name = test_case_name
         if yaml_name.startswith("test_npu_"):
