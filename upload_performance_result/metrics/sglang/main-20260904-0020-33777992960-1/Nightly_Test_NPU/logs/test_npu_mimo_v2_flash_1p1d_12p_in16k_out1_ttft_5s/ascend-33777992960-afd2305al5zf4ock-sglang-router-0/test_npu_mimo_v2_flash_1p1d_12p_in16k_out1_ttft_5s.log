@@ -1,0 +1,38 @@
+can not use command: npu-smi info
+2026-09-04 15:52:07,254 - INFO - get env NAMESPACE = sgl-project
+2026-09-04 15:52:07,254 - INFO - get env KUBE_CONFIG_MAP = sglang-configmap-afd2305al5zf4ock
+2026-09-04 15:52:07,255 - INFO - The nic name matched is enp23s0f3
+2026-09-04 15:52:07,255 - INFO - PYTHON_FOR_TEST_TOOL: python3
+2026-09-04 15:52:07,261 - INFO - get env LANGUAGE = en_US:en
+2026-09-04 15:52:07,262 - INFO - get env POD_IP = 172.22.3.95
+2026-09-04 15:52:07,263 - INFO - get env HOSTNAME = ascend-33777992960-afd2305al5zf4ock-sglang-router-0
+2026-09-04 15:52:07,263 - INFO - Init 172.22.3.95 cls.role='router'!
+2026-09-04 15:52:07,263 - INFO - The current node is router, skip this function start_pd_server.
+2026-09-04 15:52:07,429 - INFO - get env KUBECONFIG = /root/.cache/.cache/kb.yaml
+2026-09-04 15:52:07,482 - INFO - Successfully queried ConfigMap sglang-configmap-afd2305al5zf4ock in namespace sgl-project
+2026-09-04 15:52:07,517 - INFO - Upserted ConfigMap sglang-configmap-afd2305al5zf4ock: active-test-class=TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1_TTFT_5s
+2026-09-04 15:52:07,518 - INFO - active-test-class set for the first time (TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1_TTFT_5s)
+2026-09-04 15:52:07,518 - INFO - Starting router in thread...
+2026-09-04 15:52:07,519 - INFO - launch_router start ......
+2026-09-04 15:52:07,519 - INFO - Waiting for router to be ready at http://172.22.3.95:6677/health
+2026-09-04 15:52:07,519 - INFO - Waiting for the server to start at http://172.22.3.95:6677/health...
+2026-09-04 15:52:07,600 - INFO - Discovered 2 worker nodes (prefill: 1, decode: 1)
+2026-09-04 15:52:07,634 - INFO - Successfully queried ConfigMap sglang-configmap-afd2305al5zf4ock in namespace sgl-project
+2026-09-04 15:52:07,636 - INFO - Retrieved ConfigMap data: {'active-test-class': 'TestNPUMimo_v2_flash_1P1D_16p_In16k_Out1_TTFT_5s', 'ascend-33777992960-afd2305al5zf4ock-sglang-decode-0': '172.22.3.138', 'ascend-33777992960-afd2305al5zf4ock-sglang-prefill-0': '172.22.3.79', 'ascend-33777992960-afd2305al5zf4ock-sglang-router-0': '172.22.3.95'}
+2026-09-04 15:52:07,636 - INFO - Skipping ConfigMap entry with non-numeric suffix: active-test-class
+2026-09-04 15:52:07,637 - INFO - ConfigMap monitoring complete: prefill_url=['172.22.3.79:8000'], decode_url=['172.22.3.138:8000'], bootstrap_ports=['8995'], node_ip_list=['172.22.3.138', '172.22.3.79']
+2026-09-04 15:58:52,662 - INFO - Node 172.22.3.138:8000 is ready
+2026-09-04 15:58:52,663 - INFO - Waiting for 1 more nodes to be ready...
+2026-09-04 16:00:22,669 - INFO - Node 172.22.3.79:8000 is ready
+2026-09-04 16:00:22,669 - INFO - All 2 nodes' ports are ready!
+2026-09-04 16:00:22,669 - INFO - Starting router with command: python3 -u -m sglang_router.launch_router --host 0.0.0.0 --port 6677 --pd-disaggregation --policy cache_aware --health-check-interval-secs 3600 --mini-lb --prefill http://172.22.3.79:8000 8995 --decode http://172.22.3.138:8000
+2026-09-04 16:00:22,670 - INFO - Router process started with PID: 366
+/usr/local/python3.11.15/lib/python3.11/subprocess.py:1127: ResourceWarning: subprocess 366 is still running
+  _warn("subprocess %s is still running" % self.pid,
+can not use command: npu-smi info
+[33mMiniLB is only for debugging purposes, it only supports random policy![0m
+[MiniLB] Overriding policy to random
+INFO:     Started server process [366]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://0.0.0.0:6677 (Press CTRL+C to quit)
