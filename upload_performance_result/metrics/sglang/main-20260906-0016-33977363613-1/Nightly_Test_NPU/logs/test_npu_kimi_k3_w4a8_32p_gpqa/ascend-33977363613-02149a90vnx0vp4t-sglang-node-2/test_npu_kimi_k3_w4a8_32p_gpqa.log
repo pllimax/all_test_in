@@ -9815,3 +9815,465 @@ Thread 123334 (idle): "Thread-1 (_watchdog_thread)"
 [2026-09-06 09:00:45 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 50944, full token usage: 0.23, mamba num: 1, mamba usage: 0.06, accept len: 2.92, accept rate: 0.28, npu graph: True, gen throughput (token/s): 23.76, #queue-req: 0
 [2026-09-06 09:00:50 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51072, full token usage: 0.23, mamba num: 1, mamba usage: 0.06, accept len: 3.42, accept rate: 0.35, npu graph: True, gen throughput (token/s): 27.80, #queue-req: 0
 [2026-09-06 09:00:55 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51200, full token usage: 0.23, mamba num: 1, mamba usage: 0.06, accept len: 2.27, accept rate: 0.18, npu graph: True, gen throughput (token/s): 17.98, #queue-req: 0
+[2026-09-06 09:01:00 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51328, full token usage: 0.23, mamba num: 1, mamba usage: 0.06, accept len: 2.15, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.48, #queue-req: 0
+[2026-09-06 09:01:05 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51456, full token usage: 0.23, mamba num: 1, mamba usage: 0.06, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.48, #queue-req: 0
+[2026-09-06 09:01:10 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51456, full token usage: 0.23, mamba num: 1, mamba usage: 0.06, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 22.31, #queue-req: 0
+[2026-09-06 09:01:15 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51584, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.02, accept rate: 0.15, npu graph: True, gen throughput (token/s): 16.41, #queue-req: 0
+[2026-09-06 09:01:20 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51712, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 3.15, accept rate: 0.31, npu graph: True, gen throughput (token/s): 25.58, #queue-req: 0
+[2026-09-06 09:01:25 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51840, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.35, accept rate: 0.19, npu graph: True, gen throughput (token/s): 19.13, #queue-req: 0
+[2026-09-06 09:01:30 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51968, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.95, #queue-req: 0
+[2026-09-06 09:01:35 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 51968, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.15, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.31, #queue-req: 0
+[2026-09-06 09:01:37] Pyspy dump for PID 566 (py-spy dump --native --pid 566):
+Process 566: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 566 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:864)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff7d037400 (libc.so.6)
+Thread 123334 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff7d0903c8 (libc.so.6)
+    0xffff7d0f9edc (libc.so.6)
+
+[2026-09-06 09:01:37] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-06 09:01:40 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52096, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 22.38, #queue-req: 0
+[2026-09-06 09:01:45 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52224, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.19, #queue-req: 0
+[2026-09-06 09:01:49 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52352, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.48, accept rate: 0.21, npu graph: True, gen throughput (token/s): 20.08, #queue-req: 0
+[2026-09-06 09:01:54 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52352, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.41, #queue-req: 0
+[2026-09-06 09:01:59 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52480, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.40, #queue-req: 0
+[2026-09-06 09:02:04 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52608, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.90, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.48, #queue-req: 0
+[2026-09-06 09:02:09 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52736, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.57, #queue-req: 0
+[2026-09-06 09:02:14 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52864, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.35, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.87, #queue-req: 0
+[2026-09-06 09:02:19 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52864, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.10, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.01, #queue-req: 0
+[2026-09-06 09:02:24 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 52992, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.51, #queue-req: 0
+[2026-09-06 09:02:29 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 53120, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.86, #queue-req: 0
+[2026-09-06 09:02:34 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 53248, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.90, #queue-req: 0
+[2026-09-06 09:02:39 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 53248, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.41, #queue-req: 0
+[2026-09-06 09:02:44 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 53376, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.12, #queue-req: 0
+[2026-09-06 09:02:49 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 53504, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.90, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.38, #queue-req: 0
+[2026-09-06 09:02:54 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 53632, full token usage: 0.24, mamba num: 1, mamba usage: 0.06, accept len: 2.48, accept rate: 0.21, npu graph: True, gen throughput (token/s): 20.29, #queue-req: 0
+[2026-09-06 09:02:59 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 53760, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.82, #queue-req: 0
+[2026-09-06 09:03:03 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 53888, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.41, #queue-req: 0
+[2026-09-06 09:03:08 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 53888, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.44, #queue-req: 0
+[2026-09-06 09:03:13 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54016, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.44, #queue-req: 0
+[2026-09-06 09:03:18 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54144, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.15, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.27, #queue-req: 0
+[2026-09-06 09:03:23 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54272, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.92, accept rate: 0.28, npu graph: True, gen throughput (token/s): 23.60, #queue-req: 0
+[2026-09-06 09:03:28 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54400, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.73, accept rate: 0.25, npu graph: True, gen throughput (token/s): 21.97, #queue-req: 0
+[2026-09-06 09:03:33 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54400, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 18.90, #queue-req: 0
+[2026-09-06 09:03:38 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54528, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.83, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.47, #queue-req: 0
+[2026-09-06 09:03:43 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54656, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 22.16, #queue-req: 0
+[2026-09-06 09:03:48 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54784, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.41, #queue-req: 0
+[2026-09-06 09:03:53 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54784, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.55, #queue-req: 0
+[2026-09-06 09:03:58 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 54912, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.91, #queue-req: 0
+[2026-09-06 09:04:03 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55040, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 3.02, accept rate: 0.29, npu graph: True, gen throughput (token/s): 24.38, #queue-req: 0
+[2026-09-06 09:04:08 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55168, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.67, #queue-req: 0
+[2026-09-06 09:04:13 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55296, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.29, #queue-req: 0
+[2026-09-06 09:04:18 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55424, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.20, #queue-req: 0
+[2026-09-06 09:04:23 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55424, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.00, accept rate: 0.14, npu graph: True, gen throughput (token/s): 15.75, #queue-req: 0
+[2026-09-06 09:04:28 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55552, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.15, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.17, #queue-req: 0
+[2026-09-06 09:04:33 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55680, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.83, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.81, #queue-req: 0
+[2026-09-06 09:04:38 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55808, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 21.90, #queue-req: 0
+[2026-09-06 09:04:43 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55808, full token usage: 0.25, mamba num: 1, mamba usage: 0.06, accept len: 2.27, accept rate: 0.18, npu graph: True, gen throughput (token/s): 18.40, #queue-req: 0
+[2026-09-06 09:04:48 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 55936, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 3.25, accept rate: 0.32, npu graph: True, gen throughput (token/s): 25.93, #queue-req: 0
+[2026-09-06 09:04:53 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 56064, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.83, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.22, #queue-req: 0
+[2026-09-06 09:04:58 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 56192, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 3.30, accept rate: 0.33, npu graph: True, gen throughput (token/s): 26.57, #queue-req: 0
+[2026-09-06 09:05:03 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 56320, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 3.15, accept rate: 0.31, npu graph: True, gen throughput (token/s): 25.44, #queue-req: 0
+[2026-09-06 09:05:08 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 56448, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 3.62, accept rate: 0.38, npu graph: True, gen throughput (token/s): 28.71, #queue-req: 0
+[2026-09-06 09:05:13 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 56576, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.23, #queue-req: 0
+[2026-09-06 09:05:18 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 56704, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.22, #queue-req: 0
+[2026-09-06 09:05:23 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 56832, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.27, accept rate: 0.18, npu graph: True, gen throughput (token/s): 18.27, #queue-req: 0
+[2026-09-06 09:05:28 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 56960, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.75, #queue-req: 0
+[2026-09-06 09:05:33 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 56960, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 20.12, #queue-req: 0
+[2026-09-06 09:05:38 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 57088, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 3.10, accept rate: 0.30, npu graph: True, gen throughput (token/s): 25.22, #queue-req: 0
+[2026-09-06 09:05:43 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 57216, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 3.58, accept rate: 0.37, npu graph: True, gen throughput (token/s): 29.02, #queue-req: 0
+[2026-09-06 09:05:48 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 57472, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 3.33, accept rate: 0.33, npu graph: True, gen throughput (token/s): 26.67, #queue-req: 0
+[2026-09-06 09:05:53 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 57472, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 3.05, accept rate: 0.29, npu graph: True, gen throughput (token/s): 24.40, #queue-req: 0
+[2026-09-06 09:05:58 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 57600, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 23.16, #queue-req: 0
+[2026-09-06 09:06:03 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 57728, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.81, #queue-req: 0
+[2026-09-06 09:06:08 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 57856, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 20.24, #queue-req: 0
+[2026-09-06 09:06:13 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 57984, full token usage: 0.26, mamba num: 1, mamba usage: 0.06, accept len: 2.20, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.78, #queue-req: 0
+[2026-09-06 09:06:18 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58112, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 23.25, #queue-req: 0
+[2026-09-06 09:06:23 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58112, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 1.80, accept rate: 0.11, npu graph: True, gen throughput (token/s): 14.35, #queue-req: 0
+[2026-09-06 09:06:28 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58240, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.90, #queue-req: 0
+[2026-09-06 09:06:33 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58368, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.08, #queue-req: 0
+[2026-09-06 09:06:37 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58496, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.60, #queue-req: 0
+[2026-09-06 09:06:38] Pyspy dump for PID 566 (py-spy dump --native --pid 566):
+Process 566: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 566 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:864)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff7d037400 (libc.so.6)
+Thread 123334 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff7d0903c8 (libc.so.6)
+    0xffff7d0f9edc (libc.so.6)
+
+[2026-09-06 09:06:38] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-06 09:06:42 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58496, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.57, #queue-req: 0
+[2026-09-06 09:06:47 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58624, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.68, #queue-req: 0
+[2026-09-06 09:06:52 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58752, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 1.98, accept rate: 0.14, npu graph: True, gen throughput (token/s): 15.97, #queue-req: 0
+[2026-09-06 09:06:57 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58880, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 19.04, #queue-req: 0
+[2026-09-06 09:07:02 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 58880, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.20, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.99, #queue-req: 0
+[2026-09-06 09:07:07 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 59008, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.45, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.36, #queue-req: 0
+[2026-09-06 09:07:12 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 59136, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.66, #queue-req: 0
+[2026-09-06 09:07:17 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 59264, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.92, accept rate: 0.28, npu graph: True, gen throughput (token/s): 23.66, #queue-req: 0
+[2026-09-06 09:07:22 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 59264, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.76, #queue-req: 0
+[2026-09-06 09:07:27 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 59392, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 3.12, accept rate: 0.30, npu graph: True, gen throughput (token/s): 25.18, #queue-req: 0
+[2026-09-06 09:07:32 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 59520, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.60, #queue-req: 0
+[2026-09-06 09:07:37 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 59648, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.48, accept rate: 0.21, npu graph: True, gen throughput (token/s): 20.06, #queue-req: 0
+[2026-09-06 09:07:42 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 59776, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.25, accept rate: 0.18, npu graph: True, gen throughput (token/s): 18.21, #queue-req: 0
+[2026-09-06 09:07:47 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 59904, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 3.12, accept rate: 0.30, npu graph: True, gen throughput (token/s): 25.25, #queue-req: 0
+[2026-09-06 09:07:52 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60032, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 22.36, #queue-req: 0
+[2026-09-06 09:07:57 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60032, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.83, accept rate: 0.26, npu graph: True, gen throughput (token/s): 23.00, #queue-req: 0
+[2026-09-06 09:08:01 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60160, full token usage: 0.27, mamba num: 1, mamba usage: 0.06, accept len: 2.35, accept rate: 0.19, npu graph: True, gen throughput (token/s): 19.05, #queue-req: 0
+[2026-09-06 09:08:07 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60288, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.61, #queue-req: 0
+[2026-09-06 09:08:11 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60416, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.72, #queue-req: 0
+[2026-09-06 09:08:16 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60416, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.88, #queue-req: 0
+[2026-09-06 09:08:21 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60544, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.33, #queue-req: 0
+[2026-09-06 09:08:26 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60672, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 20.24, #queue-req: 0
+[2026-09-06 09:08:31 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60800, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.48, #queue-req: 0
+[2026-09-06 09:08:36 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60928, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.12, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.11, #queue-req: 0
+[2026-09-06 09:08:41 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 60928, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.07, #queue-req: 0
+[2026-09-06 09:08:46 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61056, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.17, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.57, #queue-req: 0
+[2026-09-06 09:08:51 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61184, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.61, #queue-req: 0
+[2026-09-06 09:08:56 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61312, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.10, accept rate: 0.16, npu graph: True, gen throughput (token/s): 16.70, #queue-req: 0
+[2026-09-06 09:09:01 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61312, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.23, accept rate: 0.17, npu graph: True, gen throughput (token/s): 18.10, #queue-req: 0
+[2026-09-06 09:09:06 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61440, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.41, #queue-req: 0
+[2026-09-06 09:09:11 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61568, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.83, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.84, #queue-req: 0
+[2026-09-06 09:09:16 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61696, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.98, accept rate: 0.28, npu graph: True, gen throughput (token/s): 23.85, #queue-req: 0
+[2026-09-06 09:09:21 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61824, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.25, accept rate: 0.18, npu graph: True, gen throughput (token/s): 18.19, #queue-req: 0
+[2026-09-06 09:09:26 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61952, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 3.17, accept rate: 0.31, npu graph: True, gen throughput (token/s): 25.39, #queue-req: 0
+[2026-09-06 09:09:31 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 61952, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 3.00, accept rate: 0.29, npu graph: True, gen throughput (token/s): 24.10, #queue-req: 0
+[2026-09-06 09:09:36 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62080, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.45, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.75, #queue-req: 0
+[2026-09-06 09:09:41 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62208, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.28, #queue-req: 0
+[2026-09-06 09:09:46 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62336, full token usage: 0.28, mamba num: 1, mamba usage: 0.06, accept len: 2.55, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.65, #queue-req: 0
+[2026-09-06 09:09:50 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62464, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.16, #queue-req: 0
+[2026-09-06 09:09:55 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62464, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.90, #queue-req: 0
+[2026-09-06 09:10:00 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62592, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.25, accept rate: 0.18, npu graph: True, gen throughput (token/s): 18.20, #queue-req: 0
+[2026-09-06 09:10:05 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62720, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 19.04, #queue-req: 0
+[2026-09-06 09:10:10 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62720, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.14, #queue-req: 0
+[2026-09-06 09:10:15 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62848, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.45, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.66, #queue-req: 0
+[2026-09-06 09:10:20 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 62976, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.51, #queue-req: 0
+[2026-09-06 09:10:25 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 63104, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.44, #queue-req: 0
+[2026-09-06 09:10:30 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 63232, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.98, accept rate: 0.28, npu graph: True, gen throughput (token/s): 23.57, #queue-req: 0
+[2026-09-06 09:10:35 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 63232, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.25, accept rate: 0.18, npu graph: True, gen throughput (token/s): 18.35, #queue-req: 0
+[2026-09-06 09:10:40 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 63360, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 3.27, accept rate: 0.33, npu graph: True, gen throughput (token/s): 26.16, #queue-req: 0
+[2026-09-06 09:10:45 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 63488, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 22.17, #queue-req: 0
+[2026-09-06 09:10:50 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 63616, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.81, #queue-req: 0
+[2026-09-06 09:10:55 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 63744, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 1.98, accept rate: 0.14, npu graph: True, gen throughput (token/s): 15.83, #queue-req: 0
+[2026-09-06 09:11:00 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 63872, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.09, #queue-req: 0
+[2026-09-06 09:11:05 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 63872, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.35, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.98, #queue-req: 0
+[2026-09-06 09:11:10 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64000, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.23, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.91, #queue-req: 0
+[2026-09-06 09:11:15 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64128, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 22.50, #queue-req: 0
+[2026-09-06 09:11:20 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64256, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 20.23, #queue-req: 0
+[2026-09-06 09:11:25 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64256, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.76, #queue-req: 0
+[2026-09-06 09:11:30 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64384, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.41, #queue-req: 0
+[2026-09-06 09:11:35 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64512, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.23, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.88, #queue-req: 0
+[2026-09-06 09:11:38] Pyspy dump for PID 566 (py-spy dump --native --pid 566):
+Process 566: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 566 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:864)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff7d037400 (libc.so.6)
+Thread 123334 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff7d0903c8 (libc.so.6)
+    0xffff7d0f9edc (libc.so.6)
+
+[2026-09-06 09:11:38] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-06 09:11:40 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64640, full token usage: 0.29, mamba num: 1, mamba usage: 0.06, accept len: 2.25, accept rate: 0.18, npu graph: True, gen throughput (token/s): 17.84, #queue-req: 0
+[2026-09-06 09:11:45 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64768, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 23.07, #queue-req: 0
+[2026-09-06 09:11:50 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64768, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.39, #queue-req: 0
+[2026-09-06 09:11:55 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 64896, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 1.88, accept rate: 0.12, npu graph: True, gen throughput (token/s): 15.29, #queue-req: 0
+[2026-09-06 09:12:00 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65024, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.10, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.03, #queue-req: 0
+[2026-09-06 09:12:05 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65024, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.12, #queue-req: 0
+[2026-09-06 09:12:10 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65152, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.42, #queue-req: 0
+[2026-09-06 09:12:15 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65280, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.50, #queue-req: 0
+[2026-09-06 09:12:20 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65408, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 3.10, accept rate: 0.30, npu graph: True, gen throughput (token/s): 24.95, #queue-req: 0
+[2026-09-06 09:12:24 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65536, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.50, #queue-req: 0
+[2026-09-06 09:12:30 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65664, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.48, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.68, #queue-req: 0
+[2026-09-06 09:12:34 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65792, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 3.12, accept rate: 0.30, npu graph: True, gen throughput (token/s): 25.27, #queue-req: 0
+[2026-09-06 09:12:39 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65920, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.32, #queue-req: 0
+[2026-09-06 09:12:44 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 65920, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.00, #queue-req: 0
+[2026-09-06 09:12:49 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66048, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.75, #queue-req: 0
+[2026-09-06 09:12:54 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66176, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.08, accept rate: 0.15, npu graph: True, gen throughput (token/s): 16.62, #queue-req: 0
+[2026-09-06 09:12:59 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66304, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.73, accept rate: 0.25, npu graph: True, gen throughput (token/s): 21.76, #queue-req: 0
+[2026-09-06 09:13:04 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66432, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.19, #queue-req: 0
+[2026-09-06 09:13:09 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66560, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 3.23, accept rate: 0.32, npu graph: True, gen throughput (token/s): 25.81, #queue-req: 0
+[2026-09-06 09:13:14 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66560, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.29, #queue-req: 0
+[2026-09-06 09:13:19 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66688, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 1.57, accept rate: 0.08, npu graph: True, gen throughput (token/s): 12.55, #queue-req: 0
+[2026-09-06 09:13:24 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66816, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.53, #queue-req: 0
+[2026-09-06 09:13:29 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66816, full token usage: 0.30, mamba num: 1, mamba usage: 0.06, accept len: 2.08, accept rate: 0.15, npu graph: True, gen throughput (token/s): 16.59, #queue-req: 0
+[2026-09-06 09:13:34 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 66944, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 3.10, accept rate: 0.30, npu graph: True, gen throughput (token/s): 24.54, #queue-req: 0
+[2026-09-06 09:13:39 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67072, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.71, #queue-req: 0
+[2026-09-06 09:13:44 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67200, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.50, #queue-req: 0
+[2026-09-06 09:13:49 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67328, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 3.55, accept rate: 0.36, npu graph: True, gen throughput (token/s): 28.73, #queue-req: 0
+[2026-09-06 09:13:54 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67456, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.80, #queue-req: 0
+[2026-09-06 09:13:59 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67456, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.12, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.12, #queue-req: 0
+[2026-09-06 09:14:04 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67584, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 1.98, accept rate: 0.14, npu graph: True, gen throughput (token/s): 15.92, #queue-req: 0
+[2026-09-06 09:14:09 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67712, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.34, #queue-req: 0
+[2026-09-06 09:14:14 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67712, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.10, accept rate: 0.16, npu graph: True, gen throughput (token/s): 16.76, #queue-req: 0
+[2026-09-06 09:14:19 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67840, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 3.40, accept rate: 0.34, npu graph: True, gen throughput (token/s): 27.65, #queue-req: 0
+[2026-09-06 09:14:24 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 67968, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.63, #queue-req: 0
+[2026-09-06 09:14:29 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68096, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.47, #queue-req: 0
+[2026-09-06 09:14:34 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68224, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.15, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.40, #queue-req: 0
+[2026-09-06 09:14:39 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68224, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.55, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.52, #queue-req: 0
+[2026-09-06 09:14:44 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68352, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.73, accept rate: 0.25, npu graph: True, gen throughput (token/s): 21.82, #queue-req: 0
+[2026-09-06 09:14:49 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68480, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.48, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.55, #queue-req: 0
+[2026-09-06 09:14:54 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68608, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.12, #queue-req: 0
+[2026-09-06 09:14:59 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68736, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.73, #queue-req: 0
+[2026-09-06 09:15:04 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68864, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.42, #queue-req: 0
+[2026-09-06 09:15:09 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68864, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.59, #queue-req: 0
+[2026-09-06 09:15:14 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 68992, full token usage: 0.31, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.84, #queue-req: 0
+[2026-09-06 09:15:19 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 69120, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.55, #queue-req: 0
+[2026-09-06 09:15:24 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 69248, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.80, #queue-req: 0
+[2026-09-06 09:15:29 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 69376, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.95, accept rate: 0.28, npu graph: True, gen throughput (token/s): 23.86, #queue-req: 0
+[2026-09-06 09:15:34 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 69376, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.44, #queue-req: 0
+[2026-09-06 09:15:39 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 69504, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.06, #queue-req: 0
+[2026-09-06 09:15:44 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 69632, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 3.02, accept rate: 0.29, npu graph: True, gen throughput (token/s): 24.16, #queue-req: 0
+[2026-09-06 09:15:49 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 69760, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 3.10, accept rate: 0.30, npu graph: True, gen throughput (token/s): 24.81, #queue-req: 0
+[2026-09-06 09:15:54 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 69888, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.90, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.27, #queue-req: 0
+[2026-09-06 09:15:59 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70016, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.57, #queue-req: 0
+[2026-09-06 09:16:03 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70144, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.83, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.96, #queue-req: 0
+[2026-09-06 09:16:08 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70272, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.51, #queue-req: 0
+[2026-09-06 09:16:13 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70272, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 1.98, accept rate: 0.14, npu graph: True, gen throughput (token/s): 16.01, #queue-req: 0
+[2026-09-06 09:16:18 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70400, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.90, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.22, #queue-req: 0
+[2026-09-06 09:16:23 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70528, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 22.93, #queue-req: 0
+[2026-09-06 09:16:28 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70656, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.64, #queue-req: 0
+[2026-09-06 09:16:33 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70784, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 22.23, #queue-req: 0
+[2026-09-06 09:16:38] Pyspy dump for PID 566 (py-spy dump --native --pid 566):
+Process 566: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 566 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:864)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff7d037400 (libc.so.6)
+Thread 123334 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff7d0903c8 (libc.so.6)
+    0xffff7d0f9edc (libc.so.6)
+
+[2026-09-06 09:16:38] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-06 09:16:38 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70784, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.45, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.68, #queue-req: 0
+[2026-09-06 09:16:43 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 70912, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.35, #queue-req: 0
+[2026-09-06 09:16:48 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71040, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.55, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.76, #queue-req: 0
+[2026-09-06 09:16:53 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71168, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.27, accept rate: 0.18, npu graph: True, gen throughput (token/s): 18.55, #queue-req: 0
+[2026-09-06 09:16:58 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71168, full token usage: 0.32, mamba num: 1, mamba usage: 0.06, accept len: 2.00, accept rate: 0.14, npu graph: True, gen throughput (token/s): 15.92, #queue-req: 0
+[2026-09-06 09:17:03 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71296, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 1.82, accept rate: 0.12, npu graph: True, gen throughput (token/s): 14.73, #queue-req: 0
+[2026-09-06 09:17:08 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71424, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.34, #queue-req: 0
+[2026-09-06 09:17:13 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71552, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.31, #queue-req: 0
+[2026-09-06 09:17:18 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71552, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.94, #queue-req: 0
+[2026-09-06 09:17:23 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71680, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 20.19, #queue-req: 0
+[2026-09-06 09:17:28 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71808, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.14, #queue-req: 0
+[2026-09-06 09:17:33 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 71936, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.58, #queue-req: 0
+[2026-09-06 09:17:38 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72064, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 22.00, #queue-req: 0
+[2026-09-06 09:17:43 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72192, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.13, #queue-req: 0
+[2026-09-06 09:17:48 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72320, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 3.12, accept rate: 0.30, npu graph: True, gen throughput (token/s): 25.03, #queue-req: 0
+[2026-09-06 09:17:53 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72448, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 3.20, accept rate: 0.31, npu graph: True, gen throughput (token/s): 25.62, #queue-req: 0
+[2026-09-06 09:17:58 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72576, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 21.80, #queue-req: 0
+[2026-09-06 09:18:03 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72576, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.55, accept rate: 0.22, npu graph: True, gen throughput (token/s): 20.20, #queue-req: 0
+[2026-09-06 09:18:08 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72704, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 1.82, accept rate: 0.12, npu graph: True, gen throughput (token/s): 14.59, #queue-req: 0
+[2026-09-06 09:18:13 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72832, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.50, #queue-req: 0
+[2026-09-06 09:18:18 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72832, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 1.95, accept rate: 0.14, npu graph: True, gen throughput (token/s): 15.55, #queue-req: 0
+[2026-09-06 09:18:23 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 72960, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.22, #queue-req: 0
+[2026-09-06 09:18:28 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73088, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.62, #queue-req: 0
+[2026-09-06 09:18:33 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73216, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.30, #queue-req: 0
+[2026-09-06 09:18:38 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73344, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.83, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.89, #queue-req: 0
+[2026-09-06 09:18:43 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73344, full token usage: 0.33, mamba num: 1, mamba usage: 0.06, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.42, #queue-req: 0
+[2026-09-06 09:18:48 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73472, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.83, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.68, #queue-req: 0
+[2026-09-06 09:18:53 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73600, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.65, #queue-req: 0
+[2026-09-06 09:18:58 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73728, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.23, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.97, #queue-req: 0
+[2026-09-06 09:19:03 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73856, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.61, #queue-req: 0
+[2026-09-06 09:19:07 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73856, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.79, #queue-req: 0
+[2026-09-06 09:19:12 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 73984, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 3.20, accept rate: 0.31, npu graph: True, gen throughput (token/s): 25.61, #queue-req: 0
+[2026-09-06 09:19:17 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 74112, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.30, #queue-req: 0
+[2026-09-06 09:19:22 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 74240, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.82, #queue-req: 0
+[2026-09-06 09:19:27 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 74368, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.84, #queue-req: 0
+[2026-09-06 09:19:32 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 74368, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.17, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.38, #queue-req: 0
+[2026-09-06 09:19:37 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 74496, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 3.70, accept rate: 0.39, npu graph: True, gen throughput (token/s): 29.56, #queue-req: 0
+[2026-09-06 09:19:42 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 74624, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.52, #queue-req: 0
+[2026-09-06 09:19:47 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 74752, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 1.98, accept rate: 0.14, npu graph: True, gen throughput (token/s): 15.93, #queue-req: 0
+[2026-09-06 09:19:52 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 74880, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.12, #queue-req: 0
+[2026-09-06 09:19:57 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 74880, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 21.46, #queue-req: 0
+[2026-09-06 09:20:02 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 75008, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.62, #queue-req: 0
+[2026-09-06 09:20:07 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 75136, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.34, #queue-req: 0
+[2026-09-06 09:20:12 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 75264, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 3.50, accept rate: 0.36, npu graph: True, gen throughput (token/s): 28.24, #queue-req: 0
+[2026-09-06 09:20:17 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 75392, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 3.17, accept rate: 0.31, npu graph: True, gen throughput (token/s): 25.46, #queue-req: 0
+[2026-09-06 09:20:22 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 75520, full token usage: 0.34, mamba num: 1, mamba usage: 0.06, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 23.22, #queue-req: 0
+[2026-09-06 09:20:27 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 75648, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 3.45, accept rate: 0.35, npu graph: True, gen throughput (token/s): 27.89, #queue-req: 0
+[2026-09-06 09:20:32 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 75776, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.98, accept rate: 0.28, npu graph: True, gen throughput (token/s): 23.98, #queue-req: 0
+[2026-09-06 09:20:37 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 75904, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.00, accept rate: 0.14, npu graph: True, gen throughput (token/s): 16.07, #queue-req: 0
+[2026-09-06 09:20:42 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 75904, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.53, #queue-req: 0
+[2026-09-06 09:20:47 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76032, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 3.38, accept rate: 0.34, npu graph: True, gen throughput (token/s): 26.90, #queue-req: 0
+[2026-09-06 09:20:52 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76160, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.89, #queue-req: 0
+[2026-09-06 09:20:57 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76288, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 1.95, accept rate: 0.14, npu graph: True, gen throughput (token/s): 15.77, #queue-req: 0
+[2026-09-06 09:21:02 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76416, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.46, #queue-req: 0
+[2026-09-06 09:21:07 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76416, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.17, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.68, #queue-req: 0
+[2026-09-06 09:21:12 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76544, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.25, #queue-req: 0
+[2026-09-06 09:21:17 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76672, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 3.23, accept rate: 0.32, npu graph: True, gen throughput (token/s): 25.97, #queue-req: 0
+[2026-09-06 09:21:22 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76800, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.98, accept rate: 0.28, npu graph: True, gen throughput (token/s): 23.77, #queue-req: 0
+[2026-09-06 09:21:27 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76928, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.12, accept rate: 0.16, npu graph: True, gen throughput (token/s): 17.06, #queue-req: 0
+[2026-09-06 09:21:32 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 76928, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.83, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.45, #queue-req: 0
+[2026-09-06 09:21:37 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77056, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 3.10, accept rate: 0.30, npu graph: True, gen throughput (token/s): 24.61, #queue-req: 0
+[2026-09-06 09:21:38] Pyspy dump for PID 566 (py-spy dump --native --pid 566):
+Process 566: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 566 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:864)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff7d037400 (libc.so.6)
+Thread 123334 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff7d0903c8 (libc.so.6)
+    0xffff7d0f9edc (libc.so.6)
+
+[2026-09-06 09:21:38] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-06 09:21:42 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77184, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.23, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.45, #queue-req: 0
+[2026-09-06 09:21:47 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77312, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.20, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.61, #queue-req: 0
+[2026-09-06 09:21:52 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77440, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.95, accept rate: 0.28, npu graph: True, gen throughput (token/s): 23.87, #queue-req: 0
+[2026-09-06 09:21:57 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77440, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.20, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.79, #queue-req: 0
+[2026-09-06 09:22:02 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77568, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.08, accept rate: 0.15, npu graph: True, gen throughput (token/s): 16.89, #queue-req: 0
+[2026-09-06 09:22:07 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77696, full token usage: 0.35, mamba num: 1, mamba usage: 0.06, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 20.58, #queue-req: 0
+[2026-09-06 09:22:12 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77824, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.58, #queue-req: 0
+[2026-09-06 09:22:17 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77824, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.21, #queue-req: 0
+[2026-09-06 09:22:22 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 77952, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 19.95, #queue-req: 0
+[2026-09-06 09:22:27 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 78080, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 20.98, #queue-req: 0
+[2026-09-06 09:22:32 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 78208, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 3.05, accept rate: 0.29, npu graph: True, gen throughput (token/s): 24.18, #queue-req: 0
+[2026-09-06 09:22:37 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 78336, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 22.14, #queue-req: 0
+[2026-09-06 09:22:42 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 78464, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 18.72, #queue-req: 0
+[2026-09-06 09:22:47 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 78464, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 19.51, #queue-req: 0
+[2026-09-06 09:22:52 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 78592, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 21.32, #queue-req: 0
+[2026-09-06 09:22:57 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 78720, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 2.23, accept rate: 0.17, npu graph: True, gen throughput (token/s): 17.89, #queue-req: 0
+[2026-09-06 09:23:02 DP2 TP32 EP32] Decode batch, #running-req: 1, #full token: 78848, full token usage: 0.36, mamba num: 1, mamba usage: 0.06, accept len: 4.22, accept rate: 0.46, npu graph: True, gen throughput (token/s): 34.05, #queue-req: 0
