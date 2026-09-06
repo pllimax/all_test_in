@@ -1,0 +1,756 @@
+can not use command: npu-smi info
+2026-09-07 03:03:03,367 - INFO - get env NAMESPACE = sgl-project
+2026-09-07 03:03:03,367 - INFO - get env KUBE_CONFIG_MAP = sglang-configmap-9d502414c1o0ygw9
+2026-09-07 03:03:03,368 - INFO - The nic name matched is enp23s0f3
+2026-09-07 03:03:03,368 - INFO - PYTHON_FOR_TEST_TOOL: python3
+2026-09-07 03:03:03,380 - INFO - PYTHON_FOR_TEST_TOOL: python3
+2026-09-07 03:03:03,385 - INFO - get env LANGUAGE = en_US:en
+2026-09-07 03:03:03,386 - INFO - get env POD_IP = 172.22.3.158
+2026-09-07 03:03:03,386 - INFO - get env HOSTNAME = ascend-34044970837-9d502414c1o0ygw9-sglang-router-0
+2026-09-07 03:03:03,386 - INFO - Init 172.22.3.158 cls.role='router'!
+2026-09-07 03:03:03,386 - INFO - The current node is router, skip this function start_pd_server.
+2026-09-07 03:03:03,386 - INFO - Starting router in thread...
+2026-09-07 03:03:03,387 - INFO - launch_router start ......
+2026-09-07 03:03:03,387 - INFO - Waiting for router to be ready at http://172.22.3.158:6677/health
+2026-09-07 03:03:03,387 - INFO - Waiting for the server to start at http://172.22.3.158:6677/health...
+2026-09-07 03:03:03,560 - INFO - get env KUBECONFIG = /root/.cache/.cache/kb.yaml
+2026-09-07 03:03:03,662 - INFO - Discovered 4 worker nodes (prefill: 2, decode: 2)
+2026-09-07 03:03:03,692 - INFO - Successfully queried ConfigMap sglang-configmap-9d502414c1o0ygw9 in namespace sgl-project
+2026-09-07 03:03:03,694 - INFO - ConfigMap data is not available yet, waiting for 15s...
+2026-09-07 03:03:18,730 - INFO - Successfully queried ConfigMap sglang-configmap-9d502414c1o0ygw9 in namespace sgl-project
+2026-09-07 03:03:18,732 - INFO - ConfigMap data is not available yet, waiting for 15s...
+2026-09-07 03:03:33,763 - INFO - Successfully queried ConfigMap sglang-configmap-9d502414c1o0ygw9 in namespace sgl-project
+2026-09-07 03:03:33,765 - INFO - Retrieved ConfigMap data: {'ascend-34044970837-9d502414c1o0ygw9-sglang-decode-0': '172.22.3.71', 'ascend-34044970837-9d502414c1o0ygw9-sglang-decode-1': '172.22.3.181', 'ascend-34044970837-9d502414c1o0ygw9-sglang-prefill-0': '172.22.3.77', 'ascend-34044970837-9d502414c1o0ygw9-sglang-prefill-1': '172.22.3.160', 'ascend-34044970837-9d502414c1o0ygw9-sglang-router-0': '172.22.3.158'}
+2026-09-07 03:03:33,765 - INFO - ConfigMap monitoring complete: prefill_url=['172.22.3.77:8000'], decode_url=['172.22.3.71:8000'], bootstrap_ports=['8995'], node_ip_list=['172.22.3.71', '172.22.3.77']
+2026-09-07 03:07:33,780 - INFO - Node 172.22.3.77:8000 is ready
+2026-09-07 03:07:33,780 - INFO - Waiting for 1 more nodes to be ready...
+2026-09-07 03:09:33,786 - INFO - Node 172.22.3.71:8000 is ready
+2026-09-07 03:09:33,787 - INFO - All 2 nodes' ports are ready!
+2026-09-07 03:09:33,787 - INFO - Starting router with command: python3 -u -m sglang_router.launch_router --host 0.0.0.0 --port 6677 --pd-disaggregation --policy cache_aware --policy round_robin --request-timeout-secs 7200 --prefill http://172.22.3.77:8000 8995 --decode http://172.22.3.71:8000
+2026-09-07 03:09:33,788 - INFO - Router process started with PID: 366
+/usr/local/python3.11.15/lib/python3.11/subprocess.py:1127: ResourceWarning: subprocess 366 is still running
+  _warn("subprocess %s is still running" % self.pid,
+can not use command: npu-smi info
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m794:[0m Starting router on 0.0.0.0:6677 | mode: PrefillDecode { prefill_urls: [("http://172.22.3.77:8000", Some(8995))], decode_urls: ["http://172.22.3.71:8000"], prefill_policy: None, decode_policy: None } | policy: RoundRobin | max_payload: 512MB
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::app_context[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/app_context.rs[0m[2m:[0m[2m412:[0m Tokenizer path is not provided, will load from worker on the fly
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::data_connector::factory[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/data_connector/factory.rs[0m[2m:[0m[2m51:[0m Initializing data connector: Memory
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::mcp::manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/mcp/manager.rs[0m[2m:[0m[2m90:[0m No static MCP servers connected
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m833:[0m Initializing workers for routing mode: PrefillDecode { prefill_urls: [("http://172.22.3.77:8000", Some(8995))], decode_urls: ["http://172.22.3.71:8000"], prefill_policy: None, decode_policy: None }
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m851:[0m Worker initialization job submitted (will complete in background)
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m863:[0m No MCP config provided, skipping MCP server initialization
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m875:[0m Workers initialized: 0 total, 0 healthy
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::routers::router_manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/routers/router_manager.rs[0m[2m:[0m[2m169:[0m Initializing RouterManager in single-router mode
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::routers::router_manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/routers/router_manager.rs[0m[2m:[0m[2m177:[0m Created single router with ID: http-pd
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::routers::router_manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/routers/router_manager.rs[0m[2m:[0m[2m216:[0m Set default router to http-pd
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::core::worker_manager[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/worker_manager.rs[0m[2m:[0m[2m350:[0m Starting load monitoring with interval: 30s
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m907:[0m Rate limiting is disabled (max_concurrent_requests = -1)
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m985:[0m Router ready | workers: []
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m197:[0m Workflow started [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mdefinition_id[0m[2m=[0mlocal_worker_registration
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m197:[0m Workflow started [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mdefinition_id[0m[2m=[0mlocal_worker_registration
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mdetect_connection_mode [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mdetect_connection_mode [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:40[0m [32m INFO[0m [2msmg::server[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/server.rs[0m[2m:[0m[2m1018:[0m Starting server on 0.0.0.0:6677
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mdetect_connection_mode [3mduration_ms[0m[2m=[0m1003
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mdiscover_metadata [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mdetect_connection_mode [3mduration_ms[0m[2m=[0m1003
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mdiscover_metadata [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mdiscover_metadata [3mduration_ms[0m[2m=[0m23
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mdiscover_dp_info [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mdiscover_dp_info [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mcreate_worker [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mregister_workers [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mcreate_worker [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mregister_workers [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::core::steps::worker::shared::activate[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/activate.rs[0m[2m:[0m[2m31:[0m Activated 1 worker(s) (marked as healthy)
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::tokenizer::registry[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/tokenizer/registry.rs[0m[2m:[0m[2m121:[0m Loading tokenizer 'glm-5' from source: /root/.cache/modelscope/hub/models/Eco-Tech/GLM-5.1-w4a8
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mactivate_workers [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mactivate_workers [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::policies::registry[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/policies/registry.rs[0m[2m:[0m[2m89:[0m Assigning policy round_robin to new model glm-5
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mupdate_policies [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mupdate_policies [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mdiscover_metadata [3mduration_ms[0m[2m=[0m105
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mdiscover_dp_info [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mdiscover_dp_info [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mcreate_worker [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mcreate_worker [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mregister_workers [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mregister_workers [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::core::steps::worker::shared::activate[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/activate.rs[0m[2m:[0m[2m31:[0m Activated 1 worker(s) (marked as healthy)
+[2m2026-09-06 19:09:41[0m [33m WARN[0m [2msmg::core::steps::worker::shared::update_policies[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/update_policies.rs[0m[2m:[0m[2m62:[0m Model glm-5 has conflicting tp_size: prefill=Some("4"), decode=Some("32")
+[2m2026-09-06 19:09:41[0m [33m WARN[0m [2msmg::core::steps::worker::shared::update_policies[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/update_policies.rs[0m[2m:[0m[2m62:[0m Model glm-5 has conflicting dp_size: prefill=Some("1"), decode=Some("32")
+[2m2026-09-06 19:09:41[0m [33m WARN[0m [2msmg::core::steps::worker::shared::update_policies[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/core/steps/worker/shared/update_policies.rs[0m[2m:[0m[2m62:[0m Model glm-5 has conflicting load_balance_method: prefill=Some("follow_bootstrap_room"), decode=Some("round_robin")
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mactivate_workers [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mactivate_workers [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mregister_tokenizer [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mupdate_policies [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:41[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mupdate_policies [3mduration_ms[0m[2m=[0m0
+[2m2026-09-06 19:09:42[0m [32m INFO[0m [2msmg::tokenizer::registry[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/tokenizer/registry.rs[0m[2m:[0m[2m141:[0m Successfully registered tokenizer 'glm-5' with id: 3e125efa-2b37-48d9-970a-37678b096fa2
+[2m2026-09-06 19:09:42[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m208:[0m Step started [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mregister_tokenizer [3mattempt[0m[2m=[0m1
+[2m2026-09-06 19:09:42[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mstep_id[0m[2m=[0mregister_tokenizer [3mduration_ms[0m[2m=[0m667
+[2m2026-09-06 19:09:42[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m259:[0m Workflow completed [3minstance_id[0m[2m=[0m1096efcb-7a37-4e00-8b20-0201373d2960 [3mduration_ms[0m[2m=[0m1694
+[2m2026-09-06 19:09:42[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m220:[0m Step succeeded [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mstep_id[0m[2m=[0mregister_tokenizer [3mduration_ms[0m[2m=[0m585
+[2m2026-09-06 19:09:42[0m [32m INFO[0m [2msmg::workflow::event[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/workflow/event.rs[0m[2m:[0m[2m259:[0m Workflow completed [3minstance_id[0m[2m=[0m4f419456-3287-4c9a-aa87-0f7aa39febbf [3mduration_ms[0m[2m=[0m1694
+[2m2026-09-06 19:09:43[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mGET [3muri[0m[2m=[0m/health [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"req-jLhXK2MYCgY9gooIbKPsL8Gp"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:09:43[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mGET [3muri[0m[2m=[0m/health [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"req-jLhXK2MYCgY9gooIbKPsL8Gp" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m105[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+2026-09-07 03:09:43,467 - INFO - Server http://172.22.3.158:6677/health is ready!
+2026-09-07 03:09:43,467 - INFO - Waiting 120 seconds for the server to fully initialize...
+[CI Test Method] TestNPUGLM5_1_W4A8_PD_SEP_AIME2026.test_npu_glm5_1_w4a8_pd_sep_aime2026
+2026-09-07 03:11:43,467 - INFO - get env SGLANG_TEST_MAX_RETRY = 0
+2026-09-07 03:11:43,468 - INFO - get env METRICS_DATA_FILE = /root/.cache/tests/output/main-20260907-0017-34044970837-1/Nightly_Test_NPU/accuracy/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26
+2026-09-07 03:11:43,468 - INFO - The metrics result file: /root/.cache/tests/output/main-20260907-0017-34044970837-1/Nightly_Test_NPU/accuracy/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26
+2026-09-07 03:11:43,468 - INFO - Generated evalscope script: /tmp/evalscope_run_GLM-5.1-w4a8_aime26.py
+===== Install evalscope in virtual env - Begin =====
+Install evalscope from local source: /root/.cache/.cache/evalscope
+Looking in indexes: https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+Requirement already satisfied: pip in ./test_env_evalscope/lib/python3.11/site-packages (24.0)
+Collecting pip
+  Downloading https://mirrors.tuna.tsinghua.edu.cn/pypi/web/packages/f3/6e/1736e5b4ae2b778ef2f81c47d797de9f891d4d8acb047a24ca37a60294dd/pip-26.2.1-py3-none-any.whl (1.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 7.4 MB/s eta 0:00:00
+Installing collected packages: pip
+  Attempting uninstall: pip
+    Found existing installation: pip 24.0
+    Uninstalling pip-24.0:
+      Successfully uninstalled pip-24.0
+Successfully installed pip-26.2.1
+Looking in indexes: https://mirrors.tuna.tsinghua.edu.cn/pypi/web/simple
+Obtaining file:///root/.cache/.cache/evalscope
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Checking if build backend supports build_editable: started
+  Checking if build backend supports build_editable: finished with status 'done'
+  Getting requirements to build editable: started
+  Getting requirements to build editable: finished with status 'done'
+  Preparing editable metadata (pyproject.toml): started
+  Preparing editable metadata (pyproject.toml): finished with status 'done'
+Collecting aiohttp (from evalscope==0.0.0.dev0)
+  Downloading aiohttp-3.14.3-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (1.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.8/1.8 MB 9.6 MB/s  0:00:00
+Collecting colorlog (from evalscope==0.0.0.dev0)
+  Using cached colorlog-6.12.0-py3-none-any.whl (12 kB)
+Collecting docstring_parser (from evalscope==0.0.0.dev0)
+  Using cached docstring_parser-0.18.0-py3-none-any.whl (22 kB)
+Collecting dotenv (from evalscope==0.0.0.dev0)
+  Using cached dotenv-0.9.9-py2.py3-none-any.whl (1.9 kB)
+Collecting editdistance (from evalscope==0.0.0.dev0)
+  Using cached editdistance-0.8.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (409 kB)
+Collecting jieba (from evalscope==0.0.0.dev0)
+  Using cached jieba-0.42.1-py3-none-any.whl
+Collecting jinja2 (from evalscope==0.0.0.dev0)
+  Using cached jinja2-3.1.6-py3-none-any.whl (134 kB)
+Collecting jsonlines (from evalscope==0.0.0.dev0)
+  Using cached jsonlines-4.0.0-py3-none-any.whl (8.7 kB)
+Collecting jsonschema (from evalscope==0.0.0.dev0)
+  Using cached jsonschema-4.26.0-py3-none-any.whl (90 kB)
+Collecting latex2sympy2_extended[antlr4_9_3] (from evalscope==0.0.0.dev0)
+  Using cached latex2sympy2_extended-1.11.0-py3-none-any.whl (209 kB)
+Collecting litellm<2.0,>=1.55 (from evalscope==0.0.0.dev0)
+  Using cached litellm-1.100.0-cp310-abi3-manylinux_2_28_aarch64.whl (23.7 MB)
+Collecting Markdown (from evalscope==0.0.0.dev0)
+  Using cached markdown-3.10.3-py3-none-any.whl (110 kB)
+Collecting modelscope>=1.34 (from modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached modelscope-1.39.1-py3-none-any.whl (6.0 MB)
+Collecting more_itertools (from evalscope==0.0.0.dev0)
+  Using cached more_itertools-11.1.0-py3-none-any.whl (72 kB)
+Collecting nltk (from evalscope==0.0.0.dev0)
+  Using cached nltk-3.10.3-py3-none-any.whl (1.8 MB)
+Collecting openai (from evalscope==0.0.0.dev0)
+  Using cached openai-3.8.0-py3-none-any.whl (1.7 MB)
+Collecting overrides (from evalscope==0.0.0.dev0)
+  Using cached overrides-7.7.0-py3-none-any.whl (17 kB)
+Collecting pandas (from evalscope==0.0.0.dev0)
+  Downloading pandas-3.0.5-cp311-cp311-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl (10.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 10.8/10.8 MB 28.3 MB/s  0:00:00
+Collecting pillow (from evalscope==0.0.0.dev0)
+  Downloading pillow-12.3.0-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (6.3 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.3/6.3 MB 46.0 MB/s  0:00:00
+Collecting plotly (from evalscope==0.0.0.dev0)
+  Using cached plotly-7.0.0-py3-none-any.whl (9.1 MB)
+Collecting pydantic (from evalscope==0.0.0.dev0)
+  Using cached pydantic-2.13.5-py3-none-any.whl (472 kB)
+Collecting pylatexenc (from evalscope==0.0.0.dev0)
+  Using cached pylatexenc-2.11-py2.py3-none-any.whl (137 kB)
+Collecting pyyaml>=5.1 (from evalscope==0.0.0.dev0)
+  Downloading pyyaml-6.0.3-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (775 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 775.6/775.6 kB 3.5 MB/s  0:00:00
+Collecting requests (from evalscope==0.0.0.dev0)
+  Using cached requests-2.34.2-py3-none-any.whl (73 kB)
+Collecting rich (from evalscope==0.0.0.dev0)
+  Using cached rich-15.0.0-py3-none-any.whl (310 kB)
+Collecting rouge-chinese (from evalscope==0.0.0.dev0)
+  Using cached rouge_chinese-1.0.3-py3-none-any.whl (21 kB)
+Collecting rouge-score>=0.1.0 (from evalscope==0.0.0.dev0)
+  Using cached rouge_score-0.1.2-py3-none-any.whl
+Collecting sacrebleu (from evalscope==0.0.0.dev0)
+  Using cached sacrebleu-2.6.0-py3-none-any.whl (100 kB)
+Collecting sympy (from evalscope==0.0.0.dev0)
+  Using cached sympy-1.14.0-py3-none-any.whl (6.3 MB)
+Collecting tabulate (from evalscope==0.0.0.dev0)
+  Using cached tabulate-0.10.0-py3-none-any.whl (39 kB)
+Collecting tqdm (from evalscope==0.0.0.dev0)
+  Using cached tqdm-4.70.0-py3-none-any.whl (80 kB)
+Collecting transformers!=4.57.2,>=4.33 (from evalscope==0.0.0.dev0)
+  Using cached transformers-5.16.1-py3-none-any.whl (12.1 MB)
+Collecting word2number (from evalscope==0.0.0.dev0)
+  Using cached word2number-1.1-py3-none-any.whl
+Collecting zhconv (from evalscope==0.0.0.dev0)
+  Using cached zhconv-1.4.3-py2.py3-none-any.whl
+Collecting fastuuid<1.0,>=0.14.0 (from litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Downloading fastuuid-0.14.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (278 kB)
+Collecting httpx<1.0,>=0.28.0 (from litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached httpx-0.28.1-py3-none-any.whl (73 kB)
+Collecting openai (from evalscope==0.0.0.dev0)
+  Using cached openai-2.54.0-py3-none-any.whl (1.7 MB)
+Collecting python-dotenv<2.0,>=1.0.0 (from litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached python_dotenv-1.2.3-py3-none-any.whl (22 kB)
+Collecting tiktoken<1.0,>=0.8.0 (from litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Downloading tiktoken-0.14.0-cp311-cp311-manylinux_2_28_aarch64.whl (1.2 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.2/1.2 MB 2.2 MB/s  0:00:00
+Collecting importlib-metadata<9.0,>=8.0.0 (from litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached importlib_metadata-8.9.0-py3-none-any.whl (27 kB)
+Collecting tokenizers<1.0,>=0.21.0 (from litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached tokenizers-0.23.2-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (3.5 MB)
+Collecting click<9.0,>=8.0.0 (from litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached click-8.5.0-py3-none-any.whl (125 kB)
+Collecting pydantic-settings<3.0,>=2.14.1 (from litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached pydantic_settings-2.15.0-py3-none-any.whl (69 kB)
+Collecting boto3<2.0,>=1.43.1 (from litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached boto3-1.43.89-py3-none-any.whl (140 kB)
+Collecting aiohappyeyeballs>=2.5.0 (from aiohttp->evalscope==0.0.0.dev0)
+  Using cached aiohappyeyeballs-2.7.1-py3-none-any.whl (15 kB)
+Collecting aiosignal>=1.4.0 (from aiohttp->evalscope==0.0.0.dev0)
+  Using cached aiosignal-1.4.0-py3-none-any.whl (7.5 kB)
+Collecting attrs>=17.3.0 (from aiohttp->evalscope==0.0.0.dev0)
+  Using cached attrs-26.1.0-py3-none-any.whl (67 kB)
+Collecting frozenlist>=1.1.1 (from aiohttp->evalscope==0.0.0.dev0)
+  Downloading frozenlist-1.8.0-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (233 kB)
+Collecting multidict<7.0,>=4.5 (from aiohttp->evalscope==0.0.0.dev0)
+  Downloading multidict-6.7.1-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (246 kB)
+Collecting propcache>=0.2.0 (from aiohttp->evalscope==0.0.0.dev0)
+  Downloading propcache-0.5.2-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (57 kB)
+Collecting typing_extensions>=4.4 (from aiohttp->evalscope==0.0.0.dev0)
+  Using cached typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Collecting yarl<2.0,>=1.17.0 (from aiohttp->evalscope==0.0.0.dev0)
+  Downloading yarl-1.24.5-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (110 kB)
+Collecting botocore<1.44.0,>=1.43.89 (from boto3<2.0,>=1.43.1->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached botocore-1.43.89-py3-none-any.whl (15.8 MB)
+Collecting jmespath<2.0.0,>=0.7.1 (from boto3<2.0,>=1.43.1->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached jmespath-1.1.0-py3-none-any.whl (20 kB)
+Collecting s3transfer<0.20.0,>=0.19.0 (from boto3<2.0,>=1.43.1->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached s3transfer-0.19.2-py3-none-any.whl (90 kB)
+Collecting python-dateutil<3.0.0,>=2.1 (from botocore<1.44.0,>=1.43.89->boto3<2.0,>=1.43.1->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+Collecting urllib3!=2.2.0,<3,>=1.25.4 (from botocore<1.44.0,>=1.43.89->boto3<2.0,>=1.43.1->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached urllib3-2.7.0-py3-none-any.whl (131 kB)
+Collecting anyio (from httpx<1.0,>=0.28.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached anyio-4.15.1-py3-none-any.whl (132 kB)
+Collecting certifi (from httpx<1.0,>=0.28.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached certifi-2026.7.22-py3-none-any.whl (136 kB)
+Collecting httpcore==1.* (from httpx<1.0,>=0.28.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached httpcore-1.0.9-py3-none-any.whl (78 kB)
+Collecting idna (from httpx<1.0,>=0.28.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached idna-3.19-py3-none-any.whl (68 kB)
+Collecting h11>=0.16 (from httpcore==1.*->httpx<1.0,>=0.28.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached h11-0.16.0-py3-none-any.whl (37 kB)
+Collecting zipp>=3.20 (from importlib-metadata<9.0,>=8.0.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached zipp-4.1.0-py3-none-any.whl (10 kB)
+Collecting MarkupSafe>=2.0 (from jinja2->evalscope==0.0.0.dev0)
+  Downloading markupsafe-3.0.3-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (24 kB)
+Collecting jsonschema-specifications>=2023.03.6 (from jsonschema->evalscope==0.0.0.dev0)
+  Using cached jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+Collecting referencing>=0.28.4 (from jsonschema->evalscope==0.0.0.dev0)
+  Using cached referencing-0.37.0-py3-none-any.whl (26 kB)
+Collecting rpds-py>=0.25.0 (from jsonschema->evalscope==0.0.0.dev0)
+  Downloading rpds_py-2026.6.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (373 kB)
+Collecting distro<2,>=1.7.0 (from openai->evalscope==0.0.0.dev0)
+  Using cached distro-1.9.0-py3-none-any.whl (20 kB)
+Collecting jiter<1,>=0.10.0 (from openai->evalscope==0.0.0.dev0)
+  Downloading jiter-0.16.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (340 kB)
+Collecting sniffio (from openai->evalscope==0.0.0.dev0)
+  Using cached sniffio-1.3.1-py3-none-any.whl (10 kB)
+Collecting annotated-types>=0.6.0 (from pydantic->evalscope==0.0.0.dev0)
+  Using cached annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Collecting pydantic-core==2.46.5 (from pydantic->evalscope==0.0.0.dev0)
+  Downloading pydantic_core-2.46.5-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (1.9 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.9/1.9 MB 5.2 MB/s  0:00:00
+Collecting typing-inspection>=0.4.2 (from pydantic->evalscope==0.0.0.dev0)
+  Using cached typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Collecting six>=1.5 (from python-dateutil<3.0.0,>=2.1->botocore<1.44.0,>=1.43.89->boto3<2.0,>=1.43.1->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached six-1.17.0-py2.py3-none-any.whl (11 kB)
+Collecting regex (from tiktoken<1.0,>=0.8.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Downloading regex-2026.9.3-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (791 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 791.7/791.7 kB 6.6 MB/s  0:00:00
+Collecting huggingface-hub<2.0,>=0.16.4 (from tokenizers<1.0,>=0.21.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached huggingface_hub-1.30.0-py3-none-any.whl (796 kB)
+Collecting filelock>=3.10.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers<1.0,>=0.21.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached filelock-3.32.5-py3-none-any.whl (100 kB)
+Collecting fsspec>=2023.5.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers<1.0,>=0.21.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached fsspec-2026.7.0-py3-none-any.whl (206 kB)
+Collecting hf-xet<2.0.0,>=1.5.2 (from huggingface-hub<2.0,>=0.16.4->tokenizers<1.0,>=0.21.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached hf_xet-1.6.0-cp38-abi3-manylinux_2_28_aarch64.whl (4.3 MB)
+Collecting packaging>=20.9 (from huggingface-hub<2.0,>=0.16.4->tokenizers<1.0,>=0.21.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached packaging-26.3-py3-none-any.whl (129 kB)
+Collecting modelscope-hub>=0.2.0 (from modelscope>=1.34->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached modelscope_hub-0.4.0-py3-none-any.whl (200 kB)
+Requirement already satisfied: setuptools in ./test_env_evalscope/lib/python3.11/site-packages (from modelscope>=1.34->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0) (79.0.1)
+Collecting cryptography>=41 (from modelscope-hub>=0.2.0->modelscope>=1.34->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached cryptography-50.0.1-cp311-abi3-manylinux_2_34_aarch64.whl (4.7 MB)
+Collecting cffi>=2.0.0 (from cryptography>=41->modelscope-hub>=0.2.0->modelscope>=1.34->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Downloading cffi-2.1.1-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (218 kB)
+Collecting pycparser (from cffi>=2.0.0->cryptography>=41->modelscope-hub>=0.2.0->modelscope>=1.34->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached pycparser-3.0-py3-none-any.whl (48 kB)
+Collecting addict (from modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached addict-2.4.0-py3-none-any.whl (3.8 kB)
+Collecting datasets<=4.8.4,>=4.0.0 (from modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached datasets-4.8.4-py3-none-any.whl (526 kB)
+Collecting einops (from modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached einops-0.8.2-py3-none-any.whl (65 kB)
+Collecting oss2 (from modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached oss2-2.19.1-py3-none-any.whl
+Collecting scipy (from modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Downloading scipy-1.17.1-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (33.1 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 33.1/33.1 MB 18.6 MB/s  0:00:01
+Collecting simplejson>=3.3.0 (from modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Downloading simplejson-4.1.2-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (185 kB)
+Collecting sortedcontainers>=1.5.9 (from modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached sortedcontainers-2.4.0-py2.py3-none-any.whl (29 kB)
+Collecting numpy>=1.17 (from datasets<=4.8.4,>=4.0.0->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Downloading numpy-2.4.6-cp311-cp311-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (16.0 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.0/16.0 MB 35.3 MB/s  0:00:00
+Collecting pyarrow>=21.0.0 (from datasets<=4.8.4,>=4.0.0->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Downloading pyarrow-25.0.1-cp311-cp311-manylinux_2_28_aarch64.whl (46.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 46.8/46.8 MB 32.5 MB/s  0:00:01
+Collecting dill<0.4.2,>=0.3.0 (from datasets<=4.8.4,>=4.0.0->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached dill-0.4.1-py3-none-any.whl (120 kB)
+Collecting xxhash (from datasets<=4.8.4,>=4.0.0->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Downloading xxhash-4.0.1-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (276 kB)
+Collecting multiprocess<0.70.20 (from datasets<=4.8.4,>=4.0.0->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Downloading multiprocess-0.70.19-py311-none-any.whl (144 kB)
+Collecting fsspec>=2023.5.0 (from huggingface-hub<2.0,>=0.16.4->tokenizers<1.0,>=0.21.0->litellm<2.0,>=1.55->evalscope==0.0.0.dev0)
+  Using cached fsspec-2026.2.0-py3-none-any.whl (202 kB)
+Collecting charset_normalizer<4,>=2 (from requests->evalscope==0.0.0.dev0)
+  Downloading charset_normalizer-3.5.1-cp311-cp311-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl (251 kB)
+Collecting absl-py (from rouge-score>=0.1.0->evalscope==0.0.0.dev0)
+  Using cached absl_py-2.5.0-py3-none-any.whl (137 kB)
+Collecting typer (from transformers!=4.57.2,>=4.33->evalscope==0.0.0.dev0)
+  Using cached typer-0.27.2-py3-none-any.whl (123 kB)
+Collecting safetensors>=0.8.0 (from transformers!=4.57.2,>=4.33->evalscope==0.0.0.dev0)
+  Using cached safetensors-0.8.0-cp310-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (502 kB)
+Collecting antlr4-python3-runtime<=4.13.2,>=4.9.3 (from latex2sympy2_extended[antlr4_9_3]->evalscope==0.0.0.dev0)
+  Using cached antlr4_python3_runtime-4.13.2-py3-none-any.whl (144 kB)
+  Using cached antlr4_python3_runtime-4.9.3-py3-none-any.whl
+Collecting defusedxml (from nltk->evalscope==0.0.0.dev0)
+  Using cached defusedxml-0.7.1-py2.py3-none-any.whl (25 kB)
+Collecting joblib (from nltk->evalscope==0.0.0.dev0)
+  Using cached joblib-1.6.0-py3-none-any.whl (306 kB)
+Collecting cloudpickle>=3.0 (from joblib->nltk->evalscope==0.0.0.dev0)
+  Using cached cloudpickle-3.1.2-py3-none-any.whl (22 kB)
+Collecting crcmod>=1.7 (from oss2->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached crcmod-1.7-cp311-cp311-linux_aarch64.whl
+Collecting pycryptodome>=3.4.7 (from oss2->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached pycryptodome-3.23.0-cp37-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl (2.2 MB)
+Collecting aliyun-python-sdk-kms>=2.4.1 (from oss2->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached aliyun_python_sdk_kms-2.16.5-py2.py3-none-any.whl (99 kB)
+Collecting aliyun-python-sdk-core>=2.13.12 (from oss2->modelscope[datasets]>=1.34->evalscope==0.0.0.dev0)
+  Using cached aliyun_python_sdk_core-2.16.1-py3-none-any.whl (521 kB)
+Collecting narwhals>=1.15.1 (from plotly->evalscope==0.0.0.dev0)
+  Using cached narwhals-2.25.0-py3-none-any.whl (467 kB)
+Collecting markdown-it-py>=2.2.0 (from rich->evalscope==0.0.0.dev0)
+  Using cached markdown_it_py-4.2.0-py3-none-any.whl (91 kB)
+Collecting pygments<3.0.0,>=2.13.0 (from rich->evalscope==0.0.0.dev0)
+  Using cached pygments-2.21.0-py3-none-any.whl (1.3 MB)
+Collecting mdurl~=0.1 (from markdown-it-py>=2.2.0->rich->evalscope==0.0.0.dev0)
+  Using cached mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+Collecting portalocker (from sacrebleu->evalscope==0.0.0.dev0)
+  Using cached portalocker-4.3.0-py3-none-any.whl (129 kB)
+Collecting colorama (from sacrebleu->evalscope==0.0.0.dev0)
+  Using cached colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Collecting lxml (from sacrebleu->evalscope==0.0.0.dev0)
+  Downloading lxml-6.1.3-cp311-cp311-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl (5.0 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 5.0/5.0 MB 38.2 MB/s  0:00:00
+Collecting mpmath<1.4,>=1.1.0 (from sympy->evalscope==0.0.0.dev0)
+  Using cached mpmath-1.3.0-py3-none-any.whl (536 kB)
+Collecting shellingham>=1.3.0 (from typer->transformers!=4.57.2,>=4.33->evalscope==0.0.0.dev0)
+  Using cached shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+Collecting annotated-doc>=0.0.2 (from typer->transformers!=4.57.2,>=4.33->evalscope==0.0.0.dev0)
+  Using cached annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+Building wheels for collected packages: evalscope
+  Building editable for evalscope (pyproject.toml): started
+  Building editable for evalscope (pyproject.toml): finished with status 'done'
+  Created wheel for evalscope: filename=evalscope-0.0.0.dev0-0.editable-py3-none-any.whl size=17960 sha256=e698fa58c826419f4aa963c20bccc3640a81e3f09ec5c51ca61705a0e3408437
+  Stored in directory: /tmp/pip-ephem-wheel-cache-6jcc885z/wheels/c1/2b/a5/f2dcd86a5d922120dcb02884cd5f6ebcfec2a0d7ebbc03a5e8
+Successfully built evalscope
+Installing collected packages: zhconv, word2number, sortedcontainers, pylatexenc, mpmath, jieba, crcmod, antlr4-python3-runtime, addict, zipp, xxhash, urllib3, typing_extensions, tqdm, tabulate, sympy, sniffio, six, simplejson, shellingham, safetensors, rpds-py, regex, pyyaml, python-dotenv, pygments, pycryptodome, pycparser, pyarrow, propcache, portalocker, pillow, packaging, overrides, numpy, narwhals, multidict, more_itertools, mdurl, MarkupSafe, Markdown, lxml, jmespath, jiter, idna, hf-xet, h11, fsspec, frozenlist, filelock, fastuuid, einops, editdistance, docstring_parser, distro, dill, defusedxml, colorlog, colorama, cloudpickle, click, charset_normalizer, certifi, attrs, annotated-types, annotated-doc, aiohappyeyeballs, absl-py, yarl, typing-inspection, scipy, sacrebleu, rouge-chinese, requests, referencing, python-dateutil, pydantic-core, plotly, multiprocess, markdown-it-py, latex2sympy2_extended, jsonlines, joblib, jinja2, importlib-metadata, httpcore, dotenv, cffi, anyio, aiosignal, tiktoken, rich, pydantic, pandas, nltk, jsonschema-specifications, httpx, cryptography, botocore, aiohttp, typer, s3transfer, rouge-score, pydantic-settings, openai, modelscope-hub, jsonschema, huggingface-hub, aliyun-python-sdk-core, tokenizers, modelscope, datasets, boto3, aliyun-python-sdk-kms, transformers, oss2, litellm, evalscope
+
+ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.
+te 0.4.0 requires decorator, which is not installed.
+te 0.4.0 requires ml-dtypes, which is not installed.
+te 0.4.0 requires psutil, which is not installed.
+te 0.4.0 requires tornado, which is not installed.
+auto-tune 0.1.0 requires decorator, which is not installed.
+asc-op-compile-base 0.1.0 requires decorator, which is not installed.
+asc-op-compile-base 0.1.0 requires psutil, which is not installed.
+schedule-search 0.0.1 requires decorator, which is not installed.
+opc-tool 0.1.0 requires decorator, which is not installed.
+opc-tool 0.1.0 requires psutil, which is not installed.
+ms-service-profiler 26.0.0 requires loguru, which is not installed.
+ms-service-profiler 26.0.0 requires matplotlib, which is not installed.
+ms-service-profiler 26.0.0 requires msguard, which is not installed.
+ms-service-profiler 26.0.0 requires openpyxl, which is not installed.
+ms-service-profiler 26.0.0 requires opentelemetry-exporter-otlp-proto-grpc==1.33.1, which is not installed.
+ms-service-profiler 26.0.0 requires opentelemetry-exporter-otlp-proto-http==1.33.1, which is not installed.
+ms-service-profiler 26.0.0 requires psutil, which is not installed.
+superkernel 0.1.0 requires decorator>=5.1.0, which is not installed.
+superkernel 0.1.0 requires psutil>=5.9, which is not installed.
+asc-opc-tool 0.1.0 requires decorator, which is not installed.
+asc-opc-tool 0.1.0 requires psutil, which is not installed.
+ms-service-profiler 26.0.0 requires pandas~=2.2, but you have pandas 3.0.5 which is incompatible.
+Successfully installed Markdown-3.10.3 MarkupSafe-3.0.3 absl-py-2.5.0 addict-2.4.0 aiohappyeyeballs-2.7.1 aiohttp-3.14.3 aiosignal-1.4.0 aliyun-python-sdk-core-2.16.1 aliyun-python-sdk-kms-2.16.5 annotated-doc-0.0.5 annotated-types-0.8.0 antlr4-python3-runtime-4.9.3 anyio-4.15.1 attrs-26.1.0 boto3-1.43.89 botocore-1.43.89 certifi-2026.7.22 cffi-2.1.1 charset_normalizer-3.5.1 click-8.5.0 cloudpickle-3.1.2 colorama-0.4.6 colorlog-6.12.0 crcmod-1.7 cryptography-50.0.1 datasets-4.8.4 defusedxml-0.7.1 dill-0.4.1 distro-1.9.0 docstring_parser-0.18.0 dotenv-0.9.9 editdistance-0.8.1 einops-0.8.2 evalscope-0.0.0.dev0 fastuuid-0.14.0 filelock-3.32.5 frozenlist-1.8.0 fsspec-2026.2.0 h11-0.16.0 hf-xet-1.6.0 httpcore-1.0.9 httpx-0.28.1 huggingface-hub-1.30.0 idna-3.19 importlib-metadata-8.9.0 jieba-0.42.1 jinja2-3.1.6 jiter-0.16.0 jmespath-1.1.0 joblib-1.6.0 jsonlines-4.0.0 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 latex2sympy2_extended-1.11.0 litellm-1.100.0 lxml-6.1.3 markdown-it-py-4.2.0 mdurl-0.1.2 modelscope-1.39.1 modelscope-hub-0.4.0 more_itertools-11.1.0 mpmath-1.3.0 multidict-6.7.1 multiprocess-0.70.19 narwhals-2.25.0 nltk-3.10.3 numpy-2.4.6 openai-2.54.0 oss2-2.19.1 overrides-7.7.0 packaging-26.3 pandas-3.0.5 pillow-12.3.0 plotly-7.0.0 portalocker-4.3.0 propcache-0.5.2 pyarrow-25.0.1 pycparser-3.0 pycryptodome-3.23.0 pydantic-2.13.5 pydantic-core-2.46.5 pydantic-settings-2.15.0 pygments-2.21.0 pylatexenc-2.11 python-dateutil-2.9.0.post0 python-dotenv-1.2.3 pyyaml-6.0.3 referencing-0.37.0 regex-2026.9.3 requests-2.34.2 rich-15.0.0 rouge-chinese-1.0.3 rouge-score-0.1.2 rpds-py-2026.6.3 s3transfer-0.19.2 sacrebleu-2.6.0 safetensors-0.8.0 scipy-1.17.1 shellingham-1.5.4 simplejson-4.1.2 six-1.17.0 sniffio-1.3.1 sortedcontainers-2.4.0 sympy-1.14.0 tabulate-0.10.0 tiktoken-0.14.0 tokenizers-0.23.2 tqdm-4.70.0 transformers-5.16.1 typer-0.27.2 typing-inspection-0.4.4 typing_extensions-4.16.0 urllib3-2.7.0 word2number-1.1 xxhash-4.0.1 yarl-1.24.5 zhconv-1.4.3 zipp-4.1.0
+===== Install evalscope in virtual env - End =====
+2026-09-07 03:13:24,075 - INFO - Command: test_env_evalscope/bin/python /tmp/evalscope_run_GLM-5.1-w4a8_aime26.py
+2026-09-07 03:13:24,077 - INFO - run_evalscope spawned: pid=536 pgid=536 cmd=test_env_evalscope/bin/python /tmp/evalscope_run_GLM-5.1-w4a8_aime26.py
+2026-09-07 03:13:27 - evalscope - [33mWARNING[0m: Deprecated: The `timeout` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.timeout` instead.[0m
+2026-09-07 03:13:27 - evalscope - [33mWARNING[0m: Deprecated: The `stream` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.stream` instead.[0m
+2026-09-07 03:13:27 - evalscope - [32mINFO[0m: Args: Task config is provided with TaskConfig type.[0m
+2026-09-07 03:13:27 - evalscope - [32mINFO[0m: Running with native backend[0m
+2026-09-07 03:13:27 - evalscope - [32mINFO[0m: Dump task config to /root/.cache/tests/output/main-20260907-0017-34044970837-1/Nightly_Test_NPU/accuracy/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26/20260907_031327/configs/task_config.yaml[0m
+2026-09-07 03:13:27 - evalscope - [32mINFO[0m: {
+    "model": "GLM-5.1-w4a8",
+    "model_id": "GLM-5.1-w4a8",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "aime26"
+    ],
+    "dataset_args": {
+        "aime26": {
+            "name": "aime26",
+            "dataset_id": "evalscope/aime26",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "default"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "test",
+            "prompt_template": "\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "AIME-2026",
+            "description": "\n## Overview\n\nAIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2026 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536,
+        "temperature": 1.0
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20260907-0017-34044970837-1/Nightly_Test_NPU/accuracy/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26/20260907_031327",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://172.22.3.158:6677/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+2026-09-07 03:13:27 - evalscope - [32mINFO[0m: Start loading benchmark dataset: aime26[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+Processing records:   0%|          | 0/30 [00:00<?, ?it/s][A
+Processing records: 100%|██████████| 30/30 [00:00<00:00, 210769.05it/s]
+2026-09-07 03:13:28 - evalscope - [32mINFO[0m: Start evaluating 1 subsets of aime26: ['default'][0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+2026-09-07 03:13:28 - evalscope - [32mINFO[0m: Unified pool: 30 items to process, 0 already fully cached (30 total across all subsets).[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+Evaluating[aime26]:   0%|          | 0/30 [00:00<?, ?it/s][A
+[A2026-09-07 03:13:28 - evalscope - [32mINFO[0m: Loading model for prediction...[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+Evaluating[aime26]:   0%|          | 0/30 [00:00<?, ?it/s][A
+[A2026-09-07 03:13:28 - evalscope - [32mINFO[0m: Creating model GLM-5.1-w4a8 with eval_type=openai_api base_url=http://172.22.3.158:6677/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536, 'temperature': 1.0}, model_args={}[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+Evaluating[aime26]:   0%|          | 0/30 [00:00<?, ?it/s][A
+[A2026-09-07 03:13:28 - evalscope - [32mINFO[0m: Model loaded successfully.[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-4besahmKnqXN316pCfZoCZlY"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-khCuECYJE9g9QTSVuSbcP1It"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-AERsp4aeCQiS8UXe3aNYbF8q"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-iMOrXe4HcBKKHrERb09vquO3"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-d8Y0zDN0o0joGtQrB6zwViLR"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-vgnmjwkTQFH3B7Syx6aHZSMQ"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-PGWBjG1b3KEShKSIMuSm14RI"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-e4DA8EtFzHctxWEVrnc99k9C"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-4cAS7qAjpRb9avpUdwXcVx8F"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-IUT4CKoR3R2M8d1HewmjN2Mg"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-vFl5LJsalJUux6hXA4ZEfqcE"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-VrKlPka6mozP2dye1TUZ2j4p"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-cra8FwNXK5DlbjVG7EmhFMe2"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-OJM44usENUIZIsl7KJZjoT4c"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-RNIWgOqzF5dVutob26OhWVwx"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-o5ny5LFkiaCFihGplyvINrIo"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-XvrR2LIb42KUDNng4GtheNHj"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-8JciVZKyazs53DiKHmOp65sD"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-R5uUNuhDFfttQHABOTv6snoR"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-ceDsBhKOUXpwXdGsX8DqXKrO"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-OhS4l0luhY0XJdssZLH56I8B"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-Ytm0Hzt5jxjPw2vpI7xSW2Hx"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-3xgoKD1hRTF7Kfbl6qGQEjU9"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-z0GDEGRzBeKMYVENzVOcMyOZ"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-KamHlDShoJGU7RGNugiV8epR"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-ZqSPgvorwTyoNJLgiMoOqjDq"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-pwoxoq4Fo1XT7rkgVqREjYnb"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-uQldx0lUwTOMpdGrSCQMVJNp"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-y27J2x5qk8jFEMWyq7NWO7DG"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:28[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-xgmiC2kqaNtiwsfBbJteZGxO"[1m}[0m[2m:[0m [2msmg::request[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m310:[0m started processing request
+[2m2026-09-06 19:13:31[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-4besahmKnqXN316pCfZoCZlY" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m2972783[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:31[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-iMOrXe4HcBKKHrERb09vquO3" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m3323103[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:32[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-4cAS7qAjpRb9avpUdwXcVx8F" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m3534006[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:32[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-d8Y0zDN0o0joGtQrB6zwViLR" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m3712824[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:32[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-khCuECYJE9g9QTSVuSbcP1It" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m3714134[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:32[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-AERsp4aeCQiS8UXe3aNYbF8q" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m3963936[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:32[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-vgnmjwkTQFH3B7Syx6aHZSMQ" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m3962792[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:32[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-PGWBjG1b3KEShKSIMuSm14RI" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m4038921[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:32[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-e4DA8EtFzHctxWEVrnc99k9C" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m4125722[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:33[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-IUT4CKoR3R2M8d1HewmjN2Mg" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m4353588[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:33[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-OhS4l0luhY0XJdssZLH56I8B" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m4514778[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:33[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-VrKlPka6mozP2dye1TUZ2j4p" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m4656782[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:33[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-cra8FwNXK5DlbjVG7EmhFMe2" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m4740257[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:33[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-vFl5LJsalJUux6hXA4ZEfqcE" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m4741132[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:33[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-RNIWgOqzF5dVutob26OhWVwx" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m5061688[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:33[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-Ytm0Hzt5jxjPw2vpI7xSW2Hx" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m5169389[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:33[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-ceDsBhKOUXpwXdGsX8DqXKrO" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m5248662[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:34[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-R5uUNuhDFfttQHABOTv6snoR" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m5546134[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:34[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-XvrR2LIb42KUDNng4GtheNHj" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m5594159[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:34[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-o5ny5LFkiaCFihGplyvINrIo" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m5711767[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:34[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-8JciVZKyazs53DiKHmOp65sD" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m5734032[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:34[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-OJM44usENUIZIsl7KJZjoT4c" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m6067517[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:34[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-3xgoKD1hRTF7Kfbl6qGQEjU9" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m6022582[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:35[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-z0GDEGRzBeKMYVENzVOcMyOZ" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m6365293[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:35[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-uQldx0lUwTOMpdGrSCQMVJNp" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m6365341[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:35[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-y27J2x5qk8jFEMWyq7NWO7DG" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m6577309[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:35[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-KamHlDShoJGU7RGNugiV8epR" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m6659400[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:35[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-xgmiC2kqaNtiwsfBbJteZGxO" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m6806256[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:35[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-ZqSPgvorwTyoNJLgiMoOqjDq" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m7015600[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+[2m2026-09-06 19:13:36[0m [32m INFO[0m [1mhttp_request[0m[1m{[0m[3mmethod[0m[2m=[0mPOST [3muri[0m[2m=[0m/v1/chat/completions [3mversion[0m[2m=[0mHTTP/1.1 [3mmodule[0m[2m=[0m"smg" [3mrequest_id[0m[2m=[0m"chatcmpl-pwoxoq4Fo1XT7rkgVqREjYnb" [3mstatus_code[0m[2m=[0m200 [3mlatency[0m[2m=[0m7299362[1m}[0m[2m:[0m [2msmg::response[0m[2m:[0m [2m/home/runner/work/sglang/sglang/src/middleware.rs[0m[2m:[0m[2m359:[0m finished processing request
+Evaluating[aime26]:   0%|          | 0/30 [00:00<?, ?it/s][A
+[A2026-09-07 03:14:28 - evalscope - [32mINFO[0m: Evaluating[aime26]   0%| 0/30 [Elapsed: 01:00 < Remaining: ?, ?it/s][0m
+Running[eval]:   0%|          | 0/1 [01:00<?, ?benchmark/s]
+Evaluating[aime26]:   0%|          | 0/30 [01:00<?, ?it/s][A
+Evaluating[aime26]:   3%|▎         | 1/30 [01:49<52:43, 109.09s/it][A
+[A2026-09-07 03:15:28 - evalscope - [32mINFO[0m: Evaluating[aime26]   3%| 1/30 [Elapsed: 02:00 < Remaining: 52:43, 109.09s/it][0m
+Running[eval]:   0%|          | 0/1 [02:00<?, ?benchmark/s]
+Evaluating[aime26]:   3%|▎         | 1/30 [02:00<52:43, 109.09s/it][A
+[A2026-09-07 03:16:28 - evalscope - [32mINFO[0m: Evaluating[aime26]   3%| 1/30 [Elapsed: 03:00 < Remaining: 52:43, 109.09s/it][0m
+Running[eval]:   0%|          | 0/1 [03:00<?, ?benchmark/s]
+Evaluating[aime26]:   3%|▎         | 1/30 [03:00<52:43, 109.09s/it][A
+Evaluating[aime26]:   7%|▋         | 2/30 [03:40<51:30, 110.36s/it][A
+Evaluating[aime26]:  10%|█         | 3/30 [03:52<29:27, 65.46s/it] [A
+[A2026-09-07 03:17:28 - evalscope - [32mINFO[0m: Evaluating[aime26]  10%| 3/30 [Elapsed: 04:00 < Remaining: 29:27, 65.46s/it][0m
+Running[eval]:   0%|          | 0/1 [04:00<?, ?benchmark/s]
+Evaluating[aime26]:  10%|█         | 3/30 [04:00<29:27, 65.46s/it][A
+[A2026-09-07 03:18:28 - evalscope - [32mINFO[0m: Evaluating[aime26]  10%| 3/30 [Elapsed: 05:00 < Remaining: 29:27, 65.46s/it][0m
+Running[eval]:   0%|          | 0/1 [05:00<?, ?benchmark/s]
+Evaluating[aime26]:  10%|█         | 3/30 [05:00<29:27, 65.46s/it][A
+[A2026-09-07 03:19:28 - evalscope - [32mINFO[0m: Evaluating[aime26]  10%| 3/30 [Elapsed: 06:00 < Remaining: 29:27, 65.46s/it][0m
+Running[eval]:   0%|          | 0/1 [06:00<?, ?benchmark/s]
+Evaluating[aime26]:  10%|█         | 3/30 [06:00<29:27, 65.46s/it][A
+Evaluating[aime26]:  13%|█▎        | 4/30 [07:00<49:20, 113.87s/it][A
+[A2026-09-07 03:20:29 - evalscope - [32mINFO[0m: Evaluating[aime26]  13%| 4/30 [Elapsed: 07:01 < Remaining: 49:20, 113.87s/it][0m
+Running[eval]:   0%|          | 0/1 [07:01<?, ?benchmark/s]
+Evaluating[aime26]:  13%|█▎        | 4/30 [07:01<49:20, 113.87s/it][A
+[A2026-09-07 03:21:29 - evalscope - [32mINFO[0m: Evaluating[aime26]  13%| 4/30 [Elapsed: 08:01 < Remaining: 49:20, 113.87s/it][0m
+Running[eval]:   0%|          | 0/1 [08:01<?, ?benchmark/s]
+Evaluating[aime26]:  13%|█▎        | 4/30 [08:01<49:20, 113.87s/it][A
+Evaluating[aime26]:  17%|█▋        | 5/30 [08:13<41:18, 99.15s/it] [A
+[A2026-09-07 03:22:29 - evalscope - [32mINFO[0m: Evaluating[aime26]  17%| 5/30 [Elapsed: 09:01 < Remaining: 41:18, 99.15s/it][0m
+Running[eval]:   0%|          | 0/1 [09:01<?, ?benchmark/s]
+Evaluating[aime26]:  17%|█▋        | 5/30 [09:01<41:18, 99.15s/it][A
+Evaluating[aime26]:  20%|██        | 6/30 [09:34<37:09, 92.90s/it][A
+Evaluating[aime26]:  23%|██▎       | 7/30 [09:47<25:36, 66.79s/it][A
+[A2026-09-07 03:23:30 - evalscope - [32mINFO[0m: Evaluating[aime26]  23%| 7/30 [Elapsed: 10:02 < Remaining: 25:36, 66.79s/it][0m
+Running[eval]:   0%|          | 0/1 [10:02<?, ?benchmark/s]
+Evaluating[aime26]:  23%|██▎       | 7/30 [10:02<25:36, 66.79s/it][A
+Evaluating[aime26]:  27%|██▋       | 8/30 [10:37<22:31, 61.45s/it][A
+Evaluating[aime26]:  30%|███       | 9/30 [10:48<15:59, 45.70s/it][A
+[A2026-09-07 03:24:30 - evalscope - [32mINFO[0m: Evaluating[aime26]  30%| 9/30 [Elapsed: 11:02 < Remaining: 15:59, 45.70s/it][0m
+Running[eval]:   0%|          | 0/1 [11:02<?, ?benchmark/s]
+Evaluating[aime26]:  30%|███       | 9/30 [11:02<15:59, 45.70s/it][A
+[A2026-09-07 03:25:31 - evalscope - [32mINFO[0m: Evaluating[aime26]  30%| 9/30 [Elapsed: 12:03 < Remaining: 15:59, 45.70s/it][0m
+Running[eval]:   0%|          | 0/1 [12:03<?, ?benchmark/s]
+Evaluating[aime26]:  30%|███       | 9/30 [12:03<15:59, 45.70s/it][A
+[A2026-09-07 03:26:31 - evalscope - [32mINFO[0m: Evaluating[aime26]  30%| 9/30 [Elapsed: 13:03 < Remaining: 15:59, 45.70s/it][0m
+Running[eval]:   0%|          | 0/1 [13:03<?, ?benchmark/s]
+Evaluating[aime26]:  30%|███       | 9/30 [13:03<15:59, 45.70s/it][A
+Evaluating[aime26]:  33%|███▎      | 10/30 [13:44<28:36, 85.84s/it][A
+[A2026-09-07 03:27:31 - evalscope - [32mINFO[0m: Evaluating[aime26]  33%| 10/30 [Elapsed: 14:03 < Remaining: 28:36, 85.84s/it][0m
+Running[eval]:   0%|          | 0/1 [14:03<?, ?benchmark/s]
+Evaluating[aime26]:  33%|███▎      | 10/30 [14:03<28:36, 85.84s/it][A
+Evaluating[aime26]:  37%|███▋      | 11/30 [14:14<21:46, 68.76s/it][A
+[A2026-09-07 03:28:31 - evalscope - [32mINFO[0m: Evaluating[aime26]  40%| 12/30 [Elapsed: 15:03 < Remaining: 20:37, 68.76s/it][0m
+Running[eval]:   0%|          | 0/1 [15:03<?, ?benchmark/s]
+Evaluating[aime26]:  40%|████      | 12/30 [15:03<20:37, 68.76s/it][A
+Evaluating[aime26]:  43%|████▎     | 13/30 [15:57<17:13, 60.80s/it][A
+[A2026-09-07 03:29:31 - evalscope - [32mINFO[0m: Evaluating[aime26]  43%| 13/30 [Elapsed: 16:03 < Remaining: 17:13, 60.80s/it][0m
+Running[eval]:   0%|          | 0/1 [16:03<?, ?benchmark/s]
+Evaluating[aime26]:  43%|████▎     | 13/30 [16:03<17:13, 60.80s/it][A
+[A2026-09-07 03:30:31 - evalscope - [32mINFO[0m: Evaluating[aime26]  43%| 13/30 [Elapsed: 17:03 < Remaining: 17:13, 60.80s/it][0m
+Running[eval]:   0%|          | 0/1 [17:03<?, ?benchmark/s]
+Evaluating[aime26]:  43%|████▎     | 13/30 [17:03<17:13, 60.80s/it][A
+Evaluating[aime26]:  47%|████▋     | 14/30 [17:22<17:49, 66.86s/it][A
+[A2026-09-07 03:31:31 - evalscope - [32mINFO[0m: Evaluating[aime26]  47%| 14/30 [Elapsed: 18:03 < Remaining: 17:49, 66.86s/it][0m
+Running[eval]:   0%|          | 0/1 [18:03<?, ?benchmark/s]
+Evaluating[aime26]:  47%|████▋     | 14/30 [18:03<17:49, 66.86s/it][A
+Evaluating[aime26]:  50%|█████     | 15/30 [18:49<18:02, 72.17s/it][A
+[A2026-09-07 03:32:31 - evalscope - [32mINFO[0m: Evaluating[aime26]  50%| 15/30 [Elapsed: 19:03 < Remaining: 18:02, 72.17s/it][0m
+Running[eval]:   0%|          | 0/1 [19:03<?, ?benchmark/s]
+Evaluating[aime26]:  50%|█████     | 15/30 [19:03<18:02, 72.17s/it][A
+[A2026-09-07 03:33:31 - evalscope - [32mINFO[0m: Evaluating[aime26]  50%| 15/30 [Elapsed: 20:03 < Remaining: 18:02, 72.17s/it][0m
+Running[eval]:   0%|          | 0/1 [20:04<?, ?benchmark/s]
+Evaluating[aime26]:  50%|█████     | 15/30 [20:03<18:02, 72.17s/it][A
+Evaluating[aime26]:  53%|█████▎    | 16/30 [20:16<17:47, 76.24s/it][A
+[A2026-09-07 03:34:32 - evalscope - [32mINFO[0m: Evaluating[aime26]  53%| 16/30 [Elapsed: 21:03 < Remaining: 17:47, 76.24s/it][0m
+Running[eval]:   0%|          | 0/1 [21:04<?, ?benchmark/s]
+Evaluating[aime26]:  53%|█████▎    | 16/30 [21:03<17:47, 76.24s/it][A
+[A2026-09-07 03:35:32 - evalscope - [32mINFO[0m: Evaluating[aime26]  53%| 16/30 [Elapsed: 22:03 < Remaining: 17:47, 76.24s/it][0m
+Running[eval]:   0%|          | 0/1 [22:04<?, ?benchmark/s]
+Evaluating[aime26]:  53%|█████▎    | 16/30 [22:03<17:47, 76.24s/it][A
+[A2026-09-07 03:36:32 - evalscope - [32mINFO[0m: Evaluating[aime26]  53%| 16/30 [Elapsed: 23:04 < Remaining: 17:47, 76.24s/it][0m
+Running[eval]:   0%|          | 0/1 [23:04<?, ?benchmark/s]
+Evaluating[aime26]:  53%|█████▎    | 16/30 [23:04<17:47, 76.24s/it][A
+[A2026-09-07 03:37:32 - evalscope - [32mINFO[0m: Evaluating[aime26]  53%| 16/30 [Elapsed: 24:04 < Remaining: 17:47, 76.24s/it][0m
+Running[eval]:   0%|          | 0/1 [24:04<?, ?benchmark/s]
+Evaluating[aime26]:  53%|█████▎    | 16/30 [24:04<17:47, 76.24s/it][A
+Evaluating[aime26]:  57%|█████▋    | 17/30 [24:55<28:48, 132.98s/it][A
+[A2026-09-07 03:38:32 - evalscope - [32mINFO[0m: Evaluating[aime26]  57%| 17/30 [Elapsed: 25:04 < Remaining: 28:48, 132.98s/it][0m
+Running[eval]:   0%|          | 0/1 [25:04<?, ?benchmark/s]
+Evaluating[aime26]:  57%|█████▋    | 17/30 [25:04<28:48, 132.98s/it][A
+Evaluating[aime26]:  60%|██████    | 18/30 [25:16<20:11, 100.94s/it][A
+[A2026-09-07 03:39:32 - evalscope - [32mINFO[0m: Evaluating[aime26]  60%| 18/30 [Elapsed: 26:04 < Remaining: 20:11, 100.94s/it][0m
+Running[eval]:   0%|          | 0/1 [26:04<?, ?benchmark/s]
+Evaluating[aime26]:  60%|██████    | 18/30 [26:04<20:11, 100.94s/it][A
+Evaluating[aime26]:  63%|██████▎   | 19/30 [27:04<18:52, 102.97s/it][A
+[A2026-09-07 03:40:33 - evalscope - [32mINFO[0m: Evaluating[aime26]  63%| 19/30 [Elapsed: 27:05 < Remaining: 18:52, 102.97s/it][0m
+Running[eval]:   0%|          | 0/1 [27:05<?, ?benchmark/s]
+Evaluating[aime26]:  63%|██████▎   | 19/30 [27:05<18:52, 102.97s/it][A
+[A2026-09-07 03:41:33 - evalscope - [32mINFO[0m: Evaluating[aime26]  63%| 19/30 [Elapsed: 28:05 < Remaining: 18:52, 102.97s/it][0m
+Running[eval]:   0%|          | 0/1 [28:05<?, ?benchmark/s]
+Evaluating[aime26]:  63%|██████▎   | 19/30 [28:05<18:52, 102.97s/it][A
+Evaluating[aime26]:  67%|██████▋   | 20/30 [28:39<16:46, 100.65s/it][A
+[A2026-09-07 03:42:33 - evalscope - [32mINFO[0m: Evaluating[aime26]  67%| 20/30 [Elapsed: 29:05 < Remaining: 16:46, 100.65s/it][0m
+Running[eval]:   0%|          | 0/1 [29:05<?, ?benchmark/s]
+Evaluating[aime26]:  67%|██████▋   | 20/30 [29:05<16:46, 100.65s/it][A
+Evaluating[aime26]:  70%|███████   | 21/30 [29:28<12:48, 85.42s/it] [A
+[A2026-09-07 03:43:33 - evalscope - [32mINFO[0m: Evaluating[aime26]  70%| 21/30 [Elapsed: 30:05 < Remaining: 12:48, 85.42s/it][0m
+Running[eval]:   0%|          | 0/1 [30:05<?, ?benchmark/s]
+Evaluating[aime26]:  70%|███████   | 21/30 [30:05<12:48, 85.42s/it][A
+[A2026-09-07 03:44:33 - evalscope - [32mINFO[0m: Evaluating[aime26]  70%| 21/30 [Elapsed: 31:05 < Remaining: 12:48, 85.42s/it][0m
+Running[eval]:   0%|          | 0/1 [31:05<?, ?benchmark/s]
+Evaluating[aime26]:  70%|███████   | 21/30 [31:05<12:48, 85.42s/it][A
+[A2026-09-07 03:45:33 - evalscope - [32mINFO[0m: Evaluating[aime26]  70%| 21/30 [Elapsed: 32:05 < Remaining: 12:48, 85.42s/it][0m
+Running[eval]:   0%|          | 0/1 [32:05<?, ?benchmark/s]
+Evaluating[aime26]:  70%|███████   | 21/30 [32:05<12:48, 85.42s/it][A
+[A2026-09-07 03:46:33 - evalscope - [32mINFO[0m: Evaluating[aime26]  70%| 21/30 [Elapsed: 33:05 < Remaining: 12:48, 85.42s/it][0m
+Running[eval]:   0%|          | 0/1 [33:05<?, ?benchmark/s]
+Evaluating[aime26]:  70%|███████   | 21/30 [33:05<12:48, 85.42s/it][A
+[A2026-09-07 03:47:33 - evalscope - [32mINFO[0m: Evaluating[aime26]  70%| 21/30 [Elapsed: 34:05 < Remaining: 12:48, 85.42s/it][0m
+Running[eval]:   0%|          | 0/1 [34:05<?, ?benchmark/s]
+Evaluating[aime26]:  70%|███████   | 21/30 [34:05<12:48, 85.42s/it][A
+Evaluating[aime26]:  73%|███████▎  | 22/30 [34:44<20:30, 153.86s/it][A
+[A2026-09-07 03:48:33 - evalscope - [32mINFO[0m: Evaluating[aime26]  73%| 22/30 [Elapsed: 35:05 < Remaining: 20:30, 153.86s/it][0m
+Running[eval]:   0%|          | 0/1 [35:05<?, ?benchmark/s]
+Evaluating[aime26]:  73%|███████▎  | 22/30 [35:05<20:30, 153.86s/it][A
+Evaluating[aime26]:  77%|███████▋  | 23/30 [35:47<14:49, 127.01s/it][A
+[A2026-09-07 03:49:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  77%| 23/30 [Elapsed: 36:05 < Remaining: 14:49, 127.01s/it][0m
+Running[eval]:   0%|          | 0/1 [36:06<?, ?benchmark/s]
+Evaluating[aime26]:  77%|███████▋  | 23/30 [36:05<14:49, 127.01s/it][A
+[A2026-09-07 03:50:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  77%| 23/30 [Elapsed: 37:05 < Remaining: 14:49, 127.01s/it][0m
+Running[eval]:   0%|          | 0/1 [37:06<?, ?benchmark/s]
+Evaluating[aime26]:  77%|███████▋  | 23/30 [37:05<14:49, 127.01s/it][A
+[A2026-09-07 03:51:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  77%| 23/30 [Elapsed: 38:05 < Remaining: 14:49, 127.01s/it][0m
+Running[eval]:   0%|          | 0/1 [38:06<?, ?benchmark/s]
+Evaluating[aime26]:  77%|███████▋  | 23/30 [38:05<14:49, 127.01s/it][A
+[A2026-09-07 03:52:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  77%| 23/30 [Elapsed: 39:05 < Remaining: 14:49, 127.01s/it][0m
+Running[eval]:   0%|          | 0/1 [39:06<?, ?benchmark/s]
+Evaluating[aime26]:  77%|███████▋  | 23/30 [39:05<14:49, 127.01s/it][A
+[A2026-09-07 03:53:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  77%| 23/30 [Elapsed: 40:05 < Remaining: 14:49, 127.01s/it][0m
+Running[eval]:   0%|          | 0/1 [40:06<?, ?benchmark/s]
+Evaluating[aime26]:  77%|███████▋  | 23/30 [40:05<14:49, 127.01s/it][A
+[A2026-09-07 03:54:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  77%| 23/30 [Elapsed: 41:06 < Remaining: 14:49, 127.01s/it][0m
+Running[eval]:   0%|          | 0/1 [41:06<?, ?benchmark/s]
+Evaluating[aime26]:  77%|███████▋  | 23/30 [41:06<14:49, 127.01s/it][A
+[A2026-09-07 03:55:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  77%| 23/30 [Elapsed: 42:06 < Remaining: 14:49, 127.01s/it][0m
+Running[eval]:   0%|          | 0/1 [42:06<?, ?benchmark/s]
+Evaluating[aime26]:  77%|███████▋  | 23/30 [42:06<14:49, 127.01s/it][A
+[A2026-09-07 03:56:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  77%| 23/30 [Elapsed: 43:06 < Remaining: 14:49, 127.01s/it][0m
+Running[eval]:   0%|          | 0/1 [43:06<?, ?benchmark/s]
+Evaluating[aime26]:  77%|███████▋  | 23/30 [43:06<14:49, 127.01s/it][A
+Evaluating[aime26]:  80%|████████  | 24/30 [43:12<22:09, 221.61s/it][A
+[A2026-09-07 03:57:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  80%| 24/30 [Elapsed: 44:06 < Remaining: 22:09, 221.61s/it][0m
+Running[eval]:   0%|          | 0/1 [44:06<?, ?benchmark/s]
+Evaluating[aime26]:  80%|████████  | 24/30 [44:06<22:09, 221.61s/it][A
+[A2026-09-07 03:58:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  80%| 24/30 [Elapsed: 45:06 < Remaining: 22:09, 221.61s/it][0m
+Running[eval]:   0%|          | 0/1 [45:06<?, ?benchmark/s]
+Evaluating[aime26]:  80%|████████  | 24/30 [45:06<22:09, 221.61s/it][A
+[A2026-09-07 03:59:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  80%| 24/30 [Elapsed: 46:06 < Remaining: 22:09, 221.61s/it][0m
+Running[eval]:   0%|          | 0/1 [46:06<?, ?benchmark/s]
+Evaluating[aime26]:  80%|████████  | 24/30 [46:06<22:09, 221.61s/it][A
+[A2026-09-07 04:00:34 - evalscope - [32mINFO[0m: Evaluating[aime26]  80%| 24/30 [Elapsed: 47:06 < Remaining: 22:09, 221.61s/it][0m
+Running[eval]:   0%|          | 0/1 [47:06<?, ?benchmark/s]
