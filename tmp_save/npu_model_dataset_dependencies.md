@@ -1,0 +1,173 @@
+# NPU 测试用例本地模型/数据集依赖汇总（精简版：脚本按目录归并）
+
+扫描目录 `test/registered/npu`；模型 125 个、数据集 26 条、其他引用 4 个。大小为 ModelScope/HF 仓库 API 统计的仓库总大小（GB，含全部格式权重文件，可能略大于实际所需）。
+
+## 一、模型权重（按大小排序）
+
+- **vllm-ascend/DeepSeek-R1-0528-W8A8** — 701.69 GB — basic_function/hierarchical_cache_mla,load_balance_method,deepep,speculative_moe_a2a_backend
+- **vllm-ascend/DeepSeek-V3.2-W8A8** — 694.47 GB — basic_function/cp_vs_nocp_ttft,enable_return_routed_experts,deepep_auto_deepseek_v3_2_w8a8,deepep_low_latency_deepseek_v3_2_w8a8；llm_models/deepseek_v32_indexcache,deepseek_v3_2_w8a8
+- **Kimi/Kimi-K2-Thinking** — 594.26 GB — llm_models/kimi_k2_thinking
+- **Eco-Tech/Kimi-K2.6-w4a8** — 535.91 GB — accuracy/kimi_k2_6_w4a8_16p_in64k_out1k_100ms_aime25；basic_function/full_decode_graph_gsm8k
+- **Qwen/Qwen3-VL-235B-A22B-Instruct** — 471.35 GB — vlm_models/qwen3_vl_235b_a22b_instruct
+- **cyankiwi/MiniMax-M2-BF16** — 457.51 GB — llm_models/minimax_m2_bf16
+- **yzgjhdxf/GLM-5-top64-pruned-gsm8k** — 420.41 GB — accuracy/glm5_top64_pruned_bf16_8p_gsm8k
+- **Eco-Tech/GLM-5.1-w4a8** — 420.17 GB — accuracy/glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26；performance/* (6个)
+- **Eco-Tech/DeepSeek-V4-Flash-0731-w8a8** — 313.45 GB — performance/deepseek_v4_flash_w8a8_8p_in8k_out1k_50ms
+- **Eco-Tech/DeepSeek-V4-Flash-w8a8-mtp** — 300.1 GB — accuracy/deepseek_v4_flash_w8a8_8p_gpqa；performance/deepseek_v4_flash_w8a8_1p1d_16p_in8k_out1k_50ms,deepseek_v4_flash_w8a8_8p_in32k_out1k_50ms
+- **vllm-ascend/Qwen3-235B-A22B-W8A8** — 236.8 GB — basic_function/deepep_auto_qwen3_235b_a22b_w8a8,deepep_low_latency_qwen3_235b_a22b_w8a8；llm_models/qwen3_235b_a22b_w8a8
+- **Eco-Tech/Qwen3.5-397B-A17B-w4a8-mtp** — 235.88 GB — accuracy/qwen3_5_397b_8p_aime26,qwen3_5_397b_8p_gpqa；performance/* (10个)
+- **Eco-Tech/MiniMax-M2.5-w8a8-QuaRot** — 230.82 GB — accuracy/minimax_m2_5_w8a8_4p_in64k_out1k_prefix90_50ms_gpqa,minimax_m2_5_w8a8_8p_in3k5_out1k5_50ms_gpqa
+- **meta-llama/Llama-4-Scout-17B-16E-Instruct** — 217.32 GB — llm_models/llama4_scount_17b_16e
+- **ZhipuAI/GLM-4.5V** — 215.45 GB — vlm_models/glm_4_5v
+- **Qwen/Qwen3-Next-80B-A3B-Instruct** — 162.68 GB — accuracy/qwen3_next_80b_w8a8_2p_in6k_out1k5_bs16_aime25；basic_function/deepep_auto_qwen3_next,deepep_low_latency_qwen3_next,disaggregation_hybrid_attention；llm_models/qwen3_next_80b
+- **Qwen/Qwen2.5-VL-72B-Instruct** — 146.83 GB — vlm_models/encoder_dp,qwen2_5_vl_72b_instruct
+- **mistralai/Mistral-Small-3.1-24B-Instruct-2503** — 96.08 GB — vlm_models/mistral_small_3_1_24b_instruct_2503
+- **vllm-ascend/Qwen3-Next-80B-A3B-Instruct-W8A8** — 84.9 GB — accuracy/qwen3_next_80b_w8a8_2p_in6k_out1k5_bs16_aime25
+- **Qwen/Qwen3.5-35B-A3B** — 71.93 GB — basic_function/* (5个)
+- **Qwen/Qwen3.6-35B-A3B** — 71.93 GB — accuracy/qwen3_6_35b_a3b_1p_aime26,qwen3_6_35b_a3b_1p_in64k_out1k_prefix90_50ms_aime26；basic_function/attn_tp_gather_fuseep；performance/* (9个)
+- **Qwen/Qwen3-Omni-30B-A3B-Instruct** — 70.53 GB — vlm_models/qwen3_omni_30b_a3b_instruct
+- **CohereForAI/c4ai-command-r-v01** — 69.97 GB — basic_function/api_related
+- **Qwen/Qwen3-32B** — 65.54 GB — accuracy/qwen3_32b_bf16_8p_gpqa；basic_function/* (18个)；llm_models/qwen3_32b
+- **Qwen/Qwen3-Omni-30B-A3B-Thinking** — 63.45 GB — accuracy/qwen3_omni_30b_a3b_thinking_1p_mmmu
+- **google/gemma-4-31B-it** — 62.58 GB — vlm_models/vision_openai_server_a
+- **ZhipuAI/GLM-4.7-Flash** — 62.47 GB — accuracy/glm4_7_flash_1p_aime25,glm4_7_flash_1p_gsm8k
+- **Qwen/Qwen3-VL-30B-A3B-Instruct** — 62.15 GB — accuracy/qwen3_vl_30b_a3b_bf16_2p_gsm8k；basic_function/adaptive_dispatch_to_encoder,disaggregated_vlm；vlm_models/qwen3_vl_30b_a3b_instruct,vision_openai_server_a
+- **Qwen/Qwen3-VL-30B-A3B-Thinking** — 62.15 GB — accuracy/qwen3_vl_30b_a3b_thinking_1p_mmmu
+- **Qwen/Qwen3-30B-A3B** — 61.08 GB — basic_function/* (5个)；interface/enable_thinking；llm_models/qwen3_30b_attn_cp
+- **Qwen/Qwen3-30B-A3B-Instruct-2507** — 61.08 GB — basic_function/* (6个)；llm_models/qwen3_30b
+- **Qwen/Qwen3.5-27B** — 55.59 GB — basic_function/api_related_tool_call
+- **Qwen/Qwen3.6-27B** — 55.59 GB — accuracy/qwen3_6_27b_1p_gpqa；basic_function/lora_qwen3_6_27b_logprob_diff；performance/qwen3_6_27b_1p_in1024x1024_30_out1024_50ms,qwen3_6_27b_1p_in1080p_30_out256_50ms,qwen3_6_27b_1p_in64k_out1k_prefix90_50ms,qwen3_6_27b_2p_in64k_out1k_prefix90_50ms
+- **AI-ModelScope/Skywork-Reward-Gemma-2-27B-v0.2** — 54.47 GB — reward_models/gemma_2_27b_v0_2
+- **arcee-ai/Trinity-Mini** — 52.27 GB — llm_models/trinity_mini
+- **baidu/ERNIE-4.5-21B-A3B-PT** — 43.92 GB — llm_models/ernie_4_5_21b_a3b_pt
+- **vllm-ascend/QWQ-32B-W8A8** — 43.44 GB — llm_models/qwq_32b_w8a8
+- **aleoyang/Qwen3-32B-w8a8-MindIE** — 42.77 GB — accuracy/qwen3_32b_w8a8_2p_in3k5_out1k5_50ms_gpqa,qwen3_32b_w8a8_2p_in3k5_out1k5_50ms_gpqa_a2；basic_function/speculative_attention_mode,speculative_multi_npu,speculative_token_map
+- **Eco-Tech/Qwen3.5-35B-A3B-w8a8-mtp** — 39.81 GB — basic_function/multimodal_quantization_chunked,enable_quant_communications,deepep_dispatcher_output_dtype,enable_waterfill
+- **Eco-Tech/Qwen3-32B-w4a4-LAOS** — 34.37 GB — basic_function/w4a4_quantization
+- **inclusionAI/Ling-lite** — 33.61 GB — llm_models/ling_lite
+- **moonshotai/Kimi-VL-A3B-Instruct** — 32.82 GB — basic_function/dp_attention；vlm_models/kimi_vl_a3b_instruct,vision_openai_server_a,vlm_input_format
+- **inclusionAI/LLaDA2.0-mini** — 32.52 GB — basic_function/llada2_mini
+- **Eco-Tech/Qwen3.6-27B-w8a8** — 32.15 GB — accuracy/qwen3_6_27b_w8a8_1p_in3k5_out1k5_50ms_gpqa；performance/* (5个)
+- **AI-ModelScope/Llama-3.1-8B-Instruct** — 32.13 GB — accuracy/* (30个)；basic_function/* (126个)；interface/matched_stop；llm_models/* (26个)；performance/* (30个)；rerank_models/qwen3_reranker_8b,qwen3_vl_reranker_2b；reward_models/gemma_2_27b_v0_2；vlm_models/* (22个)
+- **LLM-Research/Meta-Llama-3-8B-Instruct** — 32.13 GB — basic_function/speculative_token_map
+- **LLM-Research/Meta-Llama-3.1-8B-Instruct** — 32.13 GB — basic_function/multi_tokenizer
+- **moonshotai/Moonlight-16B-A3B-Instruct** — 31.93 GB — accuracy/moonlight_16b_a3b_bf16_1p_gsm8k
+- **deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct** — 31.42 GB — basic_function/* (6个)
+- **Eco-Tech/Qwen3-30B-A3B-w4a4-LAOS** — 31.38 GB — llm_models/qwen3_30b_w4a4
+- **vllm-ascend/Qwen3-30B-A3B-W8A8** — 31.29 GB — accuracy/qwen3_30b_w8a8_1p_in3k5_out1k5_50ms_aime25
+- **mistralai/Mistral-7B-Instruct-v0.2** — 29.49 GB — basic_function/model_config_parser
+- **openai/whisper-large-v3** — 24.7 GB — basic_function/serving_transcription
+- **ZhipuAI/GLM-4.6V-Flash** — 20.61 GB — accuracy/glm4_6v_flash_1p_mmmu
+- **stepfun-ai/Step3-VL-10B** — 20.36 GB — vlm_models/step3_vl_10b
+- **Qwen/Qwen3.5-9B** — 19.33 GB — accuracy/qwen3_5_9b_bf16_1p_gsm8k；basic_function/* (7个)
+- **Qwen/Qwen3-30B-A3B-GGUF/Qwen3-30B-A3B-Q4_K_M.gguf** — 18.56 GB — basic_function/gguf_moe
+- **Qwen/Qwen3-VL-8B-Instruct** — 17.55 GB — accuracy/qwen3_vl_8b_bf16_2p_gsm8k；basic_function/* (5个)；vlm_models/qwen3_vl_8b_instruct,vision_openai_server_a
+- **Qwen/Qwen3-VL-8B-Thinking** — 17.55 GB — accuracy/qwen3_vl_8b_thinking_1p_mmmu；basic_function/pp_single_node_extra
+- **openbmb/MiniCPM-o-2_6** — 17.43 GB — basic_function/warmups；vlm_models/minicpm_o_2_6,vision_openai_server_a
+- **vllm-ascend/DeepSeek-V2-Lite-W8A8** — 17.22 GB — basic_function/* (6个)
+- **Qwen/Qwen3-30B-A3B-GPTQ-Int4** — 16.95 GB — basic_function/gptq_moe
+- **Intel/Qwen3-30B-A3B-Instruct-2507-int4-AutoRound** — 16.83 GB — basic_function/autoround_moe
+- **XiaomiMiMo/MiMo-VL-7B-RL** — 16.62 GB — vlm_models/mimo_vl_7b_rl
+- **Qwen/Qwen3-8B** — 16.4 GB — basic_function/* (21个)；interface/large_max_new_tokens；llm_models/qwen3_8b_communications_quantization
+- **Qwen/Qwen3-Reranker-8B** — 16.39 GB — rerank_models/qwen3_reranker_8b
+- **openbmb/MiniCPM-V-2_6** — 16.21 GB — vlm_models/vision_openai_server_a
+- **lmms-lab/llava-onevision-qwen2-7b-ov** — 16.07 GB — vlm_models/vision_openai_server_a
+- **XiaomiMiMo/MiMo-7B-RL** — 15.68 GB — llm_models/mimo_7b_rl
+- **Qwen/Qwen2.5-7B-Instruct** — 15.24 GB — basic_function/* (9个)
+- **deepseek-ai/DeepSeek-R1-Distill-Qwen-7B** — 15.24 GB — basic_function/reasoning_content
+- **Qwen/Qwen3-Embedding-8B** — 15.15 GB — embedding_models/qwen3_embedding_8b
+- **deepseek-ai/Janus-Pro-7B** — 14.85 GB — vlm_models/janus_pro_7b
+- **LLM-Research/Llama-2-7B** — 13.48 GB — basic_function/nccl_port
+- **microsoft/Phi-4-multimodal-instruct** — 12.88 GB — basic_function/keep_mm_feature_on_device；llm_models/phi_4_multimodal_llm；vlm_models/phi4_multimodal_instruct
+- **Qwen/Qwen3.5-4B** — 9.34 GB — basic_function/lora_backend,lora_tied_lm_head
+- **arcee-ai/AFM-4.5B-Base** — 9.26 GB — llm_models/afm_4_5b
+- **Qwen/Qwen3-VL-4B-Instruct** — 8.89 GB — basic_function/* (7个)；interface/api_encode；vlm_models/qwen3_vl_4b_instruct
+- **google/gemma-3-4b-it** — 8.64 GB — basic_function/mm_attention_backend；llm_models/gemma_3_4b_it_llm；vlm_models/gemma_3_4b_it,vlm_input_format
+- **Qwen/Qwen2.5-VL-3B-Instruct** — 7.52 GB — basic_function/skip_tokenizer_init；vlm_models/qwen2_5_vl_3b_instruct,token_id_retokenize_e2e,vlm_input_format
+- **Qwen/gte-Qwen2-1.5B-instruct** — 7.12 GB — basic_function/srt_engine
+- **iic/gte_Qwen2-1.5B-instruct** — 7.11 GB — basic_function/openai_embedding
+- **lightseekorg/kimi-k2.6-eagle3** — 6.36 GB — accuracy/kimi_k2_6_w4a8_16p_in64k_out1k_100ms_aime25
+- **Intel/Qwen3-8B-int4-AutoRound** — 6.11 GB — basic_function/autoround_dense
+- **rednote-hilab/dots.ocr** — 6.09 GB — vlm_models/dots_ocr
+- **LLM-Research/Llama-3.2-1B** — 4.95 GB — basic_function/* (5个)
+- **LLM-Research/Llama-3.2-1B-Instruct** — 4.95 GB — basic_function/* (64个)；interface/* (6个)
+- **philschmid/code-llama-3-1-8b-text-to-sql-lora** — 4.79 GB — basic_function/lora_update
+- **Qwen/Qwen3-ASR-1.7B** — 4.7 GB — vlm_models/qwen3_asr
+- **Qwen/Qwen2-VL-2B-Instruct** — 4.43 GB — basic_function/external_models；vlm_models/vision_openai_server_a
+- **Qwen/Qwen3-VL-Reranker-2B** — 4.27 GB — rerank_models/qwen3_vl_reranker_2b
+- **deepseek-ai/Janus-Pro-1B** — 4.18 GB — vlm_models/janus_pro_1b
+- **deepseek-ai/deepseek-coder-1.3b-base** — 2.69 GB — basic_function/fim_completion
+- **sgl-npu/MiniMax-M2.5-eagel-model-0318** — 2.68 GB — accuracy/minimax_m2_5_w8a8_4p_in64k_out1k_prefix90_50ms_gpqa,minimax_m2_5_w8a8_8p_in3k5_out1k5_50ms_gpqa
+- **Qwen/Qwen3-4B-GGUF/Qwen3-4B-Q4_K_M.gguf** — 2.5 GB — basic_function/model_tokenizer,gguf
+- **BAAI/bge-reranker-v2-m3** — 2.29 GB — basic_function/openai_server
+- **z-lab/Qwen3-8B-DFlash-b16** — 2.1 GB — basic_function/dflash_speculative
+- **Qwen/Qwen3-1.7B-GPTQ-Int8** — 2.08 GB — llm_models/qwen3_1_7b_gptq_int8
+- **Qwen/Qwen3-ASR-0.6B** — 1.88 GB — basic_function/api_related_asr_max
+- **Zjcxy-SmartAI/Eagle3-Qwen3-32B-zh** — 1.57 GB — accuracy/qwen3_32b_bf16_8p_gpqa,qwen3_32b_w8a8_2p_in3k5_out1k5_50ms_gpqa,qwen3_32b_w8a8_2p_in3k5_out1k5_50ms_gpqa_a2；basic_function/speculative_attention_mode,speculative_multi_npu,speculative_token_map
+- **lmsys/sglang-EAGLE-LLaMA3-Instruct-8B** — 1.55 GB — basic_function/speculative_token_map
+- **Qwen/Qwen3-0.6B** — 1.52 GB — basic_function/* (36个)；interface/anthropic_server,http2_server,openai_server_ebnf；llm_models/qwen3_0_6b
+- **hotdogs/qwen3.6-27b-cybersecurity-lora** — 1.32 GB — basic_function/lora_qwen3_6_27b_logprob_diff
+- **algoprog/fact-generation-llama-3.1-8b-instruct-lora** — 0.39 GB — basic_function/lora_update
+- **pbevan11/llama-3.1-8b-ocr-correction** — 0.34 GB — basic_function/lora_update
+- **Aswinkv07/qwen3.5-4b-neo4j-text2cypher-lora** — 0.19 GB — basic_function/lora_backend
+- **codelion/Llama-3.2-1B-Instruct-tool-calling-lora** — 0.18 GB — basic_function/* (7个)
+- **nvidia/llama-3.1-nemoguard-8b-topic-control** — 0.08 GB — basic_function/lora_update
+- **suayptalha/FastLlama-3.2-LoRA** — 0.06 GB — basic_function/lora_basic,lora_memory_eviction,lora_openai_compatible_supplement,wait_threshold
+- **[hf-cache]Qwen3-30B-A3B-Instruct-2507-theo-style-lora** — 未查到* GB — basic_function/experts_shared_outer_lora
+- **DeepSeek-R1-0528-w4a8-per-channel** — 未查到* GB — basic_function/deepep_auto_deepseek_R1_0528_w4a8_per_channel,deepep_low_latency_deepseek_R1_0528_w4a8_per_channel,speculative_draft_attention_backend
+- **DeepSeek-V3.2-Exp-W8A8** — 未查到* GB — accuracy/deepseek_v3_2_8p_aime25,deepseek_v3_2_8p_gsm8k；llm_models/deepseek_v3_2_exp_w8a8
+- **Howeee/DeepSeek-R1-0528-w8a8** — 未查到* GB — basic_function/mlapo,bucket_adjust_interval_secs_concurrency
+- **Qwen/Eagle3-Qwen3-8B-zh** — 未查到* GB — accuracy/qwen3_8b_w8a8_1p_in3k5_out1k5_50ms_gpqa,qwen3_8b_w8a8_1p_in6k_out1k5_bs16_gpqa
+- **Qwen/Qwen3-30B-A3B-w8a8** — 未查到* GB — basic_function/deepep_auto_qwen3_30b_a3b_w8a8,deepep_low_latency_qwen3_30b_a3b_w8a8,eplb_min_rebalancing_utilization_threshold；llm_models/qwen3_30b_fuseep；test_npu_memory_consumption.py/memory_consumption
+- **Qwen/Qwen3-8B-W8A8** — 未查到* GB — accuracy/qwen3_8b_w8a8_1p_in3k5_out1k5_50ms_gpqa,qwen3_8b_w8a8_1p_in6k_out1k5_bs16_gpqa
+- **Qwen/Qwen3-8B_eagle3** — 未查到* GB — basic_function/* (9个)
+- **Qwen/Qwen3-VL-8B-Instruct-Eagle3** — 未查到* GB — basic_function/multimodal_spec_overlap
+- **Qwen/Qwen3-a3B_eagle3** — 未查到* GB — accuracy/qwen3_30b_w8a8_1p_in3k5_out1k5_50ms_aime25；basic_function/eagle_dp_attention
+- **Qwen3-Coder-480B-A35B-Instruct-w8a8-QuaRot** — 未查到* GB — basic_function/api_related_tool_call,deepep_auto_qwen3_480b,deepep_low_latency_qwen3_480b；llm_models/qwen3_coder_480b_a35b
+- **YZY/Qwen3-8B** — 未查到* GB — basic_function/decrypted_draft_config_file
+- **YZY/Qwen3-8B_eagle3** — 未查到* GB — basic_function/decrypted_draft_config_file
+- **eigen-ai-labs/gpt-oss-120b-bf16** — 未查到* GB — basic_function/swa_radix_cache_kl,streaming_session_swa；llm_models/gpt_oss_120b_bf16
+- **hot_map/pd_prefill_0720.pt** — 未查到* GB — performance/deepseek_v4_flash_w8a8_1p1d_16p_in8k_out1k_50ms
+- **sglang-EAGLE3-LLaMA3.1-Instruct-8B** — 未查到* GB — basic_function/* (6个)
+
+\* 未查到：内部/私有仓库（多为 Eco-Tech 量化版之外的 w8a8 内部模型、YZY/Howeee 等测试自建仓库），公网不可查。
+
+## 二、数据集
+
+- **[ms-datasets]audios/bird.mp3** — 未知 — vlm_models/qwen3_omni_30b_a3b_instruct
+- **[ms-datasets]audios/trump.mp3** — 未知 — vlm_models/qwen3_omni_30b_a3b_instruct
+- **[ms-datasets]gsm8k_deepseekv4/cache0_32000/formal_run1_64_32000_cache0.json** — 本地生成性能数据（8000/32000 条长序列），约数十 MB — performance/deepseek_v4_flash_w8a8_8p_in32k_out1k_50ms
+- **[ms-datasets]gsm8k_deepseekv4/cache0_8000/formal_run1_160_8000_cache0.json** — 本地生成性能数据（8000/32000 条长序列），约数十 MB — performance/deepseek_v4_flash_w8a8_8p_in8k_out1k_50ms
+- **[ms-datasets]images/023.jpg** — 未知 — rerank_models/qwen3_vl_reranker_2b
+- **[ms-datasets]images/1x1.png** — 未知 — basic_function/pp_single_node_extra
+- **[ms-datasets]images/example_image.png** — 未知 — basic_function/dp_attention,skip_tokenizer_init
+- **[ms-datasets]images/invoice_with_barcode_logo.jpeg** — 未知 — basic_function/prefix_mm_cache；vlm_models/dots_ocr
+- **[ms-datasets]images/logo.png** — 未知 — basic_function/mm_limit；vlm_models/qwen3_omni_30b_a3b_instruct
+- **[ms-datasets]images/man.png** — 未知 — basic_function/mm_limit,embedding_interpolation；vlm_models/qwen3_omni_30b_a3b_instruct
+- **[ms-datasets]images/man_ironing_on_back_of_suv.png** — 未知 — vlm_models/vision_openai_server_a,vlm_input_format
+- **[ms-datasets]images/sgl_logo.png** — 未知 — vlm_models/vlm_input_format
+- **[ms-datasets]openslr/librispeech_asr** — test-clean 约 0.35 GB（完整集约 60 GB） — vlm_models/qwen3_asr
+- **[ms-datasets]video/audios_Trump_WEF_2018_10s.mp3** — 未知 — basic_function/serving_transcription
+- **[ms-datasets]video/jobs.mp4** — 未知 — vlm_models/qwen3_omni_30b_a3b_instruct
+- **[ms-datasets]wav/asr_en.wav** — 未知 — basic_function/api_related_asr_max
+- **aisbench-type:gsm8k** — 数 MB (AISBench 内置 gsm8k 采样) — performance/* (22个)
+- **aisbench-type:mm-custom-gen** — 自定义多模态生成数据 — performance/qwen3_6_27b_1p_in1024x1024_30_out1024_50ms,qwen3_6_27b_1p_in1080p_30_out256_50ms,qwen3_6_35b_a3b_1p_in1024x1024_30_out1024_50ms,qwen3_6_35b_a3b_1p_in1080p_30_out256_50ms
+- **aisbench:generated-shared-prefix** — 随机共享前缀（内存生成） — performance/* (7个)
+- **aisbench:image** — 未知 — performance/qwen3_6_27b_1p_in1024x1024_30_out1024_50ms,qwen3_6_27b_1p_in1080p_30_out256_50ms,qwen3_6_35b_a3b_1p_in1024x1024_30_out1024_50ms,qwen3_6_35b_a3b_1p_in1080p_30_out256_50ms
+- **aisbench:random** — 随机 token 序列（无外部文件，内存生成） — basic_function/cp_vs_nocp_ttft,bucket_adjust_interval_secs_concurrency；performance/* (31个)
+- **evalscope:aime25** — 约 0.1 MB (30 题) — accuracy/glm4_7_flash_1p_aime25,kimi_k2_6_w4a8_16p_in64k_out1k_100ms_aime25,qwen3_30b_w8a8_1p_in3k5_out1k5_50ms_aime25,qwen3_next_80b_w8a8_2p_in6k_out1k5_bs16_aime25
+- **evalscope:aime26** — 约 0.1 MB (约 12 题) — accuracy/glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26,qwen3_5_397b_8p_aime26,qwen3_6_35b_a3b_1p_aime26,qwen3_6_35b_a3b_1p_in64k_out1k_prefix90_50ms_aime26
+- **evalscope:gpqa_diamond** — 约 1 MB (198 题) — accuracy/* (12个)
+- **evalscope:gsm8k** — 约 5 MB (openai/gsm8k test split) — accuracy/* (8个)
+- **evalscope:mmmu** — 约 0.7 GB (validation split, 含图片) — accuracy/glm4_6v_flash_1p_mmmu,qwen3_omni_30b_a3b_thinking_1p_mmmu,qwen3_vl_30b_a3b_thinking_1p_mmmu,qwen3_vl_8b_thinking_1p_mmmu
+
+## 三、其他引用（HF 仓库 ID / 特殊文件）
+
+- **Qwen/Qwen2-0.5B-Instruct** — 约 1 GB — basic_function/download_dir
+- **RedHatAI/Qwen2.5-0.5B-Instruct-quantized.w8a8** — 约 0.6 GB — basic_function/w8a8_quantization
+- **default** — 内置测试多模态样例（无下载） — basic_function/* (7个)；vlm_models/qwen3_asr,qwen3_omni_30b_a3b_instruct,vision_openai_server_a
+- **dots_ocr** — 未知 — vlm_models/dots_ocr
+- **dummy** — 占位符（无下载） — basic_function/disaggregation_basic
+- **meta-llama/Llama-3.1-8B-Instruct** — 约 32 GB (ModelScope 同名仓库) — basic_function/openai_server
+- **qwen3-asr** — 未知 — basic_function/api_related_asr_max
+- **whisper** — 未知 — basic_function/serving_transcription
