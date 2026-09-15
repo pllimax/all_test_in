@@ -950,7 +950,7 @@ def _extract_case_names(job_name):
 
 def _match_job_for_case(case_key, jobs):
     """按用例名匹配 job。jobs 形如 {case_name: {job_id, name}}。
-    兼容 yaml_name 带/不带 test_npu_ 前缀、带/不带 _a2 后缀。
+    兼容 yaml_name 带/不带 test_npu_ 前缀、带/不带 _a2/_a5 后缀。
     """
     if not jobs:
         return None
@@ -961,12 +961,13 @@ def _match_job_for_case(case_key, jobs):
             candidates.append(case_key[len("test_npu_"):])
         else:
             candidates.append("test_npu_" + case_key)
-    # 末尾 _a2 芯片标记差异容错
+    # 末尾 _a2/_a5 芯片标记差异容错
     for c in list(candidates):
-        if c.endswith("_a2"):
-            candidates.append(c[:-3])
-        else:
-            candidates.append(c + "_a2")
+        for suffix in ("_a2", "_a5"):
+            if c.endswith(suffix):
+                candidates.append(c[: -len(suffix)])
+            else:
+                candidates.append(c + suffix)
     for c in candidates:
         if c in jobs:
             return jobs[c]
@@ -1484,8 +1485,8 @@ def parse_yaml_test_name(name):
     # Strip test_npu_ prefix if present
     if name.startswith("test_npu_"):
         name = name[len("test_npu_"):]
-    # Strip _a2 suffix (A2 chip marker)
-    name = re.sub(r"_a2$", "", name)
+    # Strip chip marker suffix (A2/A5 chip)
+    name = re.sub(r"_(a2|a5)$", "", name)
     # Use parse_filename by feeding it as if it were a filename
     labels = parse_filename("test_npu_" + name + ".txt")
     return labels
