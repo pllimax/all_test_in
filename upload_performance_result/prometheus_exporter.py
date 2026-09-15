@@ -160,12 +160,21 @@ def _iter_metrics_files(metrics_dir, suffix, subdir=""):
                     yield top, os.path.join(scan_dir, name)
         else:
             # 新结构：{branch}-{run_id}/{workflow_name}/
+            # workflow 目录名可携带镜像标签后缀（PR #39585）：
+            #   {workflow}--{image_label}，如 Nightly_Test_NPU--main-cann9.0.0-a3
+            # 查表用去掉后缀的基础名；date_label 保留后缀，供 split_date_label 分离 image
             for wf_dir in sorted(os.listdir(top_path)):
                 wf_path = os.path.join(top_path, wf_dir)
                 if not os.path.isdir(wf_path):
                     continue
-                workflow = WORKFLOW_NAME_MAP.get(wf_dir, wf_dir.lower())
-                date_label = f"{top}/{workflow}"
+                base_wf, sep, image_label = wf_dir.rpartition("--")
+                if not sep or not base_wf:
+                    base_wf, image_label = wf_dir, ""
+                workflow = WORKFLOW_NAME_MAP.get(base_wf, base_wf.lower())
+                if image_label:
+                    date_label = f"{top}/{workflow}--{image_label}"
+                else:
+                    date_label = f"{top}/{workflow}"
                 scan_dir = os.path.join(wf_path, subdir) if subdir else wf_path
                 if not os.path.isdir(scan_dir):
                     continue

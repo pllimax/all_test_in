@@ -1962,32 +1962,40 @@ def _match_baselines_for_item(item, baselines):
 
 
 def split_date_label(date_label):
-    """拆分 date_label 为 (date, branch, run_id, run_workflow)。
+    """拆分 date_label 为 (date, branch, run_id, run_workflow, image)。
 
     新格式（CI 目录新增时间/序号段）:
             {branch}-{date}-{time}-{run_id}-{attempt}/{workflow}
             例如 pllimax-pllimax-outputlogdirstructure-20260813-2002-31698149241-1/Nightly_Test_NPU
-            → (20260813, pllimax-pllimax-outputlogdirstructure, 31698149241, Nightly_Test_NPU)
+            → (20260813, pllimax-pllimax-outputlogdirstructure, 31698149241, Nightly_Test_NPU, "")
             # 中间 -2002- 为 CI 时间/序号段（2-4 位），跳过；run_id 剥离本地去重后缀 -N。
+    镜像标签（PR #39585）: workflow 段可携带 --{image_label} 后缀，如
+            {branch}-.../{workflow}--{image_label}（Nightly_Test_NPU--main-cann9.0.0-a3）
+            → run_workflow 保持纯净值（供 BRANCH_REPO_MAP 等映射），image 单独返回。
     旧格式（分支模式）:
             {branch}-{date}-{run_id}-{attempt}/{workflow}
-            例如 pllimax-...-20260809-31317079962-1/Nightly_Test_NPU
-    旧格式: YYYYMMDD → (YYYYMMDD, "", "", "")
+    旧格式: YYYYMMDD → (YYYYMMDD, "", "", "", "")
     """
     if not date_label:
-        return date_label, "", "", ""
-    # 新格式：{branch}-{date}-{time}-{run_id}-{attempt}/{workflow}
+        return date_label, "", "", "", ""
+    # 新格式：{branch}-{date}-{time}-{run_id}-{attempt}/{workflow}[-{image_label}]
     # run_id 至少 5 位（GitHub Actions run_id 实际 9-11 位），time 段 2-4 位
     m = re.match(r"^(.+)-(\d{8})-(\d{2,4})-(\d{5,})(?:-(\d+))?/(.+)$", date_label)
     if m:
         run_id = re.sub(r"-\d+$", "", m.group(4))
-        return m.group(2), m.group(1), run_id, m.group(6)
+        wf, sep, image = m.group(6).rpartition("--")
+        if not sep or not wf:
+            wf, image = m.group(6), ""
+        return m.group(2), m.group(1), run_id, wf, image
     # 旧格式（分支模式）：{branch}-{date}-{run_id}-{attempt}/{workflow}
     m = re.match(r"^(.+)-(\d{8})-(\d{5,})(?:-(\d+))?/(.+)$", date_label)
     if m:
         run_id = re.sub(r"-\d+$", "", m.group(3))
-        return m.group(2), m.group(1), run_id, m.group(5)
-    return date_label, "", "", ""
+        wf, sep, image = m.group(5).rpartition("--")
+        if not sep or not wf:
+            wf, image = m.group(5), ""
+        return m.group(2), m.group(1), run_id, wf, image
+    return date_label, "", "", "", ""
 
 
 def collect_all_data(eval_data=None, accuracy_data=None):
@@ -2023,11 +2031,12 @@ def collect_all_data(eval_data=None, accuracy_data=None):
             continue
 
         labels = parse_filename(filename)
-        date_part, branch_part, run_id, run_workflow = split_date_label(date_folder)
+        date_part, branch_part, run_id, run_workflow, image_label = split_date_label(date_folder)
         labels["date"] = date_part
         labels["branch"] = branch_part
         labels["run_id"] = run_id
         labels["run_workflow"] = run_workflow
+        labels["image"] = image_label
         labels["yaml_name"] = filename_to_yaml_name(filename)
         # Fallback: if stripped name not in expected, try with test_npu_ prefix
         if labels["yaml_name"] not in expected_tc_ids:
@@ -2064,11 +2073,12 @@ def collect_all_data(eval_data=None, accuracy_data=None):
         accuracy_data = collect_accuracy_only_data()
     for item in accuracy_data:
         _match_baselines_for_item(item, baselines)
-        date_part, branch_part, run_id, run_workflow = split_date_label(item.get("date", ""))
+        date_part, branch_part, run_id, run_workflow, image_label = split_date_label(item.get("date", ""))
         item["date"] = date_part
         item["branch"] = branch_part
         item["run_id"] = run_id
         item["run_workflow"] = run_workflow
+        item["image"] = image_label
     results.extend(accuracy_data)
 
     # Append accuracy-only entries for eval/ scores not matched to benchmark results
@@ -2077,11 +2087,12 @@ def collect_all_data(eval_data=None, accuracy_data=None):
     for (test_case_name, date), ev in eval_data.items():
         if (test_case_name, date) not in consumed_eval_keys:
             labels = parse_filename(test_case_name + ".txt")
-            date_part, branch_part, run_id, run_workflow = split_date_label(date)
+            date_part, branch_part, run_id, run_workflow, image_label = split_date_label(date)
             labels["date"] = date_part
             labels["branch"] = branch_part
             labels["run_id"] = run_id
             labels["run_workflow"] = run_workflow
+            labels["image"] = image_label
             labels["yaml_name"] = filename_to_yaml_name(test_case_name)
             if labels["yaml_name"] not in expected_tc_ids:
                 alt = "test_npu_" + labels["yaml_name"]
