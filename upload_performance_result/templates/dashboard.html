@@ -199,6 +199,7 @@ thead th.sticky-col { z-index: 5; }
         <th class="col-config">序列</th>
         <th class="col-config">prefix</th>
         <th class="col-config">数据集</th>
+        <th class="col-config">镜像</th>
         <th class="col-uniform">执行时长</th>
         <th class="col-uniform">精度</th>
         <th class="col-uniform">总请求数</th>
@@ -801,8 +802,10 @@ function aggregateFuncStatus(items) {
 }
 
 // ---- 多分支执行结果并集合并 ----
-// 同一天同一用例可能同时存在多个分支的执行记录（如 main 与 pllimax-npunightlycleanup）。
-// 分支=全部 时按 (yaml_name, date) 合并为一条：
+// 同一天同一用例可能同时存在多个分支的执行记录（如 main 与 pllimax-npunightlycleanup），
+// 也可能同一天同分支存在不同镜像的执行记录（PR #39585：workflow 目录携带镜像标签）。
+// 分支=全部 时按 (yaml_name, date, image) 合并为一条：
+//   不同镜像 → 各占一行分别显示；同镜像多次 run（重跑/attempt）仍合并。
 //   1) 展示指标/链接的代表记录：优先有指标数据的（main优先），其次有 per-case 结果的，
 //      再次 job 已执行的，最后取 main 记录；
 //   2) 显示状态取各分支执行状态的并集（通过优先）：任一分支通过 → 通过，
@@ -811,7 +814,7 @@ function aggregateFuncStatus(items) {
 function unionMergeRows(rows) {
   const byKey = {};
   rows.forEach(d => {
-    const k = (d.yaml_name || '') + '|' + (d.date || '');
+    const k = (d.yaml_name || '') + '|' + (d.date || '') + '|' + (d.image || '');
     if (!byKey[k]) byKey[k] = [];
     byKey[k].push(d);
   });
@@ -918,7 +921,7 @@ function onFilterChange() {
     }
   });
 
-  // 同一天多分支执行结果取并集：按 (用例, 日期) 合并为一条（通过优先，见 unionMergeRows）
+  // 同一天多分支/多镜像执行结果取并集：按 (用例, 日期, 镜像) 合并为一条（通过优先，见 unionMergeRows）
   filtered = unionMergeRows(filtered);
 
   if (statusFilter !== null) {
@@ -1158,6 +1161,7 @@ function updateTable(data) {
         <td class="col-config">${fmtSeqLength(d.seq_length)}</td>
         <td class="col-config">${escHtml((d.prefix || '').replace('prefix', '') || '0')}</td>
         <td class="col-config">${escHtml(d.dataset || '--')}</td>
+        <td class="col-config">${escHtml(d.image || '--')}</td>
         <td class="col-uniform">${fmtDuration(d.exec_duration)}</td>
         <td class="col-uniform">${fmtMetric(d.eval_score, 4, b.eval_score, 'accuracy', d.dataset)}</td>
         <td class="col-uniform">${fmtInt(d.total_requests)}</td>
@@ -1207,7 +1211,7 @@ function updateTable(data) {
       <td class="col-meta sticky-col col-l5">${fmtRunLink(d)}</td>
       <td class="col-note sticky-col col-l6">${fmtNote(d)}</td>
       <td class="col-baseline sticky-col col-l7">--</td>
-      <td colspan="22">--</td>
+      <td colspan="23">--</td>
     </tr>`;
   }
 
@@ -1231,7 +1235,7 @@ function updateTable(data) {
       <td class="col-meta sticky-col col-l5">--</td>
       <td class="col-note sticky-col col-l6">--</td>
       <td class="col-baseline sticky-col col-l7">--</td>
-      <td colspan="22">--</td>
+      <td colspan="23">--</td>
     </tr>`;
     // 最新一天的具体用例明细默认隐藏；第2次点击顶层行时展开（L2）
     latestItems.forEach(d => { rows += renderFuncDetailRow(d, false); });
@@ -1253,7 +1257,7 @@ function updateTable(data) {
         <td class="col-meta sticky-col col-l5">--</td>
         <td class="col-note sticky-col col-l6">--</td>
         <td class="col-baseline sticky-col col-l7">--</td>
-        <td colspan="22">--</td>
+        <td colspan="23">--</td>
       </tr>`;
       items.forEach(d => { rows += renderFuncDetailRow(d, false); });
     });
@@ -1532,7 +1536,7 @@ function exportToExcel() {
     if (dateVals !== null) filtered = filtered.filter(d => dateVals.includes(d.date));
     if (branchVals !== null) filtered = filtered.filter(d => branchVals.includes(d.branch));
 
-    // 与表格一致：同一天多分支执行结果取并集（通过优先）
+    // 与表格一致：同一天多分支/多镜像执行结果取并集（通过优先）
     filtered = unionMergeRows(filtered);
 
     // Group by test case ID, keep latest only
@@ -1565,7 +1569,7 @@ function exportToExcel() {
     // Build Excel data
     const headers = [
       '模型', '测试用例ID', '日期', '状态', '用例脚本', '任务', '备注', '基线',
-      '组网', '卡数', '序列长度', 'PREFIX', '数据集', '执行时长',
+      '组网', '卡数', '序列长度', 'PREFIX', '数据集', '镜像', '执行时长',
       '精度', '总请求数', '最大并发数', '系统并发数', '请求频率',
       'TTFT(ms)', 'TTFT P90(ms)', 'TPOT(ms)', 'TPOT P90(ms)',
       'E2E时间(ms)', '输出吞吐(TPS)', '单卡输出吞吐(TPS)',
@@ -1606,7 +1610,7 @@ function exportToExcel() {
         d.note || '',
         blParts.join(', '),
         d.topology || '', d.card_count || '', d.seq_length || '',
-        (d.prefix || '').replace('prefix', '') || '0', d.dataset || '',
+        (d.prefix || '').replace('prefix', '') || '0', d.dataset || '', d.image || '',
         d.exec_duration != null ? fmtDuration(d.exec_duration) : '',
         d.eval_score != null ? d.eval_score : '',
         d.total_requests != null ? d.total_requests : '',
