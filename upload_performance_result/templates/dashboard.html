@@ -148,6 +148,10 @@ thead th.sticky-col { z-index: 5; }
     <select id="branchFilter" multiple onchange="onFilterChange()"></select>
   </div>
   <div class="filter-group">
+    <label>镜像</label>
+    <select id="imageFilter" multiple onchange="onFilterChange()"></select>
+  </div>
+  <div class="filter-group">
     <label>状态</label>
     <select id="statusFilter" multiple onchange="onFilterChange()">
       <option value="__all__" selected>全部</option>
@@ -658,10 +662,15 @@ function populateMultiSelect(id, values, allLabel) {
 }
 
 function populateFilters() {
-  const keys = ['model','date','branch'];
-  const ids = ['modelFilter','dateFilter','branchFilter'];
+  const keys = ['model','date','branch','image'];
+  const ids = ['modelFilter','dateFilter','branchFilter','imageFilter'];
+  // 镜像筛选取归一化镜像版本（后端 image_norm，兜底前端 fmtImage 归一化）
+  const extractors = {
+    image: d => d.image_norm || fmtImage(d.image) || ''
+  };
   keys.forEach((k, i) => {
-    const vals = [...new Set(allData.map(d => d[k]).filter(Boolean))];
+    const ex = extractors[k] || (d => d[k]);
+    const vals = [...new Set(allData.map(ex).filter(Boolean))];
     // 日期倒序排列，最近的日期在最上面，方便快速筛选；模型/分支保持升序
     if (k === 'date') {
       vals.sort((a, b) => b.localeCompare(a));
@@ -830,7 +839,8 @@ function aggregateFuncStatus(items) {
 function unionMergeRows(rows) {
   const byKey = {};
   rows.forEach(d => {
-    const k = (d.yaml_name || '') + '|' + (d.date || '') + '|' + (d.image || '');
+    // 镜像维度取归一化版本（image_norm），避免同镜像不同原始标签（如 main-xxx / nightly-xxx）被拆成多行
+    const k = (d.yaml_name || '') + '|' + (d.date || '') + '|' + (d.image_norm || d.image || '');
     if (!byKey[k]) byKey[k] = [];
     byKey[k].push(d);
   });
@@ -922,8 +932,9 @@ function onFilterChange() {
     model: getSelectedValues('modelFilter'),
     date: getSelectedValues('dateFilter'),
     branch: getSelectedValues('branchFilter'),
+    image: getSelectedValues('imageFilter'),
+    statusFilter: getSelectedValues('statusFilter'),
   };
-  const statusFilter = getSelectedValues('statusFilter');
 
   let filtered = allData;
   Object.entries(filters).forEach(([key, vals]) => {
@@ -931,6 +942,9 @@ function onFilterChange() {
       if (key === 'source') {
         // source 可能为逗号分隔的多来源（如 "fulltest,nightly"），任一匹配即通过
         filtered = filtered.filter(d => String(d.source || '').split(',').some(s => vals.includes(s)));
+      } else if (key === 'image') {
+        // 镜像按归一化版本匹配
+        filtered = filtered.filter(d => vals.includes(d.image_norm || fmtImage(d.image) || ''));
       } else {
         filtered = filtered.filter(d => vals.includes(d[key]));
       }
@@ -940,6 +954,7 @@ function onFilterChange() {
   // 同一天多分支/多镜像执行结果取并集：按 (用例, 日期, 镜像) 合并为一条（通过优先，见 unionMergeRows）
   filtered = unionMergeRows(filtered);
 
+  const statusFilter = filters.statusFilter;
   if (statusFilter !== null) {
     const groups = {};
     filtered.forEach(d => {
@@ -961,7 +976,7 @@ function onFilterChange() {
 }
 
 function resetFilters() {
-  ['sourceFilter','modelFilter','dateFilter','branchFilter','statusFilter'].forEach(id => {
+  ['sourceFilter','modelFilter','dateFilter','branchFilter','imageFilter','statusFilter'].forEach(id => {
     const sel = document.getElementById(id);
     [...sel.options].forEach(o => o.selected = o.value === '__all__');
   });
@@ -990,11 +1005,13 @@ function updateTable(data) {
     if (!groups[d._id]) groups[d._id] = [];
     groups[d._id].push(d);
   });
+  // 行内镜像维度取归一化版本；同用例多镜像时各镜像行需相邻排列
+  const rowImage = d => d.image_norm || d.image || '';
   Object.values(groups).forEach(g => {
-    g.sort((a, b) => a.date.localeCompare(b.date));
-    // 勾选多日期时显示时间段内最新一次有结果的执行：
-    // 无结果的占位符排前，有结果的按日期升序排后，isLatest 即最新有结果条目
-    g.sort((a, b) => (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
+    // 先按 (镜像, 日期) 排序，保证同镜像行相邻且按时间升序；
+    // 再按 (镜像, 有结果) 稳定排序：无结果的占位符排前，有结果的按日期升序排后
+    g.sort((a, b) => rowImage(a).localeCompare(rowImage(b)) || a.date.localeCompare(b.date));
+    g.sort((a, b) => rowImage(a).localeCompare(rowImage(b)) || (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
   });
 
   // Sort groups by test case ID
@@ -1151,8 +1168,11 @@ function updateTable(data) {
   });
   sortedGroups.forEach(([tcId, items], gIdx) => {
     const safeId = tcId.replace(/[^a-zA-Z0-9]/g, '_');
+    // isLatest 按镜像子分组判定：同用例多镜像时，折叠态下每个镜像各显示一行最新结果
+    const lastIdxByImage = {};
+    items.forEach((d, i) => { lastIdxByImage[rowImage(d)] = i; });
     items.forEach((d, i) => {
-      const isLatest = i === items.length - 1;
+      const isLatest = i === lastIdxByImage[rowImage(d)];
       const status = computeStatus(d);
       const statusCls = statusCss(status);
       const b = d.baselines || {};
@@ -1546,6 +1566,7 @@ function exportToExcel() {
     const modelVals = getSelectedValues('modelFilter');
     const dateVals = getSelectedValues('dateFilter');
     const branchVals = getSelectedValues('branchFilter');
+    const imageVals = getSelectedValues('imageFilter');
     const statusVals = getSelectedValues('statusFilter');
 
     let filtered = allData;
@@ -1554,11 +1575,13 @@ function exportToExcel() {
     if (modelVals !== null) filtered = filtered.filter(d => modelVals.includes(d.model));
     if (dateVals !== null) filtered = filtered.filter(d => dateVals.includes(d.date));
     if (branchVals !== null) filtered = filtered.filter(d => branchVals.includes(d.branch));
+    if (imageVals !== null) filtered = filtered.filter(d => imageVals.includes(d.image_norm || fmtImage(d.image) || ''));
 
     // 与表格一致：同一天多分支/多镜像执行结果取并集（通过优先）
     filtered = unionMergeRows(filtered);
 
-    // Group by test case ID, keep latest only
+    // Group by test case ID, keep latest only（多镜像时每个镜像各保留一行最新结果）
+    const rowImage = d => d.image_norm || d.image || '';
     const groups = {};
     filtered.forEach(d => {
       if (!groups[d._id]) groups[d._id] = [];
@@ -1567,9 +1590,9 @@ function exportToExcel() {
 
     let rows = [];
     Object.entries(groups).forEach(([id, items]) => {
-      items.sort((a, b) => a.date.localeCompare(b.date));
+      items.sort((a, b) => rowImage(a).localeCompare(rowImage(b)) || a.date.localeCompare(b.date));
       // 最新有结果优先：无结果占位符排前，有结果的按日期升序排后
-      items.sort((a, b) => (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
+      items.sort((a, b) => rowImage(a).localeCompare(rowImage(b)) || (hasData(a) ? 1 : 0) - (hasData(b) ? 1 : 0));
       if (statusVals !== null) {
         const status = getTestCaseStatus(items);
         const keep = (statusVals.includes('通过') && status === '通过') ||
@@ -1577,7 +1600,10 @@ function exportToExcel() {
                      (statusVals.includes('未执行') && (status === '未执行' || status === '执行中'));
         if (!keep) return;
       }
-      rows.push(items[items.length - 1]);
+      // 每个镜像子分组的最后一行即该镜像最新结果
+      const lastIdxByImage = {};
+      items.forEach((d, i) => { lastIdxByImage[rowImage(d)] = i; });
+      Object.values(lastIdxByImage).forEach(idx => rows.push(items[idx]));
     });
 
     if (rows.length === 0) {
