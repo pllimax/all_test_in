@@ -88,6 +88,11 @@ TESTCASES_CONFIG_FILE = os.environ.get(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "testcases_config.json"),
 )
 
+# 镜像版本配置：用例可通过 testcases_config.json 的 images 字段配置在哪些镜像上
+# 执行/展示；不配置时默认视为仅在 a3-cann9.0.0 上执行。
+DEFAULT_IMAGE_VERSION = "a3-cann9.0.0"
+VALID_IMAGE_VERSIONS = {"a3-cann9.1.0", "a3-cann9.0.0", "a5"}
+
 # 用例 → suite 全局映射（构建成功后缓存）
 _suite_case_map = None       # {suite: [case_name, ...]}
 _case_suite_map = None       # {case_name: suite}
@@ -1478,6 +1483,74 @@ def _load_dashboard_html():
     return _dashboard_html_cache
 
 
+def normalize_image_label(raw_image, yaml_name=""):
+    """将 CI 目录携带的原始镜像标签归一化为标准镜像版本（与前端 fmtImage 规则一致）。
+
+    例：main-cann9.0.0-a3 → a3-cann9.0.0；cann9.1.0-a3-nightly → a3-cann9.1.0；xxx-a5 → a5
+    历史数据无镜像标签（raw_image 为空）时按优先级兜底：
+      1) 用例名末尾芯片后缀（_a5/_a2）推断；
+      2) 默认 a3-cann9.0.0。
+    """
+    if raw_image:
+        m = re.search(r"a(?:2|3|5)(?=[_-]|$)", raw_image, re.IGNORECASE)
+        chip = m.group(0).lower() if m else ""
+        m = re.search(r"cann[\d.]+", raw_image, re.IGNORECASE)
+        cann = m.group(0).lower() if m else ""
+        if chip and cann:
+            return f"{chip}-{cann}"
+        return chip or cann or raw_image
+    name = yaml_name or ""
+    m = re.search(r"_(a2|a5)$", name, re.IGNORECASE)
+    if m:
+        return m.group(1).lower()
+    return DEFAULT_IMAGE_VERSION
+
+
+def _default_images_for(yaml_name):
+    """未配置 images 时的默认允许镜像列表。
+
+    与历史空 image 行的归一化兜底规则保持一致：用例名末尾芯片后缀
+    （_a5/_a2）推断对应镜像，否则默认 a3-cann9.0.0，
+    避免 _a5 等芯片用例被默认允许集误过滤。
+    """
+    m = re.search(r"_(a2|a5)$", yaml_name or "", re.IGNORECASE)
+    if m:
+        return [m.group(1).lower()]
+    return [DEFAULT_IMAGE_VERSION]
+
+
+def _parse_config_images(raw_images, yaml_name):
+    """解析配置文件中的 images 字段，返回归一化镜像版本列表。
+
+    未配置 → 按用例名后缀推断（_a5/_a2），否则默认 [a3-cann9.0.0]；
+    非法值告警并忽略；全部非法时回退默认。
+    """
+    if raw_images is None:
+        return _default_images_for(yaml_name)
+    if isinstance(raw_images, str):
+        raw_images = [raw_images]
+    if not isinstance(raw_images, list):
+        print(f"[testcases-config] Warning: {yaml_name} 的 images 字段格式异常（应为列表），忽略")
+        return _default_images_for(yaml_name)
+    result = []
+    for img in raw_images:
+        norm = normalize_image_label(str(img).strip())
+        if norm in VALID_IMAGE_VERSIONS:
+            if norm not in result:
+                result.append(norm)
+        else:
+            print(f"[testcases-config] Warning: {yaml_name} 配置了非法镜像版本 {img!r}，忽略")
+    return result or _default_images_for(yaml_name)
+
+
+def _case_images(case_info, yaml_name=""):
+    """获取用例允许的镜像版本列表（配置缺失时按用例名后缀/默认值兜底）。"""
+    images = (case_info or {}).get("images")
+    if images:
+        return images
+    return _default_images_for(yaml_name)
+
+
 def parse_yaml_test_name(name):
     """Convert a YAML test config name to dashboard labels using parse_filename.
     Example: qwen3_6_35b_a3b_2p_in984k_out1k -> {model, parallelism, input_len, output_len, ...}
@@ -1768,6 +1841,8 @@ def _load_testcases_config():
                 continue
             info["labels"] = parse_yaml_test_name(name)
             info["yaml_name"] = name
+            # 镜像版本：未配置默认 [a3-cann9.0.0]，非法值告警忽略
+            info["images"] = _parse_config_images(info.get("images"), name)
         print(f"[testcases-config] 从本地配置文件加载 {len(data)} 个需展示用例: {TESTCASES_CONFIG_FILE}")
         return data
     except Exception as e:
@@ -1783,6 +1858,21 @@ def regenerate_testcases_config():
     故每条仅保存 {source, type}，减小文件体积并避免冗余。
     """
     expected = collect_expected_test_cases(use_local_config=False)
+    # 保留既有配置中手工维护的 images 字段（动态扫描无法感知镜像配置，
+    # 直接覆盖会丢失，与此前覆盖手工 test_npu_ 前缀是同类问题）
+    existing_images = {}
+    if os.path.isfile(TESTCASES_CONFIG_FILE):
+        try:
+            with open(TESTCASES_CONFIG_FILE, "r", encoding="utf-8") as f:
+                old = json.load(f)
+            if isinstance(old, dict):
+                existing_images = {
+                    name: info.get("images")
+                    for name, info in old.items()
+                    if isinstance(info, dict) and info.get("images")
+                }
+        except Exception as e:
+            print(f"[testcases-config] Warning: 读取旧配置失败，images 字段将丢失: {e}")
     simplified = {
         name: {
             "source": info.get("source", ""),
@@ -1790,6 +1880,9 @@ def regenerate_testcases_config():
         }
         for name, info in expected.items()
     }
+    for name, images in existing_images.items():
+        if name in simplified:
+            simplified[name]["images"] = images
     tmp = TESTCASES_CONFIG_FILE + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(simplified, f, ensure_ascii=False, indent=2)
@@ -2113,11 +2206,19 @@ def collect_all_data(eval_data=None, accuracy_data=None):
             if alt in expected_tc_ids:
                 r["yaml_name"] = alt
 
+    # 归一化镜像版本（目录 image 标签 > 用例名 _a2/_a5 后缀 > 默认 a3-cann9.0.0），
+    # 供镜像过滤 / 合并去重 / 占位符与前端分行显示使用
+    for r in results:
+        r["image_norm"] = normalize_image_label(r.get("image", ""), r.get("yaml_name", ""))
+
     # Filter: only keep results whose yaml_name is in expected YAML scope
     filtered = []
     for r in results:
         yaml_name = r.get("yaml_name", "")
         if yaml_name in expected_tc_ids:
+            # 仅保留用例配置的镜像版本的结果行（未配置默认仅 a3-cann9.0.0）
+            if r.get("image_norm") not in _case_images(expected[yaml_name], yaml_name):
+                continue
             r["source"] = expected[yaml_name]["source"]
             # 用例类型（accuracy/performance/unknown）用于前端基线显示与状态判定
             r["case_type"] = expected[yaml_name].get("type", "unknown")
@@ -2157,10 +2258,11 @@ def collect_all_data(eval_data=None, accuracy_data=None):
     # 合并去重：保留所有非 None 字段（字段级合并）。
     # key 必须包含 run_id / run_workflow：同一分支同一天可能有多个 CI run（不同 run_id），
     # 若只用 (yaml_name, branch, date) 合并，后遍历的 run 会被先遍历的 run 覆盖而完全丢失。
+    # 同一 run 下同用例不同镜像的行也不能互相合并，故 key 需包含归一化镜像版本。
     merged = {}
     for r in filtered:
         key = (r.get("yaml_name", ""), r.get("branch", ""), r.get("date", ""),
-               r.get("run_id", ""), r.get("run_workflow", ""))
+               r.get("run_id", ""), r.get("run_workflow", ""), r.get("image_norm", ""))
         if key in merged:
             for k, v in r.items():
                 if v is not None and merged[key].get(k) is None:
@@ -2169,9 +2271,9 @@ def collect_all_data(eval_data=None, accuracy_data=None):
             merged[key] = r
     filtered = list(merged.values())
 
-    # Existing (yaml_name, branch, date) triples to avoid duplicating real results
+    # Existing (yaml_name, branch, date, image) tuples to avoid duplicating real results
     existing_pairs = set(
-        (r.get("yaml_name", ""), r.get("branch", ""), r.get("date", ""))
+        (r.get("yaml_name", ""), r.get("branch", ""), r.get("date", ""), r.get("image_norm", ""))
         for r in filtered
     )
 
@@ -2179,8 +2281,6 @@ def collect_all_data(eval_data=None, accuracy_data=None):
         for date in sorted(dates):
             rid, rwf = run_context.get((branch, date), ("", ""))
             for yaml_name, info in expected.items():
-                if (yaml_name, branch, date) in existing_pairs:
-                    continue
                 labels = info["labels"]
                 # Derive baseline key from yaml_name: prefix with "test_npu_" if not already
                 if yaml_name.startswith("test_npu_"):
@@ -2188,31 +2288,39 @@ def collect_all_data(eval_data=None, accuracy_data=None):
                 else:
                     baseline_key = "test_npu_" + yaml_name
                 placeholder_baselines = baselines.get(baseline_key, {})
-                placeholder = {
-                    "model": labels.get("model", ""),
-                    "quantization": labels.get("quantization", ""),
-                    "parallelism": labels.get("parallelism", ""),
-                    "input_len": labels.get("input_len", ""),
-                    "output_len": labels.get("output_len", ""),
-                    "request_rate": labels.get("request_rate", ""),
-                    "dataset": labels.get("dataset", ""),
-                    "prefix": labels.get("prefix", ""),
-                    "date": date,
-                    "branch": branch,
-                    "run_id": rid,
-                    "run_workflow": rwf,
-                    "yaml_name": yaml_name,
-                    "case_type": info.get("type", "unknown"),
-                    "eval_score": None,
-                    "baselines": placeholder_baselines,
-                    "source": info["source"],
-                }
-                # 占位符无性能数据，清空全部性能字段
-                placeholder.update({k: None for k in PERF_ONLY_FIELDS})
-                # 功能用例占位符同样统一模型列显示
-                if info.get("type", "unknown") == "function":
-                    placeholder["model"] = "功能用例"
-                filtered.append(placeholder)
+                # 按用例配置的镜像版本逐一生成占位符：配置了但当日无数据的镜像
+                # 也显示一行（未执行），多镜像用例在看板上各占一行
+                for image_norm in _case_images(info, yaml_name):
+                    if (yaml_name, branch, date, image_norm) in existing_pairs:
+                        continue
+                    placeholder = {
+                        "model": labels.get("model", ""),
+                        "quantization": labels.get("quantization", ""),
+                        "parallelism": labels.get("parallelism", ""),
+                        "input_len": labels.get("input_len", ""),
+                        "output_len": labels.get("output_len", ""),
+                        "request_rate": labels.get("request_rate", ""),
+                        "dataset": labels.get("dataset", ""),
+                        "prefix": labels.get("prefix", ""),
+                        "date": date,
+                        "branch": branch,
+                        "run_id": rid,
+                        "run_workflow": rwf,
+                        "yaml_name": yaml_name,
+                        "case_type": info.get("type", "unknown"),
+                        "eval_score": None,
+                        "baselines": placeholder_baselines,
+                        "source": info["source"],
+                        # 占位行无原始镜像标签，直接写归一化版本（fmtImage 幂等可正常显示）
+                        "image": image_norm,
+                        "image_norm": image_norm,
+                    }
+                    # 占位符无性能数据，清空全部性能字段
+                    placeholder.update({k: None for k in PERF_ONLY_FIELDS})
+                    # 功能用例占位符同样统一模型列显示
+                    if info.get("type", "unknown") == "function":
+                        placeholder["model"] = "功能用例"
+                    filtered.append(placeholder)
 
     # Attach topology info to all items
     for item in filtered:
