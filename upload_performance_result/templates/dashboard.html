@@ -274,6 +274,15 @@ function buildTestCaseId(d) {
 // 惰性构建用例→记录索引（按日期升序），展开折线图时避免每次 filter 全量数据；
 // allData 更新（loadData 数据变化）时置空重建。
 function getTcItems(tcId) {
+  // 复合展开键 "yaml__镜像"（多镜像用例分行后每个镜像独立展开历史）：
+  // 拆分后先取该用例全部记录，再按归一化镜像过滤
+  const sepIdx = String(tcId || '').lastIndexOf('__');
+  if (sepIdx > 0) {
+    const yaml = tcId.slice(0, sepIdx);
+    const imgKey = tcId.slice(sepIdx + 2);
+    const items = getTcItems(yaml) || [];
+    return items.filter(d => String(d.image_norm || d.image || '').replace(/[^a-zA-Z0-9]/g, '_') === imgKey);
+  }
   if (!_tcItemsCache) {
     const cache = new Map();
     allData.forEach(d => {
@@ -332,7 +341,7 @@ function showTestCaseChart(tcId, label) {
 
   // Chart.js 未加载（如内网无法访问 CDN）时给出提示而非静默失败
   if (typeof Chart === 'undefined') {
-    panelTitle.textContent = label || '';
+    panelTitle.textContent = String(label || '').split('__')[0];
     panelBody.innerHTML =
       '<div style="padding:12px;color:#8b949e;font-size:13px;">图表库加载失败（无法访问 CDN），历史数据仍可在表格中查看。</div>';
     panel.style.display = '';
@@ -381,7 +390,8 @@ function showTestCaseChart(tcId, label) {
     }
   });
   html += '</div>';
-  panelTitle.textContent = label || '';
+  // 复合键 "yaml__镜像" 时标题只显示用例名
+  panelTitle.textContent = String(label || '').split('__')[0];
   panelBody.innerHTML = html;
   panel.style.display = '';
 
@@ -1184,17 +1194,21 @@ function updateTable(data) {
     let modelShown = false;
     items.forEach((d, i) => {
       const isLatest = i === lastIdxByImage[rowImage(d)];
+      // 展开键带镜像后缀：同用例多镜像各自独立展开历史，互不合并
+      const imgKey = (rowImage(d) || 'default').replace(/[^a-zA-Z0-9]/g, '_');
+      const tcKey = `${safeId}__${imgKey}`;
       const status = computeStatus(d);
       const statusCls = statusCss(status);
       const b = d.baselines || {};
       const bl = (key, sym) => b[key] != null ? `<br><span class="baseline-val">${sym}${b[key]}</span>` : '';
-      const expandIcon = isLatest && items.length > 1
+      // 该镜像子分组存在历史（>1 行）时才显示展开图标
+      const expandIcon = isLatest && lastIdxByImage[rowImage(d)] > 0
         ? `<span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;" title="点击展开历史">▶</span>`
         : '';
       const rowStyle = isLatest ? '' : 'style="display:none"';
       if (isLatest) visibleCount++;
       const modelDisplay = isLatest && !modelShown && groupShowModel[gIdx] ? (modelShown = true, d.model) : '';
-      rows += `<tr class="data-row" data-tc="${safeId}" data-date="${escHtml(d.date)}" data-hasdata="${hasData(d) ? '1' : '0'}" ${rowStyle}>
+      rows += `<tr class="data-row" data-tc="${tcKey}" data-date="${escHtml(d.date)}" data-hasdata="${hasData(d) ? '1' : '0'}" ${rowStyle}>
         <td class="col-model sticky-col col-l0">${escHtml(modelDisplay)}</td>
         <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" title="${escHtml(tcId)}">${expandIcon}${escHtml(tcId)}</span></td>
         <td class="col-image sticky-col col-limg" title="${escHtml(d.image || '')}">${escHtml(fmtImage(d.image)) || '--'}</td>
@@ -1410,8 +1424,10 @@ function applyHistoryFilter() {
       const latestRow = allRows[allRows.length - 1];
       const label = latestRow ? latestRow.querySelector('.testcase-id')?.getAttribute('title') : '';
       if (label) {
-        _expandedChartTc = label;
-        showTestCaseChart(label, label);
+        // 保持复合键 "yaml__镜像"，图表按 用例+镜像 独立取数
+        const tcKey = latestRow.getAttribute('data-tc');
+        _expandedChartTc = tcKey;
+        showTestCaseChart(tcKey, label);
       }
     }
   }
@@ -1555,8 +1571,9 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
     }
     const label = latestRow ? latestRow.querySelector('.testcase-id')?.getAttribute('title') : '';
     if (label) {
-      _expandedChartTc = label;
-      showTestCaseChart(label, label);
+      // tcId 为复合键 "yaml__镜像"：图表按 用例+镜像 独立取数，面板标题只显示用例名
+      _expandedChartTc = tcId;
+      showTestCaseChart(tcId, label);
     }
   }
 });
