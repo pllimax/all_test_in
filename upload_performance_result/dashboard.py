@@ -759,7 +759,10 @@ def _attach_script_urls(items):
         if run_id and run_url:
             repo = _web_base_to_repo(run_url)
             jobs_for_run = jobs_cache.get((repo, run_id))
-            job = _match_job_for_case_with_suite(item.get("yaml_name", ""), jobs_for_run, case_suite_map)
+            job = _match_job_for_case_with_suite(
+                item.get("yaml_name", ""), jobs_for_run, case_suite_map,
+                item.get("image_norm", "")
+            )
             if job:
                 item["job_url"] = f"{run_url}/job/{job['job_id']}"
                 # job 状态/结论用于前端区分「已执行但失败」与「尚未执行」
@@ -793,7 +796,18 @@ def _attach_script_urls(items):
                 break
         entry = None
         if suite:
-            entry = func_log_cache.get((repo, run_id, suite, is_function))
+            # 镜像感知：优先取与本行镜像一致的套件变体日志
+            # （cann9.1.0 行 → -cann910 后缀变体，其余 → 原套件名）；
+            # 主变体无该用例时兜底另一变体，两个变体都没抓到则走下方反查
+            for v in _suite_name_candidates(suite, item.get("image_norm", "")):
+                e = func_log_cache.get((repo, run_id, v, is_function))
+                if e is None:
+                    continue
+                if entry is None:
+                    entry = e
+                if base in e.get("map", {}):
+                    entry = e
+                    break
         if entry is None:
             # 用例未通过注册表映射到 suite（注册表稀疏检出可能滞后于社区新增用例）：
             # 从已解析的 suite job 日志中反查该用例，避免实际已执行却显示「未执行」
@@ -1351,7 +1365,12 @@ def fetch_func_logs_for_items(items):
                 break
         if not suite:
             continue
+        # cann9.1.0 镜像的 suite job 名带 -cann910 后缀（如 nightly-acc-16-npu-a3-cann910），
+        # 两个变体都调度抓取：run 中不存在的变体在 _fetch_func_log 中短路
+        # （无匹配 job，直接缓存空结果，不下载日志），保证 cann9.1.0 行的
+        # per-case 状态与 cann9.0.0 行分开解析、互不混淆
         pairs[(repo, run_id, suite, is_function)] = True
+        pairs[(repo, run_id, suite + IMAGE_CANN910_SUITE_SUFFIX, is_function)] = True
     with _func_log_lock:
         for k in pairs:
             cached = _func_log_cache.get(k)
@@ -2216,8 +2235,12 @@ def collect_all_data(eval_data=None, accuracy_data=None):
     for r in results:
         yaml_name = r.get("yaml_name", "")
         if yaml_name in expected_tc_ids:
-            # 仅保留用例配置的镜像版本的结果行（未配置默认仅 a3-cann9.0.0）
-            if r.get("image_norm") not in _case_images(expected[yaml_name], yaml_name):
+            # 真实结果行的镜像以 CI 目录标签为准（CI 会把套件拆分到不同镜像执行，
+            # 如 20260916 nightly：deepseek 在 cann9.1.0、qwen 在 cann9.0.0），
+            # 不能按用例 images 配置白名单过滤——未配置 images 的用例其 cann9.1.0
+            # 结果会被误丢；仅要求归一化镜像是合法版本。
+            # images 配置仍用于生成"未执行"占位符（见下方占位符逻辑）。
+            if r.get("image_norm") not in VALID_IMAGE_VERSIONS:
                 continue
             r["source"] = expected[yaml_name]["source"]
             # 用例类型（accuracy/performance/unknown）用于前端基线显示与状态判定
@@ -2936,9 +2959,28 @@ def get_case_suite_map():
         return _case_suite_map or {}
 
 
-def _match_job_for_case_with_suite(case_key, jobs, case_suite_map):
+# cann9.1.0 镜像行的 suite job 名后缀（CI 矩阵对 cann9.1.0 镜像的 suite job
+# 使用 -cann910 后缀命名，如 nightly-acc-16-npu-a3-cann910；cann9.0.0 无后缀）
+IMAGE_CANN910_SUITE_SUFFIX = "-cann910"
+IMAGE_CANN910_NORM = "a3-cann9.1.0"
+
+
+def _suite_name_candidates(suite, image_norm=""):
+    """按行的归一化镜像生成 suite job 名候选（优先匹配镜像一致的变体）。
+
+    cann9.1.0 行优先 -cann910 后缀变体，其余（含 cann9.0.0/历史无镜像行）
+    优先原套件名；双方兜底尝试另一变体，兼容 CI 只拆分部分套件的场景。
+    """
+    if image_norm == IMAGE_CANN910_NORM:
+        return [suite + IMAGE_CANN910_SUITE_SUFFIX, suite]
+    return [suite, suite + IMAGE_CANN910_SUITE_SUFFIX]
+
+
+def _match_job_for_case_with_suite(case_key, jobs, case_suite_map, image_norm=""):
     """增强匹配：先按用例名匹配（matrix job），失败后按用例所属 suite
     匹配聚合 job（新框架聚合 suite job 名 = suite 名）。
+    镜像感知：cann9.1.0 行优先匹配 -cann910 后缀的 suite job 变体，
+    避免错配到 cann9.0.0 的同 suite job。
     """
     job = _match_job_for_case(case_key, jobs)
     if job:
@@ -2958,8 +3000,10 @@ def _match_job_for_case_with_suite(case_key, jobs, case_suite_map):
             if c in case_suite_map:
                 suite = case_suite_map[c]
                 break
-        if suite and suite in jobs:
-            return jobs[suite]
+        if suite:
+            for name in _suite_name_candidates(suite, image_norm):
+                if name in jobs:
+                    return jobs[name]
     return None
 
 
