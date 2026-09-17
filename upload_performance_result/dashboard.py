@@ -756,6 +756,13 @@ def _attach_script_urls(items):
     for item in items:
         run_id = str(item.get("run_id", "") or "")
         run_url = item.get("run_url", "")
+        if item.get("placeholder"):
+            # 占位行（该用例该镜像当日无真实数据）不继承 run 的 job 结论：
+            # 按用例名匹配 matrix job 会命中同 run 内另一镜像的 job，
+            # 导致未执行的镜像行被误显示为「已执行通过」
+            if run_id and run_url:
+                item["job_status"] = "no_job"
+            continue
         if run_id and run_url:
             repo = _web_base_to_repo(run_url)
             jobs_for_run = jobs_cache.get((repo, run_id))
@@ -779,6 +786,10 @@ def _attach_script_urls(items):
     # 用例归属，必须以日志为准覆盖 suite 聚合匹配的结果。
     func_log_cache = fetch_func_logs_for_items(items)
     for item in items:
+        # 占位行同样不继承 per-case 状态（同 run 另一镜像的套件日志不含
+        # 本镜像执行证据，跨变体兜底会误标 pass/fail）
+        if item.get("placeholder"):
+            continue
         run_id = str(item.get("run_id", "") or "")
         run_url = item.get("run_url", "")
         if not run_id or not run_url:
@@ -2337,6 +2348,9 @@ def collect_all_data(eval_data=None, accuracy_data=None):
                         # 占位行无原始镜像标签，直接写归一化版本（fmtImage 幂等可正常显示）
                         "image": image_norm,
                         "image_norm": image_norm,
+                        # 占位标记：该用例该镜像当日无真实数据，
+                        # 不继承 run 的 job 结论/per-case 状态（避免误显示已执行）
+                        "placeholder": True,
                     }
                     # 占位符无性能数据，清空全部性能字段
                     placeholder.update({k: None for k in PERF_ONLY_FIELDS})
