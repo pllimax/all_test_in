@@ -1201,16 +1201,13 @@ function updateTable(data) {
       const statusCls = statusCss(status);
       const b = d.baselines || {};
       const bl = (key, sym) => b[key] != null ? `<br><span class="baseline-val">${sym}${b[key]}</span>` : '';
-      // 该镜像子分组存在历史（>1 行）时才显示展开图标
-      const expandIcon = isLatest && lastIdxByImage[rowImage(d)] > 0
-        ? `<span class="expand-icon" style="cursor:pointer;color:#58a6ff;margin-right:4px;" title="点击展开历史">▶</span>`
-        : '';
+      // 展开交互改为直接点击用例ID单元格，不再渲染 ▶ 展开图标
       const rowStyle = isLatest ? '' : 'style="display:none"';
       if (isLatest) visibleCount++;
       const modelDisplay = isLatest && !modelShown && groupShowModel[gIdx] ? (modelShown = true, d.model) : '';
       rows += `<tr class="data-row" data-tc="${tcKey}" data-date="${escHtml(d.date)}" data-hasdata="${hasData(d) ? '1' : '0'}" ${rowStyle}>
         <td class="col-model sticky-col col-l0">${escHtml(modelDisplay)}</td>
-        <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" title="${escHtml(tcId)}">${expandIcon}${escHtml(tcId)}</span></td>
+        <td class="col-tc-id sticky-col col-l1"><span class="testcase-id" title="${escHtml(tcId)}">${escHtml(tcId)}</span></td>
         <td class="col-image sticky-col col-limg" title="${escHtml(d.image || '')}">${escHtml(fmtImage(d.image)) || '--'}</td>
         <td class="col-meta sticky-col col-l2">${escHtml(d.date)}</td>
         <td class="col-meta sticky-col col-l3"><span class="${statusCls}">${escHtml(status)}</span></td>
@@ -1406,17 +1403,15 @@ function getDateCutoff(days) {
 
 // 修改历史天数配置后，对当前展开的用例重新应用过滤
 function applyHistoryFilter() {
-  const histDays = parseInt(document.getElementById('historyDays').value) || 7;
-  const cutoff = getDateCutoff(histDays);
-  // 依据 _expandedChartTc 定位当前展开的用例（图表面板），对历史行重新过滤
+  // 历史天数仅作用于趋势图窗口；表格历史行显示全部历史，不受窗口限制
+  // 依据 _expandedChartTc 定位当前展开的用例（图表面板）
   if (_expandedChartTc) {
     const safeId = _expandedChartTc.replace(/[^a-zA-Z0-9]/g, '_');
     const allRows = document.querySelectorAll(`tr[data-tc="${safeId}"].data-row`);
     if (allRows.length > 0) {
       allRows.forEach((r, i) => {
         const isLast = i === allRows.length - 1;
-        const rd = r.getAttribute('data-date');
-        const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
+        const show = isLast || r.getAttribute('data-hasdata') === '1';
         r.style.display = show ? '' : 'none';
         if (show) r.classList.add('selected');
       });
@@ -1510,8 +1505,8 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
     }
     return;
   }
-  // 交互元素（链接、备注按钮、展开图标）点击不触发行选中/展开
-  if (e.target.closest('a') || e.target.closest('.note-edit') || e.target.closest('.expand-icon')) return;
+  // 交互元素（链接、备注按钮）点击不触发行选中/展开
+  if (e.target.closest('a') || e.target.closest('.note-edit')) return;
   const tcId = tr.getAttribute('data-tc');
   if (!tcId) return;
 
@@ -1534,16 +1529,9 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
     });
     allRows.forEach(r => r.classList.remove('selected'));
     destroyCharts(); // 销毁图表、隐藏面板并清空 _expandedChartTc
-    // Reset expand icon
-    const latestRow = allRows[allRows.length - 1];
-    if (latestRow) {
-      const icon = latestRow.querySelector('.expand-icon');
-      if (icon) icon.textContent = '▶';
-    }
   } else {
     // Collapse other expanded groups first
     this.querySelectorAll('tr.selected').forEach(r => r.classList.remove('selected'));
-    this.querySelectorAll('.expand-icon').forEach(icon => { icon.textContent = '▶'; });
     // Hide all non-latest rows globally
     this.querySelectorAll('tr.data-row').forEach(r => {
       const tc = r.getAttribute('data-tc');
@@ -1553,22 +1541,15 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
       }
     });
 
-    // Expand: show history rows within the configured day range, highlight, show chart
-    const histDays = parseInt(document.getElementById('historyDays').value) || 7;
-    const cutoff = getDateCutoff(histDays);
+    // Expand: 显示该用例该镜像的全部历史执行结果行（无结果的占位行不显示）；
+    // 历史天数仅作用于趋势图窗口，不再限制表格历史行
     allRows.forEach((r, i) => {
-      // 最新行始终显示；历史行仅显示配置天数内且有执行结果的行（无结果日期不显示）
       const isLast = i === allRows.length - 1;
-      const rd = r.getAttribute('data-date');
-      const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
+      const show = isLast || r.getAttribute('data-hasdata') === '1';
       r.style.display = show ? '' : 'none';
       if (show) r.classList.add('selected');
     });
     const latestRow = allRows[allRows.length - 1];
-    if (latestRow) {
-      const icon = latestRow.querySelector('.expand-icon');
-      if (icon) icon.textContent = '▼';
-    }
     const label = latestRow ? latestRow.querySelector('.testcase-id')?.getAttribute('title') : '';
     if (label) {
       // tcId 为复合键 "yaml__镜像"：图表按 用例+镜像 独立取数，面板标题只显示用例名
