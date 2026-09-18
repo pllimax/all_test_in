@@ -876,10 +876,15 @@ function unionMergeRows(rows) {
     let rep = group[0], best = -1;
     group.forEach(d => {
       const s = evScore(d) * 2 + (d.branch === 'main' ? 1 : 0);
-      if (s > best) { best = s; rep = d; }
+      // 同分时取更新的 run（run_id 更大），保证展示的数据行代表最新一次执行
+      if (s > best || (s === best && BigInt(d.run_id || 0) > BigInt(rep.run_id || 0))) { best = s; rep = d; }
     });
-    // 并集状态：通过 > 失败 > 执行中 > 未执行
-    const statuses = group.map(computeStatus);
+    // 并集状态：显式 per-case 结果（func_status）最准确，优先于按 job/指标推断的状态；
+    // 显式行（或无显式行时的全部行）之间按 通过 > 失败 > 执行中 取并集。
+    // 避免：同日另一 run 的推断"通过"掩盖本 run 的显式失败（如 20260918 qwen3_6_27b_gpqa）
+    const explicit = group.filter(d => d.func_status === 'pass' || d.func_status === 'fail' || d.func_status === 'running');
+    const pool = explicit.length > 0 ? explicit : group;
+    const statuses = pool.map(computeStatus);
     let union = '未执行';
     for (const s of ['通过', '失败', '执行中']) {
       if (statuses.includes(s)) { union = s; break; }
