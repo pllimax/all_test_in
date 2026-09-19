@@ -10894,3 +10894,803 @@ Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
 [2026-09-19 09:01:11 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 28672, full token usage: 0.15, mamba num: 20, mamba usage: 0.31, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 74.83, #queue-req: 0
 [2026-09-19 09:01:16 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 29056, full token usage: 0.15, mamba num: 20, mamba usage: 0.31, accept len: 2.43, accept rate: 0.20, npu graph: True, gen throughput (token/s): 94.60, #queue-req: 0
 [2026-09-19 09:01:21 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 29696, full token usage: 0.15, mamba num: 20, mamba usage: 0.31, accept len: 2.79, accept rate: 0.26, npu graph: True, gen throughput (token/s): 109.78, #queue-req: 0
+[2026-09-19 09:01:26 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 30208, full token usage: 0.15, mamba num: 20, mamba usage: 0.31, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 107.94, #queue-req: 0
+[2026-09-19 09:01:32 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 30848, full token usage: 0.16, mamba num: 20, mamba usage: 0.31, accept len: 3.31, accept rate: 0.33, npu graph: True, gen throughput (token/s): 128.36, #queue-req: 0
+[2026-09-19 09:01:34 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 234, #cached-token: 0, full token usage: 0.16, mamba usage: 0.37, #running-req: 5, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 3.39
+[2026-09-19 09:01:38 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 32000, full token usage: 0.16, mamba num: 24, mamba usage: 0.37, accept len: 3.26, accept rate: 0.32, npu graph: True, gen throughput (token/s): 115.87, #queue-req: 0
+[2026-09-19 09:01:41] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:01:41] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:01:48 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 31104, full token usage: 0.16, mamba num: 20, mamba usage: 0.31, accept len: 2.44, accept rate: 0.21, npu graph: True, gen throughput (token/s): 51.32, #queue-req: 0
+[2026-09-19 09:01:54 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 31488, full token usage: 0.16, mamba num: 20, mamba usage: 0.31, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 90.40, #queue-req: 0
+[2026-09-19 09:01:59 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 32000, full token usage: 0.16, mamba num: 20, mamba usage: 0.31, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 103.51, #queue-req: 0
+[2026-09-19 09:02:05 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 32640, full token usage: 0.17, mamba num: 20, mamba usage: 0.31, accept len: 2.69, accept rate: 0.24, npu graph: True, gen throughput (token/s): 104.34, #queue-req: 0
+[2026-09-19 09:02:10 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 33152, full token usage: 0.17, mamba num: 20, mamba usage: 0.31, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 92.38, #queue-req: 0
+[2026-09-19 09:02:15 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 33664, full token usage: 0.17, mamba num: 20, mamba usage: 0.31, accept len: 2.81, accept rate: 0.26, npu graph: True, gen throughput (token/s): 109.49, #queue-req: 0
+[2026-09-19 09:02:21 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 34304, full token usage: 0.18, mamba num: 20, mamba usage: 0.31, accept len: 2.96, accept rate: 0.28, npu graph: True, gen throughput (token/s): 90.56, #queue-req: 0
+[2026-09-19 09:02:27 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 34944, full token usage: 0.18, mamba num: 20, mamba usage: 0.31, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 103.67, #queue-req: 0
+[2026-09-19 09:02:30 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 440, #cached-token: 0, full token usage: 0.18, mamba usage: 0.37, #running-req: 5, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 7.96
+[2026-09-19 09:02:33 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 35840, full token usage: 0.18, mamba num: 24, mamba usage: 0.37, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 92.57, #queue-req: 0
+[2026-09-19 09:02:38 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 36480, full token usage: 0.19, mamba num: 24, mamba usage: 0.37, accept len: 2.48, accept rate: 0.21, npu graph: True, gen throughput (token/s): 114.56, #queue-req: 0
+[2026-09-19 09:02:45 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 37248, full token usage: 0.19, mamba num: 24, mamba usage: 0.37, accept len: 2.46, accept rate: 0.21, npu graph: True, gen throughput (token/s): 90.43, #queue-req: 0
+[2026-09-19 09:02:50 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 37760, full token usage: 0.19, mamba num: 24, mamba usage: 0.37, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 122.13, #queue-req: 0
+[2026-09-19 09:02:55 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 38272, full token usage: 0.20, mamba num: 24, mamba usage: 0.37, accept len: 2.56, accept rate: 0.22, npu graph: True, gen throughput (token/s): 120.67, #queue-req: 0
+[2026-09-19 09:03:00 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 38912, full token usage: 0.20, mamba num: 24, mamba usage: 0.37, accept len: 2.54, accept rate: 0.22, npu graph: True, gen throughput (token/s): 118.48, #queue-req: 0
+[2026-09-19 09:03:05 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 39552, full token usage: 0.20, mamba num: 24, mamba usage: 0.37, accept len: 2.70, accept rate: 0.24, npu graph: True, gen throughput (token/s): 126.52, #queue-req: 0
+[2026-09-19 09:03:10 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 40320, full token usage: 0.21, mamba num: 24, mamba usage: 0.37, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 125.12, #queue-req: 0
+[2026-09-19 09:03:17 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 40832, full token usage: 0.21, mamba num: 24, mamba usage: 0.37, accept len: 2.55, accept rate: 0.22, npu graph: True, gen throughput (token/s): 94.99, #queue-req: 0
+[2026-09-19 09:03:22 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 41728, full token usage: 0.21, mamba num: 24, mamba usage: 0.37, accept len: 3.11, accept rate: 0.30, npu graph: True, gen throughput (token/s): 145.57, #queue-req: 0
+[2026-09-19 09:03:27 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 42240, full token usage: 0.22, mamba num: 24, mamba usage: 0.37, accept len: 2.48, accept rate: 0.21, npu graph: True, gen throughput (token/s): 116.31, #queue-req: 0
+[2026-09-19 09:03:32 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 42752, full token usage: 0.22, mamba num: 24, mamba usage: 0.37, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 124.05, #queue-req: 0
+[2026-09-19 09:03:41 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 43392, full token usage: 0.22, mamba num: 24, mamba usage: 0.37, accept len: 2.49, accept rate: 0.21, npu graph: True, gen throughput (token/s): 67.02, #queue-req: 0
+[2026-09-19 09:03:46 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 44160, full token usage: 0.23, mamba num: 24, mamba usage: 0.37, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 130.89, #queue-req: 0
+[2026-09-19 09:03:50 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 425, #cached-token: 0, full token usage: 0.23, mamba usage: 0.43, #running-req: 6, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 5.28
+[2026-09-19 09:03:53 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 45184, full token usage: 0.23, mamba num: 28, mamba usage: 0.43, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 111.32, #queue-req: 0
+[2026-09-19 09:03:58 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 46080, full token usage: 0.24, mamba num: 28, mamba usage: 0.43, accept len: 2.76, accept rate: 0.25, npu graph: True, gen throughput (token/s): 150.72, #queue-req: 0
+[2026-09-19 09:04:04 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 39808, full token usage: 0.20, mamba num: 24, mamba usage: 0.37, accept len: 3.02, accept rate: 0.29, npu graph: True, gen throughput (token/s): 121.75, #queue-req: 0
+[2026-09-19 09:04:11 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 40448, full token usage: 0.21, mamba num: 24, mamba usage: 0.37, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 106.78, #queue-req: 0
+[2026-09-19 09:04:16 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 40832, full token usage: 0.21, mamba num: 24, mamba usage: 0.37, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 118.00, #queue-req: 0
+[2026-09-19 09:04:21 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 41472, full token usage: 0.21, mamba num: 24, mamba usage: 0.37, accept len: 2.71, accept rate: 0.24, npu graph: True, gen throughput (token/s): 122.86, #queue-req: 0
+[2026-09-19 09:04:28 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 40960, full token usage: 0.21, mamba num: 20, mamba usage: 0.31, accept len: 3.11, accept rate: 0.30, npu graph: True, gen throughput (token/s): 112.16, #queue-req: 0
+[2026-09-19 09:04:30 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 382, #cached-token: 0, full token usage: 0.21, mamba usage: 0.37, #running-req: 5, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 9.56
+[2026-09-19 09:04:35 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 41728, full token usage: 0.21, mamba num: 24, mamba usage: 0.37, accept len: 2.35, accept rate: 0.19, npu graph: True, gen throughput (token/s): 83.26, #queue-req: 0
+[2026-09-19 09:04:40 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 42368, full token usage: 0.22, mamba num: 24, mamba usage: 0.37, accept len: 2.54, accept rate: 0.22, npu graph: True, gen throughput (token/s): 117.06, #queue-req: 0
+[2026-09-19 09:04:45 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 43008, full token usage: 0.22, mamba num: 24, mamba usage: 0.37, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 118.85, #queue-req: 0
+[2026-09-19 09:04:50 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 43776, full token usage: 0.22, mamba num: 24, mamba usage: 0.37, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 121.68, #queue-req: 0
+[2026-09-19 09:04:56 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 44288, full token usage: 0.23, mamba num: 24, mamba usage: 0.37, accept len: 2.91, accept rate: 0.27, npu graph: True, gen throughput (token/s): 131.59, #queue-req: 0
+[2026-09-19 09:05:01 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 45056, full token usage: 0.23, mamba num: 24, mamba usage: 0.37, accept len: 3.05, accept rate: 0.29, npu graph: True, gen throughput (token/s): 138.75, #queue-req: 0
+[2026-09-19 09:05:06 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 45952, full token usage: 0.24, mamba num: 24, mamba usage: 0.37, accept len: 2.92, accept rate: 0.27, npu graph: True, gen throughput (token/s): 131.35, #queue-req: 0
+[2026-09-19 09:05:11 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 46592, full token usage: 0.24, mamba num: 24, mamba usage: 0.37, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 114.35, #queue-req: 0
+[2026-09-19 09:05:17 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 47104, full token usage: 0.24, mamba num: 24, mamba usage: 0.37, accept len: 3.22, accept rate: 0.32, npu graph: True, gen throughput (token/s): 145.97, #queue-req: 0
+[2026-09-19 09:05:22 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 47744, full token usage: 0.24, mamba num: 24, mamba usage: 0.37, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 121.72, #queue-req: 0
+[2026-09-19 09:05:27 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 48512, full token usage: 0.25, mamba num: 24, mamba usage: 0.37, accept len: 2.86, accept rate: 0.27, npu graph: True, gen throughput (token/s): 131.76, #queue-req: 0
+[2026-09-19 09:05:34 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 49280, full token usage: 0.25, mamba num: 24, mamba usage: 0.37, accept len: 2.79, accept rate: 0.26, npu graph: True, gen throughput (token/s): 99.07, #queue-req: 0
+[2026-09-19 09:05:41 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 50048, full token usage: 0.26, mamba num: 24, mamba usage: 0.37, accept len: 2.78, accept rate: 0.25, npu graph: True, gen throughput (token/s): 99.79, #queue-req: 0
+[2026-09-19 09:05:46 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 50432, full token usage: 0.26, mamba num: 24, mamba usage: 0.37, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 120.04, #queue-req: 0
+[2026-09-19 09:05:51 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 51072, full token usage: 0.26, mamba num: 24, mamba usage: 0.37, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 108.68, #queue-req: 0
+[2026-09-19 09:05:56 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 51712, full token usage: 0.27, mamba num: 24, mamba usage: 0.37, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 124.42, #queue-req: 0
+[2026-09-19 09:06:01 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 497, #cached-token: 0, full token usage: 0.27, mamba usage: 0.43, #running-req: 6, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 5.45
+[2026-09-19 09:06:03 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 52992, full token usage: 0.27, mamba num: 28, mamba usage: 0.43, accept len: 2.76, accept rate: 0.25, npu graph: True, gen throughput (token/s): 104.65, #queue-req: 0
+[2026-09-19 09:06:10 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 53760, full token usage: 0.28, mamba num: 28, mamba usage: 0.43, accept len: 2.63, accept rate: 0.23, npu graph: True, gen throughput (token/s): 113.27, #queue-req: 0
+[2026-09-19 09:06:15 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 54656, full token usage: 0.28, mamba num: 28, mamba usage: 0.43, accept len: 2.81, accept rate: 0.26, npu graph: True, gen throughput (token/s): 153.96, #queue-req: 0
+[2026-09-19 09:06:21 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 55424, full token usage: 0.28, mamba num: 28, mamba usage: 0.43, accept len: 2.69, accept rate: 0.24, npu graph: True, gen throughput (token/s): 116.26, #queue-req: 0
+[2026-09-19 09:06:28 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 55936, full token usage: 0.29, mamba num: 28, mamba usage: 0.43, accept len: 2.64, accept rate: 0.23, npu graph: True, gen throughput (token/s): 109.56, #queue-req: 0
+[2026-09-19 09:06:33 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 56576, full token usage: 0.29, mamba num: 28, mamba usage: 0.43, accept len: 2.54, accept rate: 0.22, npu graph: True, gen throughput (token/s): 133.76, #queue-req: 0
+[2026-09-19 09:06:39 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 57472, full token usage: 0.29, mamba num: 28, mamba usage: 0.43, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 146.40, #queue-req: 0
+[2026-09-19 09:06:42] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:06:42] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:06:43 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 223, #cached-token: 0, full token usage: 0.26, mamba usage: 0.43, #running-req: 6, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 5.35
+[2026-09-19 09:06:45 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 51840, full token usage: 0.27, mamba num: 28, mamba usage: 0.43, accept len: 2.74, accept rate: 0.25, npu graph: True, gen throughput (token/s): 115.00, #queue-req: 0
+[2026-09-19 09:06:52 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 52608, full token usage: 0.27, mamba num: 28, mamba usage: 0.43, accept len: 2.84, accept rate: 0.26, npu graph: True, gen throughput (token/s): 122.93, #queue-req: 0
+[2026-09-19 09:06:57 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 53376, full token usage: 0.27, mamba num: 28, mamba usage: 0.43, accept len: 2.81, accept rate: 0.26, npu graph: True, gen throughput (token/s): 148.92, #queue-req: 0
+[2026-09-19 09:07:02 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 53888, full token usage: 0.28, mamba num: 28, mamba usage: 0.43, accept len: 2.71, accept rate: 0.24, npu graph: True, gen throughput (token/s): 143.78, #queue-req: 0
+[2026-09-19 09:07:09 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 54784, full token usage: 0.28, mamba num: 28, mamba usage: 0.43, accept len: 2.74, accept rate: 0.25, npu graph: True, gen throughput (token/s): 117.55, #queue-req: 0
+[2026-09-19 09:07:15 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 55552, full token usage: 0.28, mamba num: 28, mamba usage: 0.43, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 105.90, #queue-req: 0
+[2026-09-19 09:07:21 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 56448, full token usage: 0.29, mamba num: 28, mamba usage: 0.43, accept len: 2.79, accept rate: 0.26, npu graph: True, gen throughput (token/s): 149.00, #queue-req: 0
+[2026-09-19 09:07:26 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 57216, full token usage: 0.29, mamba num: 28, mamba usage: 0.43, accept len: 3.00, accept rate: 0.29, npu graph: True, gen throughput (token/s): 159.32, #queue-req: 0
+[2026-09-19 09:07:32 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 287, #cached-token: 0, full token usage: 0.28, mamba usage: 0.43, #running-req: 6, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 5.87
+[2026-09-19 09:07:32 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 54272, full token usage: 0.28, mamba num: 28, mamba usage: 0.43, accept len: 3.02, accept rate: 0.29, npu graph: True, gen throughput (token/s): 130.34, #queue-req: 0
+[2026-09-19 09:07:39 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 53632, full token usage: 0.28, mamba num: 24, mamba usage: 0.37, accept len: 2.73, accept rate: 0.25, npu graph: True, gen throughput (token/s): 106.56, #queue-req: 0
+[2026-09-19 09:07:44 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 54272, full token usage: 0.28, mamba num: 24, mamba usage: 0.37, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 113.56, #queue-req: 0
+[2026-09-19 09:07:50 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 54912, full token usage: 0.28, mamba num: 24, mamba usage: 0.37, accept len: 2.82, accept rate: 0.26, npu graph: True, gen throughput (token/s): 128.01, #queue-req: 0
+[2026-09-19 09:07:55 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 55808, full token usage: 0.29, mamba num: 24, mamba usage: 0.37, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 128.18, #queue-req: 0
+[2026-09-19 09:08:02 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 56576, full token usage: 0.29, mamba num: 24, mamba usage: 0.37, accept len: 2.94, accept rate: 0.28, npu graph: True, gen throughput (token/s): 105.07, #queue-req: 0
+[2026-09-19 09:08:08 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 56960, full token usage: 0.29, mamba num: 24, mamba usage: 0.37, accept len: 2.53, accept rate: 0.22, npu graph: True, gen throughput (token/s): 91.76, #queue-req: 0
+[2026-09-19 09:08:13 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 57600, full token usage: 0.30, mamba num: 24, mamba usage: 0.37, accept len: 2.69, accept rate: 0.24, npu graph: True, gen throughput (token/s): 122.83, #queue-req: 0
+[2026-09-19 09:08:19 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 58368, full token usage: 0.30, mamba num: 24, mamba usage: 0.37, accept len: 2.87, accept rate: 0.27, npu graph: True, gen throughput (token/s): 130.16, #queue-req: 0
+[2026-09-19 09:08:23 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 517, #cached-token: 0, full token usage: 0.30, mamba usage: 0.43, #running-req: 6, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 10.12
+[2026-09-19 09:08:25 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 59776, full token usage: 0.31, mamba num: 28, mamba usage: 0.43, accept len: 3.37, accept rate: 0.34, npu graph: True, gen throughput (token/s): 136.97, #queue-req: 0
+[2026-09-19 09:08:32 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 59136, full token usage: 0.30, mamba num: 24, mamba usage: 0.37, accept len: 3.20, accept rate: 0.31, npu graph: True, gen throughput (token/s): 132.30, #queue-req: 0
+[2026-09-19 09:08:38 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 59904, full token usage: 0.31, mamba num: 24, mamba usage: 0.37, accept len: 3.16, accept rate: 0.31, npu graph: True, gen throughput (token/s): 117.44, #queue-req: 0
+[2026-09-19 09:08:43 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 60672, full token usage: 0.31, mamba num: 24, mamba usage: 0.37, accept len: 3.09, accept rate: 0.30, npu graph: True, gen throughput (token/s): 142.16, #queue-req: 0
+[2026-09-19 09:08:48 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 61568, full token usage: 0.32, mamba num: 24, mamba usage: 0.37, accept len: 2.98, accept rate: 0.28, npu graph: True, gen throughput (token/s): 136.81, #queue-req: 0
+[2026-09-19 09:08:55 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 60672, full token usage: 0.31, mamba num: 20, mamba usage: 0.31, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 83.21, #queue-req: 0
+[2026-09-19 09:08:58 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 300, #cached-token: 0, full token usage: 0.31, mamba usage: 0.37, #running-req: 5, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 8.52
+[2026-09-19 09:09:01 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 61696, full token usage: 0.32, mamba num: 24, mamba usage: 0.37, accept len: 2.53, accept rate: 0.22, npu graph: True, gen throughput (token/s): 86.91, #queue-req: 0
+[2026-09-19 09:09:07 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 62208, full token usage: 0.32, mamba num: 24, mamba usage: 0.37, accept len: 2.74, accept rate: 0.25, npu graph: True, gen throughput (token/s): 124.29, #queue-req: 0
+[2026-09-19 09:09:12 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 62976, full token usage: 0.32, mamba num: 24, mamba usage: 0.37, accept len: 2.76, accept rate: 0.25, npu graph: True, gen throughput (token/s): 124.68, #queue-req: 0
+[2026-09-19 09:09:17 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 63488, full token usage: 0.33, mamba num: 24, mamba usage: 0.37, accept len: 2.35, accept rate: 0.19, npu graph: True, gen throughput (token/s): 106.65, #queue-req: 0
+[2026-09-19 09:09:25 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 64256, full token usage: 0.33, mamba num: 24, mamba usage: 0.37, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 81.29, #queue-req: 0
+[2026-09-19 09:09:30 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 272, #cached-token: 0, full token usage: 0.33, mamba usage: 0.43, #running-req: 6, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 8.45
+[2026-09-19 09:09:33 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 65280, full token usage: 0.33, mamba num: 28, mamba usage: 0.43, accept len: 2.73, accept rate: 0.25, npu graph: True, gen throughput (token/s): 90.53, #queue-req: 0
+[2026-09-19 09:09:39 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 66048, full token usage: 0.34, mamba num: 28, mamba usage: 0.43, accept len: 2.94, accept rate: 0.28, npu graph: True, gen throughput (token/s): 126.28, #queue-req: 0
+[2026-09-19 09:09:45 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 66688, full token usage: 0.34, mamba num: 28, mamba usage: 0.43, accept len: 2.84, accept rate: 0.26, npu graph: True, gen throughput (token/s): 154.88, #queue-req: 0
+[2026-09-19 09:09:50 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 67584, full token usage: 0.35, mamba num: 28, mamba usage: 0.43, accept len: 2.56, accept rate: 0.22, npu graph: True, gen throughput (token/s): 139.77, #queue-req: 0
+[2026-09-19 09:09:56 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 68352, full token usage: 0.35, mamba num: 28, mamba usage: 0.43, accept len: 2.64, accept rate: 0.23, npu graph: True, gen throughput (token/s): 115.37, #queue-req: 0
+[2026-09-19 09:10:01 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 68864, full token usage: 0.35, mamba num: 28, mamba usage: 0.43, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 134.10, #queue-req: 0
+[2026-09-19 09:10:07 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 69888, full token usage: 0.36, mamba num: 28, mamba usage: 0.43, accept len: 3.04, accept rate: 0.29, npu graph: True, gen throughput (token/s): 159.88, #queue-req: 0
+[2026-09-19 09:10:14 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 68480, full token usage: 0.35, mamba num: 24, mamba usage: 0.37, accept len: 2.87, accept rate: 0.27, npu graph: True, gen throughput (token/s): 104.05, #queue-req: 0
+[2026-09-19 09:10:19 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 69248, full token usage: 0.36, mamba num: 24, mamba usage: 0.37, accept len: 2.46, accept rate: 0.21, npu graph: True, gen throughput (token/s): 112.38, #queue-req: 0
+[2026-09-19 09:10:21 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 330, #cached-token: 0, full token usage: 0.36, mamba usage: 0.43, #running-req: 6, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 6.50
+[2026-09-19 09:10:27 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 70528, full token usage: 0.36, mamba num: 28, mamba usage: 0.43, accept len: 2.51, accept rate: 0.22, npu graph: True, gen throughput (token/s): 86.63, #queue-req: 0
+[2026-09-19 09:10:32 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 71296, full token usage: 0.37, mamba num: 28, mamba usage: 0.43, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 134.96, #queue-req: 0
+[2026-09-19 09:10:37 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 71808, full token usage: 0.37, mamba num: 28, mamba usage: 0.43, accept len: 2.64, accept rate: 0.23, npu graph: True, gen throughput (token/s): 140.76, #queue-req: 0
+[2026-09-19 09:10:44 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 72448, full token usage: 0.37, mamba num: 28, mamba usage: 0.43, accept len: 2.41, accept rate: 0.20, npu graph: True, gen throughput (token/s): 102.29, #queue-req: 0
+[2026-09-19 09:10:49 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 73344, full token usage: 0.38, mamba num: 28, mamba usage: 0.43, accept len: 2.56, accept rate: 0.22, npu graph: True, gen throughput (token/s): 135.21, #queue-req: 0
+[2026-09-19 09:10:54 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 73856, full token usage: 0.38, mamba num: 28, mamba usage: 0.43, accept len: 2.31, accept rate: 0.19, npu graph: True, gen throughput (token/s): 122.14, #queue-req: 0
+[2026-09-19 09:11:01 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 74624, full token usage: 0.38, mamba num: 28, mamba usage: 0.43, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 104.73, #queue-req: 0
+[2026-09-19 09:11:06 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 75392, full token usage: 0.39, mamba num: 28, mamba usage: 0.43, accept len: 2.73, accept rate: 0.25, npu graph: True, gen throughput (token/s): 145.27, #queue-req: 0
+[2026-09-19 09:11:12 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 325, #cached-token: 0, full token usage: 0.39, mamba usage: 0.49, #running-req: 7, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 6.35
+[2026-09-19 09:11:13 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 76544, full token usage: 0.39, mamba num: 32, mamba usage: 0.49, accept len: 2.43, accept rate: 0.20, npu graph: True, gen throughput (token/s): 105.19, #queue-req: 0
+[2026-09-19 09:11:18 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 77184, full token usage: 0.40, mamba num: 32, mamba usage: 0.49, accept len: 2.72, accept rate: 0.25, npu graph: True, gen throughput (token/s): 166.03, #queue-req: 0
+[2026-09-19 09:11:23 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 78080, full token usage: 0.40, mamba num: 32, mamba usage: 0.49, accept len: 2.64, accept rate: 0.23, npu graph: True, gen throughput (token/s): 158.56, #queue-req: 0
+[2026-09-19 09:11:29 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 79232, full token usage: 0.41, mamba num: 32, mamba usage: 0.49, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 171.43, #queue-req: 0
+[2026-09-19 09:11:35 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 79744, full token usage: 0.41, mamba num: 32, mamba usage: 0.49, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 109.48, #queue-req: 0
+[2026-09-19 09:11:41 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 80384, full token usage: 0.41, mamba num: 32, mamba usage: 0.49, accept len: 2.27, accept rate: 0.18, npu graph: True, gen throughput (token/s): 136.03, #queue-req: 0
+[2026-09-19 09:11:42] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:11:42] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:11:46 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 81408, full token usage: 0.42, mamba num: 32, mamba usage: 0.49, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 146.41, #queue-req: 0
+[2026-09-19 09:11:51 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 82176, full token usage: 0.42, mamba num: 32, mamba usage: 0.49, accept len: 2.34, accept rate: 0.19, npu graph: True, gen throughput (token/s): 142.54, #queue-req: 0
+[2026-09-19 09:11:57 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 82688, full token usage: 0.42, mamba num: 32, mamba usage: 0.49, accept len: 2.37, accept rate: 0.20, npu graph: True, gen throughput (token/s): 144.73, #queue-req: 0
+[2026-09-19 09:12:02 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 83584, full token usage: 0.43, mamba num: 32, mamba usage: 0.49, accept len: 2.64, accept rate: 0.23, npu graph: True, gen throughput (token/s): 159.37, #queue-req: 0
+[2026-09-19 09:12:07 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 84352, full token usage: 0.43, mamba num: 32, mamba usage: 0.49, accept len: 2.59, accept rate: 0.23, npu graph: True, gen throughput (token/s): 155.80, #queue-req: 0
+[2026-09-19 09:12:12 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 85248, full token usage: 0.44, mamba num: 32, mamba usage: 0.49, accept len: 2.53, accept rate: 0.22, npu graph: True, gen throughput (token/s): 152.88, #queue-req: 0
+[2026-09-19 09:12:18 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 86272, full token usage: 0.44, mamba num: 32, mamba usage: 0.49, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 160.61, #queue-req: 0
+[2026-09-19 09:12:23 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 87040, full token usage: 0.45, mamba num: 32, mamba usage: 0.49, accept len: 2.53, accept rate: 0.22, npu graph: True, gen throughput (token/s): 154.17, #queue-req: 0
+[2026-09-19 09:12:28 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 87680, full token usage: 0.45, mamba num: 32, mamba usage: 0.49, accept len: 2.37, accept rate: 0.20, npu graph: True, gen throughput (token/s): 143.16, #queue-req: 0
+[2026-09-19 09:12:34 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 88576, full token usage: 0.45, mamba num: 32, mamba usage: 0.49, accept len: 2.55, accept rate: 0.22, npu graph: True, gen throughput (token/s): 155.30, #queue-req: 0
+[2026-09-19 09:12:40 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 89216, full token usage: 0.46, mamba num: 32, mamba usage: 0.49, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 116.90, #queue-req: 0
+[2026-09-19 09:12:45 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 90112, full token usage: 0.46, mamba num: 32, mamba usage: 0.49, accept len: 2.59, accept rate: 0.23, npu graph: True, gen throughput (token/s): 159.16, #queue-req: 0
+[2026-09-19 09:12:51 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 90880, full token usage: 0.47, mamba num: 32, mamba usage: 0.49, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 150.03, #queue-req: 0
+[2026-09-19 09:12:57 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 91648, full token usage: 0.47, mamba num: 32, mamba usage: 0.49, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 124.54, #queue-req: 0
+[2026-09-19 09:13:01 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 306, #cached-token: 0, full token usage: 0.48, mamba usage: 0.55, #running-req: 8, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 2.81
+[2026-09-19 09:13:04 DP3 TP48 EP48] Decode batch, #running-req: 9, #full token: 93056, full token usage: 0.48, mamba num: 36, mamba usage: 0.55, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 132.50, #queue-req: 0
+[2026-09-19 09:13:09 DP3 TP48 EP48] Decode batch, #running-req: 9, #full token: 94080, full token usage: 0.48, mamba num: 36, mamba usage: 0.55, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 182.17, #queue-req: 0
+[2026-09-19 09:13:14 DP3 TP48 EP48] Decode batch, #running-req: 9, #full token: 94720, full token usage: 0.49, mamba num: 36, mamba usage: 0.55, accept len: 2.57, accept rate: 0.22, npu graph: True, gen throughput (token/s): 178.39, #queue-req: 0
+[2026-09-19 09:13:19 DP3 TP48 EP48] Decode batch, #running-req: 9, #full token: 95872, full token usage: 0.49, mamba num: 36, mamba usage: 0.55, accept len: 2.63, accept rate: 0.23, npu graph: True, gen throughput (token/s): 184.77, #queue-req: 0
+[2026-09-19 09:13:24 DP3 TP48 EP48] Decode batch, #running-req: 9, #full token: 96896, full token usage: 0.50, mamba num: 36, mamba usage: 0.55, accept len: 2.71, accept rate: 0.24, npu graph: True, gen throughput (token/s): 189.50, #queue-req: 0
+[2026-09-19 09:13:29 DP3 TP48 EP48] Decode batch, #running-req: 9, #full token: 97920, full token usage: 0.50, mamba num: 36, mamba usage: 0.55, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 193.58, #queue-req: 0
+[2026-09-19 09:13:36 DP3 TP48 EP48] Decode batch, #running-req: 9, #full token: 98688, full token usage: 0.51, mamba num: 36, mamba usage: 0.55, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 143.79, #queue-req: 0
+[2026-09-19 09:13:41 DP3 TP48 EP48] Decode batch, #running-req: 9, #full token: 99584, full token usage: 0.51, mamba num: 36, mamba usage: 0.55, accept len: 2.63, accept rate: 0.23, npu graph: True, gen throughput (token/s): 182.92, #queue-req: 0
+[2026-09-19 09:13:48 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 91008, full token usage: 0.47, mamba num: 32, mamba usage: 0.49, accept len: 2.89, accept rate: 0.27, npu graph: True, gen throughput (token/s): 146.46, #queue-req: 0
+[2026-09-19 09:13:54 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 67968, full token usage: 0.35, mamba num: 31, mamba usage: 0.48, accept len: 3.04, accept rate: 0.29, npu graph: True, gen throughput (token/s): 143.60, #queue-req: 0
+[2026-09-19 09:13:54 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 395, #cached-token: 0, full token usage: 0.35, mamba usage: 0.49, #running-req: 7, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 7.41
+[2026-09-19 09:14:01 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 64256, full token usage: 0.33, mamba num: 28, mamba usage: 0.43, accept len: 2.84, accept rate: 0.26, npu graph: True, gen throughput (token/s): 125.31, #queue-req: 0
+[2026-09-19 09:14:06 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 65024, full token usage: 0.33, mamba num: 28, mamba usage: 0.43, accept len: 2.57, accept rate: 0.22, npu graph: True, gen throughput (token/s): 132.92, #queue-req: 0
+[2026-09-19 09:14:12 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 65920, full token usage: 0.34, mamba num: 28, mamba usage: 0.43, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 144.91, #queue-req: 0
+[2026-09-19 09:14:17 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 66432, full token usage: 0.34, mamba num: 28, mamba usage: 0.43, accept len: 2.73, accept rate: 0.25, npu graph: True, gen throughput (token/s): 145.70, #queue-req: 0
+[2026-09-19 09:14:22 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 67328, full token usage: 0.35, mamba num: 28, mamba usage: 0.43, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 144.38, #queue-req: 0
+[2026-09-19 09:14:28 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 68096, full token usage: 0.35, mamba num: 28, mamba usage: 0.43, accept len: 2.45, accept rate: 0.21, npu graph: True, gen throughput (token/s): 129.61, #queue-req: 0
+[2026-09-19 09:14:33 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 68992, full token usage: 0.35, mamba num: 28, mamba usage: 0.43, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 151.90, #queue-req: 0
+[2026-09-19 09:14:39 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 69760, full token usage: 0.36, mamba num: 28, mamba usage: 0.43, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 121.53, #queue-req: 0
+[2026-09-19 09:14:45 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 70272, full token usage: 0.36, mamba num: 28, mamba usage: 0.43, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 146.06, #queue-req: 0
+[2026-09-19 09:14:54 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 71296, full token usage: 0.37, mamba num: 28, mamba usage: 0.43, accept len: 2.95, accept rate: 0.28, npu graph: True, gen throughput (token/s): 89.47, #queue-req: 0
+[2026-09-19 09:14:59 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 72320, full token usage: 0.37, mamba num: 28, mamba usage: 0.43, accept len: 3.07, accept rate: 0.30, npu graph: True, gen throughput (token/s): 160.52, #queue-req: 0
+[2026-09-19 09:15:03 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 201, #cached-token: 0, full token usage: 0.37, mamba usage: 0.49, #running-req: 7, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 2.92
+[2026-09-19 09:15:07 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 73088, full token usage: 0.37, mamba num: 32, mamba usage: 0.49, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 104.56, #queue-req: 0
+[2026-09-19 09:15:13 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 74112, full token usage: 0.38, mamba num: 32, mamba usage: 0.49, accept len: 2.98, accept rate: 0.28, npu graph: True, gen throughput (token/s): 178.23, #queue-req: 0
+[2026-09-19 09:15:19 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 56704, full token usage: 0.29, mamba num: 28, mamba usage: 0.43, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 133.53, #queue-req: 0
+[2026-09-19 09:15:24 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 57472, full token usage: 0.29, mamba num: 28, mamba usage: 0.43, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 139.33, #queue-req: 0
+[2026-09-19 09:15:30 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 58112, full token usage: 0.30, mamba num: 28, mamba usage: 0.43, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 131.82, #queue-req: 0
+[2026-09-19 09:15:35 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 58880, full token usage: 0.30, mamba num: 28, mamba usage: 0.43, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 145.09, #queue-req: 0
+[2026-09-19 09:15:42 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 59520, full token usage: 0.31, mamba num: 28, mamba usage: 0.43, accept len: 2.72, accept rate: 0.25, npu graph: True, gen throughput (token/s): 110.63, #queue-req: 0
+[2026-09-19 09:15:47 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 60416, full token usage: 0.31, mamba num: 28, mamba usage: 0.43, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 144.34, #queue-req: 0
+[2026-09-19 09:15:53 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 61184, full token usage: 0.31, mamba num: 28, mamba usage: 0.43, accept len: 2.84, accept rate: 0.26, npu graph: True, gen throughput (token/s): 147.14, #queue-req: 0
+[2026-09-19 09:15:58 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 61952, full token usage: 0.32, mamba num: 28, mamba usage: 0.43, accept len: 2.46, accept rate: 0.21, npu graph: True, gen throughput (token/s): 130.32, #queue-req: 0
+[2026-09-19 09:16:03 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 62720, full token usage: 0.32, mamba num: 28, mamba usage: 0.43, accept len: 2.41, accept rate: 0.20, npu graph: True, gen throughput (token/s): 127.11, #queue-req: 0
+[2026-09-19 09:16:09 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 63360, full token usage: 0.33, mamba num: 28, mamba usage: 0.43, accept len: 2.78, accept rate: 0.25, npu graph: True, gen throughput (token/s): 145.80, #queue-req: 0
+[2026-09-19 09:16:12 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 414, #cached-token: 0, full token usage: 0.31, mamba usage: 0.43, #running-req: 6, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 6.05
+[2026-09-19 09:16:15 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 61056, full token usage: 0.31, mamba num: 28, mamba usage: 0.43, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 94.79, #queue-req: 0
+[2026-09-19 09:16:21 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 61696, full token usage: 0.32, mamba num: 28, mamba usage: 0.43, accept len: 2.63, accept rate: 0.23, npu graph: True, gen throughput (token/s): 139.52, #queue-req: 0
+[2026-09-19 09:16:30 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 62336, full token usage: 0.32, mamba num: 28, mamba usage: 0.43, accept len: 2.28, accept rate: 0.18, npu graph: True, gen throughput (token/s): 70.55, #queue-req: 0
+[2026-09-19 09:16:35 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 62976, full token usage: 0.32, mamba num: 28, mamba usage: 0.43, accept len: 2.19, accept rate: 0.17, npu graph: True, gen throughput (token/s): 116.91, #queue-req: 0
+[2026-09-19 09:16:40 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 63488, full token usage: 0.33, mamba num: 28, mamba usage: 0.43, accept len: 2.29, accept rate: 0.18, npu graph: True, gen throughput (token/s): 123.61, #queue-req: 0
+[2026-09-19 09:16:42] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:16:42] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:16:47 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 64128, full token usage: 0.33, mamba num: 28, mamba usage: 0.43, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 104.38, #queue-req: 0
+[2026-09-19 09:16:53 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 59904, full token usage: 0.31, mamba num: 24, mamba usage: 0.37, accept len: 2.74, accept rate: 0.25, npu graph: True, gen throughput (token/s): 112.16, #queue-req: 0
+[2026-09-19 09:16:59 DP3 TP48 EP48] Decode batch, #running-req: 6, #full token: 60416, full token usage: 0.31, mamba num: 24, mamba usage: 0.37, accept len: 2.41, accept rate: 0.20, npu graph: True, gen throughput (token/s): 110.73, #queue-req: 0
+[2026-09-19 09:17:04 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 373, #cached-token: 0, full token usage: 0.32, mamba usage: 0.43, #running-req: 6, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 7.15
+[2026-09-19 09:17:05 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 61440, full token usage: 0.32, mamba num: 28, mamba usage: 0.43, accept len: 2.31, accept rate: 0.19, npu graph: True, gen throughput (token/s): 87.23, #queue-req: 0
+[2026-09-19 09:17:12 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 62080, full token usage: 0.32, mamba num: 28, mamba usage: 0.43, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 111.55, #queue-req: 0
+[2026-09-19 09:17:17 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 62592, full token usage: 0.32, mamba num: 28, mamba usage: 0.43, accept len: 2.26, accept rate: 0.18, npu graph: True, gen throughput (token/s): 120.67, #queue-req: 0
+[2026-09-19 09:17:24 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 63488, full token usage: 0.33, mamba num: 28, mamba usage: 0.43, accept len: 2.18, accept rate: 0.17, npu graph: True, gen throughput (token/s): 91.60, #queue-req: 0
+[2026-09-19 09:17:29 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 64128, full token usage: 0.33, mamba num: 28, mamba usage: 0.43, accept len: 2.57, accept rate: 0.22, npu graph: True, gen throughput (token/s): 136.80, #queue-req: 0
+[2026-09-19 09:17:34 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 64896, full token usage: 0.33, mamba num: 28, mamba usage: 0.43, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 123.93, #queue-req: 0
+[2026-09-19 09:17:40 DP3 TP48 EP48] Prefill batch, #new-seq: 1, #new-token: 294, #cached-token: 0, full token usage: 0.34, mamba usage: 0.49, #running-req: 7, #queue-req: 0, #pending-token: 0, npu graph: False, input throughput (token/s): 8.10
+[2026-09-19 09:17:42 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 65664, full token usage: 0.34, mamba num: 32, mamba usage: 0.49, accept len: 2.12, accept rate: 0.16, npu graph: True, gen throughput (token/s): 79.49, #queue-req: 0
+[2026-09-19 09:17:47 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 66432, full token usage: 0.34, mamba num: 32, mamba usage: 0.49, accept len: 2.17, accept rate: 0.17, npu graph: True, gen throughput (token/s): 133.40, #queue-req: 0
+[2026-09-19 09:17:52 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 67200, full token usage: 0.34, mamba num: 32, mamba usage: 0.49, accept len: 2.17, accept rate: 0.17, npu graph: True, gen throughput (token/s): 133.98, #queue-req: 0
+[2026-09-19 09:17:58 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 67968, full token usage: 0.35, mamba num: 32, mamba usage: 0.49, accept len: 2.06, accept rate: 0.15, npu graph: True, gen throughput (token/s): 124.67, #queue-req: 0
+[2026-09-19 09:18:04 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 68608, full token usage: 0.35, mamba num: 32, mamba usage: 0.49, accept len: 2.41, accept rate: 0.20, npu graph: True, gen throughput (token/s): 116.16, #queue-req: 0
+[2026-09-19 09:18:10 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 69248, full token usage: 0.36, mamba num: 32, mamba usage: 0.49, accept len: 2.29, accept rate: 0.18, npu graph: True, gen throughput (token/s): 138.89, #queue-req: 0
+[2026-09-19 09:18:15 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 70016, full token usage: 0.36, mamba num: 32, mamba usage: 0.49, accept len: 2.29, accept rate: 0.18, npu graph: True, gen throughput (token/s): 139.54, #queue-req: 0
+[2026-09-19 09:18:20 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 70912, full token usage: 0.36, mamba num: 32, mamba usage: 0.49, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 157.46, #queue-req: 0
+[2026-09-19 09:18:25 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 71680, full token usage: 0.37, mamba num: 32, mamba usage: 0.49, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 145.90, #queue-req: 0
+[2026-09-19 09:18:31 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 72448, full token usage: 0.37, mamba num: 32, mamba usage: 0.49, accept len: 2.64, accept rate: 0.23, npu graph: True, gen throughput (token/s): 159.89, #queue-req: 0
+[2026-09-19 09:18:37 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 73216, full token usage: 0.38, mamba num: 32, mamba usage: 0.49, accept len: 2.41, accept rate: 0.20, npu graph: True, gen throughput (token/s): 115.73, #queue-req: 0
+[2026-09-19 09:18:43 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 74240, full token usage: 0.38, mamba num: 32, mamba usage: 0.49, accept len: 2.27, accept rate: 0.18, npu graph: True, gen throughput (token/s): 134.83, #queue-req: 0
+[2026-09-19 09:18:49 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 74752, full token usage: 0.38, mamba num: 32, mamba usage: 0.49, accept len: 2.34, accept rate: 0.19, npu graph: True, gen throughput (token/s): 112.22, #queue-req: 0
+[2026-09-19 09:18:54 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 75520, full token usage: 0.39, mamba num: 32, mamba usage: 0.49, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 158.51, #queue-req: 0
+[2026-09-19 09:19:00 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 76544, full token usage: 0.39, mamba num: 32, mamba usage: 0.49, accept len: 2.36, accept rate: 0.19, npu graph: True, gen throughput (token/s): 143.61, #queue-req: 0
+[2026-09-19 09:19:05 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 77184, full token usage: 0.40, mamba num: 32, mamba usage: 0.49, accept len: 2.41, accept rate: 0.20, npu graph: True, gen throughput (token/s): 147.30, #queue-req: 0
+[2026-09-19 09:19:10 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 77824, full token usage: 0.40, mamba num: 32, mamba usage: 0.49, accept len: 2.43, accept rate: 0.20, npu graph: True, gen throughput (token/s): 147.57, #queue-req: 0
+[2026-09-19 09:19:15 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 78592, full token usage: 0.40, mamba num: 32, mamba usage: 0.49, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 158.52, #queue-req: 0
+[2026-09-19 09:19:21 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 79488, full token usage: 0.41, mamba num: 32, mamba usage: 0.49, accept len: 2.34, accept rate: 0.19, npu graph: True, gen throughput (token/s): 142.75, #queue-req: 0
+[2026-09-19 09:19:26 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 80128, full token usage: 0.41, mamba num: 32, mamba usage: 0.49, accept len: 2.46, accept rate: 0.21, npu graph: True, gen throughput (token/s): 150.55, #queue-req: 0
+[2026-09-19 09:19:31 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 81024, full token usage: 0.42, mamba num: 32, mamba usage: 0.49, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 150.50, #queue-req: 0
+[2026-09-19 09:19:36 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 81664, full token usage: 0.42, mamba num: 32, mamba usage: 0.49, accept len: 2.24, accept rate: 0.18, npu graph: True, gen throughput (token/s): 136.71, #queue-req: 0
+[2026-09-19 09:19:42 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 82560, full token usage: 0.42, mamba num: 32, mamba usage: 0.49, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 151.67, #queue-req: 0
+[2026-09-19 09:19:47 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 83200, full token usage: 0.43, mamba num: 32, mamba usage: 0.49, accept len: 2.45, accept rate: 0.21, npu graph: True, gen throughput (token/s): 149.60, #queue-req: 0
+[2026-09-19 09:19:52 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 83968, full token usage: 0.43, mamba num: 32, mamba usage: 0.49, accept len: 2.32, accept rate: 0.19, npu graph: True, gen throughput (token/s): 142.09, #queue-req: 0
+[2026-09-19 09:19:57 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 84736, full token usage: 0.43, mamba num: 32, mamba usage: 0.49, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 146.74, #queue-req: 0
+[2026-09-19 09:20:02 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 85760, full token usage: 0.44, mamba num: 32, mamba usage: 0.49, accept len: 2.36, accept rate: 0.19, npu graph: True, gen throughput (token/s): 145.54, #queue-req: 0
+[2026-09-19 09:20:08 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 86528, full token usage: 0.44, mamba num: 32, mamba usage: 0.49, accept len: 2.54, accept rate: 0.22, npu graph: True, gen throughput (token/s): 154.22, #queue-req: 0
+[2026-09-19 09:20:13 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 87168, full token usage: 0.45, mamba num: 32, mamba usage: 0.49, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 150.40, #queue-req: 0
+[2026-09-19 09:20:18 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 87936, full token usage: 0.45, mamba num: 32, mamba usage: 0.49, accept len: 2.34, accept rate: 0.19, npu graph: True, gen throughput (token/s): 143.84, #queue-req: 0
+[2026-09-19 09:20:23 DP3 TP48 EP48] Decode batch, #running-req: 8, #full token: 88704, full token usage: 0.46, mamba num: 32, mamba usage: 0.49, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 146.39, #queue-req: 0
+[2026-09-19 09:20:29 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 84992, full token usage: 0.44, mamba num: 28, mamba usage: 0.43, accept len: 2.37, accept rate: 0.20, npu graph: True, gen throughput (token/s): 138.78, #queue-req: 0
+[2026-09-19 09:20:34 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 85632, full token usage: 0.44, mamba num: 28, mamba usage: 0.43, accept len: 2.31, accept rate: 0.19, npu graph: True, gen throughput (token/s): 123.83, #queue-req: 0
+[2026-09-19 09:20:39 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 86272, full token usage: 0.44, mamba num: 28, mamba usage: 0.43, accept len: 2.12, accept rate: 0.16, npu graph: True, gen throughput (token/s): 114.65, #queue-req: 0
+[2026-09-19 09:20:44 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 86912, full token usage: 0.45, mamba num: 28, mamba usage: 0.43, accept len: 2.12, accept rate: 0.16, npu graph: True, gen throughput (token/s): 113.66, #queue-req: 0
+[2026-09-19 09:20:50 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 87680, full token usage: 0.45, mamba num: 28, mamba usage: 0.43, accept len: 2.33, accept rate: 0.19, npu graph: True, gen throughput (token/s): 124.89, #queue-req: 0
+[2026-09-19 09:20:55 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 88192, full token usage: 0.45, mamba num: 28, mamba usage: 0.43, accept len: 2.31, accept rate: 0.19, npu graph: True, gen throughput (token/s): 124.59, #queue-req: 0
+[2026-09-19 09:21:00 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 88704, full token usage: 0.46, mamba num: 28, mamba usage: 0.43, accept len: 2.16, accept rate: 0.17, npu graph: True, gen throughput (token/s): 114.78, #queue-req: 0
+[2026-09-19 09:21:05 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 89600, full token usage: 0.46, mamba num: 28, mamba usage: 0.43, accept len: 2.35, accept rate: 0.19, npu graph: True, gen throughput (token/s): 125.42, #queue-req: 0
+[2026-09-19 09:21:10 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 90112, full token usage: 0.46, mamba num: 28, mamba usage: 0.43, accept len: 2.27, accept rate: 0.18, npu graph: True, gen throughput (token/s): 120.93, #queue-req: 0
+[2026-09-19 09:21:16 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 90880, full token usage: 0.47, mamba num: 28, mamba usage: 0.43, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 127.99, #queue-req: 0
+[2026-09-19 09:21:21 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 91520, full token usage: 0.47, mamba num: 28, mamba usage: 0.43, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 139.27, #queue-req: 0
+[2026-09-19 09:21:26 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 92288, full token usage: 0.47, mamba num: 28, mamba usage: 0.43, accept len: 2.57, accept rate: 0.22, npu graph: True, gen throughput (token/s): 137.23, #queue-req: 0
+[2026-09-19 09:21:31 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 92800, full token usage: 0.48, mamba num: 28, mamba usage: 0.43, accept len: 2.41, accept rate: 0.20, npu graph: True, gen throughput (token/s): 127.90, #queue-req: 0
+[2026-09-19 09:21:37 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 93568, full token usage: 0.48, mamba num: 28, mamba usage: 0.43, accept len: 2.72, accept rate: 0.25, npu graph: True, gen throughput (token/s): 144.07, #queue-req: 0
+[2026-09-19 09:21:42 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 94208, full token usage: 0.48, mamba num: 28, mamba usage: 0.43, accept len: 2.26, accept rate: 0.18, npu graph: True, gen throughput (token/s): 120.39, #queue-req: 0
+[2026-09-19 09:21:42] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:21:42] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:21:47 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 94976, full token usage: 0.49, mamba num: 28, mamba usage: 0.43, accept len: 2.23, accept rate: 0.18, npu graph: True, gen throughput (token/s): 120.05, #queue-req: 0
+[2026-09-19 09:21:52 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 95616, full token usage: 0.49, mamba num: 28, mamba usage: 0.43, accept len: 2.55, accept rate: 0.22, npu graph: True, gen throughput (token/s): 134.94, #queue-req: 0
+[2026-09-19 09:21:58 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 96256, full token usage: 0.49, mamba num: 28, mamba usage: 0.43, accept len: 2.61, accept rate: 0.23, npu graph: True, gen throughput (token/s): 138.04, #queue-req: 0
+[2026-09-19 09:22:03 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 97152, full token usage: 0.50, mamba num: 28, mamba usage: 0.43, accept len: 2.56, accept rate: 0.22, npu graph: True, gen throughput (token/s): 137.38, #queue-req: 0
+[2026-09-19 09:22:08 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 97920, full token usage: 0.50, mamba num: 28, mamba usage: 0.43, accept len: 2.34, accept rate: 0.19, npu graph: True, gen throughput (token/s): 124.06, #queue-req: 0
+[2026-09-19 09:22:14 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 98560, full token usage: 0.51, mamba num: 28, mamba usage: 0.43, accept len: 2.63, accept rate: 0.23, npu graph: True, gen throughput (token/s): 139.27, #queue-req: 0
+[2026-09-19 09:22:19 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 99072, full token usage: 0.51, mamba num: 28, mamba usage: 0.43, accept len: 2.27, accept rate: 0.18, npu graph: True, gen throughput (token/s): 122.72, #queue-req: 0
+[2026-09-19 09:22:24 DP3 TP48 EP48] Decode batch, #running-req: 7, #full token: 99840, full token usage: 0.51, mamba num: 28, mamba usage: 0.43, accept len: 2.88, accept rate: 0.27, npu graph: True, gen throughput (token/s): 156.48, #queue-req: 0
+[2026-09-19 09:22:29 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 89856, full token usage: 0.46, mamba num: 20, mamba usage: 0.31, accept len: 2.98, accept rate: 0.28, npu graph: True, gen throughput (token/s): 139.19, #queue-req: 0
+[2026-09-19 09:22:34 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 90368, full token usage: 0.46, mamba num: 20, mamba usage: 0.31, accept len: 2.56, accept rate: 0.22, npu graph: True, gen throughput (token/s): 98.86, #queue-req: 0
+[2026-09-19 09:22:39 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 90880, full token usage: 0.47, mamba num: 20, mamba usage: 0.31, accept len: 2.26, accept rate: 0.18, npu graph: True, gen throughput (token/s): 86.74, #queue-req: 0
+[2026-09-19 09:22:51 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 91264, full token usage: 0.47, mamba num: 20, mamba usage: 0.31, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 44.59, #queue-req: 0
+[2026-09-19 09:22:56 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 91776, full token usage: 0.47, mamba num: 20, mamba usage: 0.31, accept len: 2.49, accept rate: 0.21, npu graph: True, gen throughput (token/s): 96.73, #queue-req: 0
+[2026-09-19 09:23:01 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 92416, full token usage: 0.47, mamba num: 20, mamba usage: 0.31, accept len: 2.51, accept rate: 0.22, npu graph: True, gen throughput (token/s): 96.85, #queue-req: 0
+[2026-09-19 09:23:06 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 92928, full token usage: 0.48, mamba num: 20, mamba usage: 0.31, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 92.51, #queue-req: 0
+[2026-09-19 09:23:11 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 93184, full token usage: 0.48, mamba num: 20, mamba usage: 0.31, accept len: 2.22, accept rate: 0.17, npu graph: True, gen throughput (token/s): 85.80, #queue-req: 0
+[2026-09-19 09:23:17 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 93696, full token usage: 0.48, mamba num: 20, mamba usage: 0.31, accept len: 2.23, accept rate: 0.17, npu graph: True, gen throughput (token/s): 86.84, #queue-req: 0
+[2026-09-19 09:23:22 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 94336, full token usage: 0.48, mamba num: 20, mamba usage: 0.31, accept len: 2.50, accept rate: 0.21, npu graph: True, gen throughput (token/s): 98.06, #queue-req: 0
+[2026-09-19 09:23:27 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 94464, full token usage: 0.48, mamba num: 20, mamba usage: 0.31, accept len: 2.15, accept rate: 0.16, npu graph: True, gen throughput (token/s): 83.72, #queue-req: 0
+[2026-09-19 09:23:32 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 95104, full token usage: 0.49, mamba num: 20, mamba usage: 0.31, accept len: 2.55, accept rate: 0.22, npu graph: True, gen throughput (token/s): 98.20, #queue-req: 0
+[2026-09-19 09:23:37 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 95616, full token usage: 0.49, mamba num: 20, mamba usage: 0.31, accept len: 2.06, accept rate: 0.15, npu graph: True, gen throughput (token/s): 79.77, #queue-req: 0
+[2026-09-19 09:23:42 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 95872, full token usage: 0.49, mamba num: 20, mamba usage: 0.31, accept len: 2.19, accept rate: 0.17, npu graph: True, gen throughput (token/s): 85.46, #queue-req: 0
+[2026-09-19 09:23:47 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 96512, full token usage: 0.50, mamba num: 20, mamba usage: 0.31, accept len: 2.58, accept rate: 0.23, npu graph: True, gen throughput (token/s): 100.24, #queue-req: 0
+[2026-09-19 09:23:53 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 96896, full token usage: 0.50, mamba num: 20, mamba usage: 0.31, accept len: 2.39, accept rate: 0.20, npu graph: True, gen throughput (token/s): 92.47, #queue-req: 0
+[2026-09-19 09:23:58 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 97536, full token usage: 0.50, mamba num: 20, mamba usage: 0.31, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 91.63, #queue-req: 0
+[2026-09-19 09:24:03 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 98048, full token usage: 0.50, mamba num: 20, mamba usage: 0.31, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 94.50, #queue-req: 0
+[2026-09-19 09:24:08 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 98432, full token usage: 0.50, mamba num: 20, mamba usage: 0.31, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 92.79, #queue-req: 0
+[2026-09-19 09:24:13 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 98816, full token usage: 0.51, mamba num: 20, mamba usage: 0.31, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 95.49, #queue-req: 0
+[2026-09-19 09:24:18 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 99328, full token usage: 0.51, mamba num: 20, mamba usage: 0.31, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 103.01, #queue-req: 0
+[2026-09-19 09:24:24 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 99968, full token usage: 0.51, mamba num: 20, mamba usage: 0.31, accept len: 2.65, accept rate: 0.24, npu graph: True, gen throughput (token/s): 102.76, #queue-req: 0
+[2026-09-19 09:24:29 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 100480, full token usage: 0.52, mamba num: 20, mamba usage: 0.31, accept len: 2.69, accept rate: 0.24, npu graph: True, gen throughput (token/s): 105.72, #queue-req: 0
+[2026-09-19 09:24:34 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 100992, full token usage: 0.52, mamba num: 20, mamba usage: 0.31, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 92.83, #queue-req: 0
+[2026-09-19 09:24:39 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 101376, full token usage: 0.52, mamba num: 20, mamba usage: 0.31, accept len: 2.25, accept rate: 0.18, npu graph: True, gen throughput (token/s): 88.13, #queue-req: 0
+[2026-09-19 09:24:44 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 101888, full token usage: 0.52, mamba num: 20, mamba usage: 0.31, accept len: 2.39, accept rate: 0.20, npu graph: True, gen throughput (token/s): 92.22, #queue-req: 0
+[2026-09-19 09:24:49 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 102528, full token usage: 0.53, mamba num: 20, mamba usage: 0.31, accept len: 2.72, accept rate: 0.25, npu graph: True, gen throughput (token/s): 105.89, #queue-req: 0
+[2026-09-19 09:24:54 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 102912, full token usage: 0.53, mamba num: 20, mamba usage: 0.31, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 103.37, #queue-req: 0
+[2026-09-19 09:25:00 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 103552, full token usage: 0.53, mamba num: 20, mamba usage: 0.31, accept len: 2.77, accept rate: 0.25, npu graph: True, gen throughput (token/s): 107.65, #queue-req: 0
+[2026-09-19 09:25:05 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 104064, full token usage: 0.53, mamba num: 20, mamba usage: 0.31, accept len: 2.92, accept rate: 0.27, npu graph: True, gen throughput (token/s): 113.64, #queue-req: 0
+[2026-09-19 09:25:10 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 104704, full token usage: 0.54, mamba num: 20, mamba usage: 0.31, accept len: 2.81, accept rate: 0.26, npu graph: True, gen throughput (token/s): 110.48, #queue-req: 0
+[2026-09-19 09:25:15 DP3 TP48 EP48] Decode batch, #running-req: 5, #full token: 105344, full token usage: 0.54, mamba num: 20, mamba usage: 0.31, accept len: 2.92, accept rate: 0.27, npu graph: True, gen throughput (token/s): 113.67, #queue-req: 0
+[2026-09-19 09:25:20 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 46208, full token usage: 0.24, mamba num: 12, mamba usage: 0.18, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 77.49, #queue-req: 0
+[2026-09-19 09:25:25 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 46464, full token usage: 0.24, mamba num: 12, mamba usage: 0.18, accept len: 2.21, accept rate: 0.17, npu graph: True, gen throughput (token/s): 51.46, #queue-req: 0
+[2026-09-19 09:25:30 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 46848, full token usage: 0.24, mamba num: 12, mamba usage: 0.18, accept len: 2.48, accept rate: 0.21, npu graph: True, gen throughput (token/s): 58.52, #queue-req: 0
+[2026-09-19 09:25:34 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 47104, full token usage: 0.24, mamba num: 12, mamba usage: 0.18, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 76.32, #queue-req: 0
+[2026-09-19 09:25:39 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 47488, full token usage: 0.24, mamba num: 12, mamba usage: 0.18, accept len: 2.90, accept rate: 0.27, npu graph: True, gen throughput (token/s): 84.31, #queue-req: 0
+[2026-09-19 09:25:43 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 47872, full token usage: 0.25, mamba num: 12, mamba usage: 0.18, accept len: 2.69, accept rate: 0.24, npu graph: True, gen throughput (token/s): 78.41, #queue-req: 0
+[2026-09-19 09:25:47 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 48128, full token usage: 0.25, mamba num: 12, mamba usage: 0.18, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 79.30, #queue-req: 0
+[2026-09-19 09:25:51 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 48384, full token usage: 0.25, mamba num: 12, mamba usage: 0.18, accept len: 2.63, accept rate: 0.23, npu graph: True, gen throughput (token/s): 75.41, #queue-req: 0
+[2026-09-19 09:25:55 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 48640, full token usage: 0.25, mamba num: 12, mamba usage: 0.18, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 68.94, #queue-req: 0
+[2026-09-19 09:25:59 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 49024, full token usage: 0.25, mamba num: 12, mamba usage: 0.18, accept len: 2.26, accept rate: 0.18, npu graph: True, gen throughput (token/s): 65.04, #queue-req: 0
+[2026-09-19 09:26:04 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 49280, full token usage: 0.25, mamba num: 12, mamba usage: 0.18, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 71.34, #queue-req: 0
+[2026-09-19 09:26:08 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 49536, full token usage: 0.25, mamba num: 12, mamba usage: 0.18, accept len: 2.24, accept rate: 0.18, npu graph: True, gen throughput (token/s): 64.76, #queue-req: 0
+[2026-09-19 09:26:12 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 49920, full token usage: 0.26, mamba num: 12, mamba usage: 0.18, accept len: 2.82, accept rate: 0.26, npu graph: True, gen throughput (token/s): 81.79, #queue-req: 0
+[2026-09-19 09:26:16 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 50304, full token usage: 0.26, mamba num: 12, mamba usage: 0.18, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 72.96, #queue-req: 0
+[2026-09-19 09:26:20 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 50432, full token usage: 0.26, mamba num: 12, mamba usage: 0.18, accept len: 2.26, accept rate: 0.18, npu graph: True, gen throughput (token/s): 65.05, #queue-req: 0
+[2026-09-19 09:26:24 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 50816, full token usage: 0.26, mamba num: 12, mamba usage: 0.18, accept len: 2.47, accept rate: 0.21, npu graph: True, gen throughput (token/s): 71.74, #queue-req: 0
+[2026-09-19 09:26:28 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 50944, full token usage: 0.26, mamba num: 12, mamba usage: 0.18, accept len: 2.39, accept rate: 0.20, npu graph: True, gen throughput (token/s): 68.95, #queue-req: 0
+[2026-09-19 09:26:33 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 51328, full token usage: 0.26, mamba num: 12, mamba usage: 0.18, accept len: 2.17, accept rate: 0.17, npu graph: True, gen throughput (token/s): 61.50, #queue-req: 0
+[2026-09-19 09:26:37 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 51584, full token usage: 0.26, mamba num: 12, mamba usage: 0.18, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 73.11, #queue-req: 0
+[2026-09-19 09:26:41 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 51840, full token usage: 0.27, mamba num: 12, mamba usage: 0.18, accept len: 2.39, accept rate: 0.20, npu graph: True, gen throughput (token/s): 67.42, #queue-req: 0
+[2026-09-19 09:26:43] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:26:43] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:26:45 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 52224, full token usage: 0.27, mamba num: 12, mamba usage: 0.18, accept len: 2.17, accept rate: 0.17, npu graph: True, gen throughput (token/s): 62.23, #queue-req: 0
+[2026-09-19 09:26:49 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 52480, full token usage: 0.27, mamba num: 12, mamba usage: 0.18, accept len: 2.17, accept rate: 0.17, npu graph: True, gen throughput (token/s): 62.80, #queue-req: 0
+[2026-09-19 09:26:53 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 52736, full token usage: 0.27, mamba num: 12, mamba usage: 0.18, accept len: 2.42, accept rate: 0.20, npu graph: True, gen throughput (token/s): 70.70, #queue-req: 0
+[2026-09-19 09:26:58 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 53120, full token usage: 0.27, mamba num: 12, mamba usage: 0.18, accept len: 2.81, accept rate: 0.26, npu graph: True, gen throughput (token/s): 80.25, #queue-req: 0
+[2026-09-19 09:27:02 DP3 TP48 EP48] Decode batch, #running-req: 3, #full token: 53248, full token usage: 0.27, mamba num: 12, mamba usage: 0.18, accept len: 2.67, accept rate: 0.24, npu graph: True, gen throughput (token/s): 77.36, #queue-req: 0
+[2026-09-19 09:27:06 DP3 TP48 EP48] Decode batch, #running-req: 2, #full token: 40064, full token usage: 0.21, mamba num: 8, mamba usage: 0.12, accept len: 3.20, accept rate: 0.31, npu graph: True, gen throughput (token/s): 91.00, #queue-req: 0
+[2026-09-19 09:27:10 DP3 TP48 EP48] Decode batch, #running-req: 2, #full token: 40192, full token usage: 0.21, mamba num: 8, mamba usage: 0.12, accept len: 2.56, accept rate: 0.22, npu graph: True, gen throughput (token/s): 49.14, #queue-req: 0
+[2026-09-19 09:27:14 DP3 TP48 EP48] Decode batch, #running-req: 2, #full token: 40320, full token usage: 0.21, mamba num: 8, mamba usage: 0.12, accept len: 2.31, accept rate: 0.19, npu graph: True, gen throughput (token/s): 44.46, #queue-req: 0
+[2026-09-19 09:27:18 DP3 TP48 EP48] Decode batch, #running-req: 2, #full token: 40576, full token usage: 0.21, mamba num: 8, mamba usage: 0.12, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 53.91, #queue-req: 0
+[2026-09-19 09:27:23 DP3 TP48 EP48] Decode batch, #running-req: 2, #full token: 40960, full token usage: 0.21, mamba num: 8, mamba usage: 0.12, accept len: 3.09, accept rate: 0.30, npu graph: True, gen throughput (token/s): 59.03, #queue-req: 0
+[2026-09-19 09:27:27 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 18816, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.75, accept rate: 0.25, npu graph: True, gen throughput (token/s): 34.34, #queue-req: 0
+[2026-09-19 09:27:31 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 18944, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.20, accept rate: 0.17, npu graph: True, gen throughput (token/s): 21.33, #queue-req: 0
+[2026-09-19 09:27:35 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 19072, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 3.60, accept rate: 0.37, npu graph: True, gen throughput (token/s): 34.48, #queue-req: 0
+[2026-09-19 09:27:39 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 19200, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.52, accept rate: 0.22, npu graph: True, gen throughput (token/s): 24.13, #queue-req: 0
+[2026-09-19 09:27:43 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 19328, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.80, accept rate: 0.26, npu graph: True, gen throughput (token/s): 27.05, #queue-req: 0
+[2026-09-19 09:27:48 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 19456, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 25.03, #queue-req: 0
+[2026-09-19 09:27:52 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 19584, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 3.23, accept rate: 0.32, npu graph: True, gen throughput (token/s): 31.08, #queue-req: 0
+[2026-09-19 09:27:56 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 19584, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 27.41, #queue-req: 0
+[2026-09-19 09:28:00 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 19712, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.85, accept rate: 0.26, npu graph: True, gen throughput (token/s): 27.38, #queue-req: 0
+[2026-09-19 09:28:04 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 19840, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 25.54, #queue-req: 0
+[2026-09-19 09:28:08 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 19968, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 3.25, accept rate: 0.32, npu graph: True, gen throughput (token/s): 31.13, #queue-req: 0
+[2026-09-19 09:28:13 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20096, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.60, accept rate: 0.23, npu graph: True, gen throughput (token/s): 25.01, #queue-req: 0
+[2026-09-19 09:28:17 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20224, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 2.05, accept rate: 0.15, npu graph: True, gen throughput (token/s): 19.80, #queue-req: 0
+[2026-09-19 09:28:21 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20352, full token usage: 0.10, mamba num: 4, mamba usage: 0.06, accept len: 3.05, accept rate: 0.29, npu graph: True, gen throughput (token/s): 29.25, #queue-req: 0
+[2026-09-19 09:28:25 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20480, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 3.33, accept rate: 0.33, npu graph: True, gen throughput (token/s): 32.06, #queue-req: 0
+[2026-09-19 09:28:29 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20480, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.10, accept rate: 0.16, npu graph: True, gen throughput (token/s): 20.15, #queue-req: 0
+[2026-09-19 09:28:33 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20608, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.20, accept rate: 0.17, npu graph: True, gen throughput (token/s): 20.97, #queue-req: 0
+[2026-09-19 09:28:37 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20736, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.02, accept rate: 0.15, npu graph: True, gen throughput (token/s): 19.57, #queue-req: 0
+[2026-09-19 09:28:42 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20736, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 1.77, accept rate: 0.11, npu graph: True, gen throughput (token/s): 16.83, #queue-req: 0
+[2026-09-19 09:28:46 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20864, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.45, accept rate: 0.21, npu graph: True, gen throughput (token/s): 23.16, #queue-req: 0
+[2026-09-19 09:28:50 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20992, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.48, accept rate: 0.21, npu graph: True, gen throughput (token/s): 23.50, #queue-req: 0
+[2026-09-19 09:28:54 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 20992, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 23.00, #queue-req: 0
+[2026-09-19 09:28:59 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 21120, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.15, accept rate: 0.16, npu graph: True, gen throughput (token/s): 20.57, #queue-req: 0
+[2026-09-19 09:29:03 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 21248, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.38, accept rate: 0.20, npu graph: True, gen throughput (token/s): 22.86, #queue-req: 0
+[2026-09-19 09:29:07 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 21248, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.05, accept rate: 0.15, npu graph: True, gen throughput (token/s): 19.69, #queue-req: 0
+[2026-09-19 09:29:11 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 21376, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.62, accept rate: 0.23, npu graph: True, gen throughput (token/s): 25.23, #queue-req: 0
+[2026-09-19 09:29:15 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 21504, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.30, accept rate: 0.19, npu graph: True, gen throughput (token/s): 21.93, #queue-req: 0
+[2026-09-19 09:29:19 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 21632, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.20, accept rate: 0.17, npu graph: True, gen throughput (token/s): 21.00, #queue-req: 0
+[2026-09-19 09:29:24 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 21632, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.40, accept rate: 0.20, npu graph: True, gen throughput (token/s): 23.16, #queue-req: 0
+[2026-09-19 09:29:28 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 21760, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 2.23, accept rate: 0.17, npu graph: True, gen throughput (token/s): 21.50, #queue-req: 0
+[2026-09-19 09:29:32 DP3 TP48 EP48] Decode batch, #running-req: 1, #full token: 21888, full token usage: 0.11, mamba num: 4, mamba usage: 0.06, accept len: 3.40, accept rate: 0.34, npu graph: True, gen throughput (token/s): 32.50, #queue-req: 0
+[2026-09-19 09:31:43] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:31:43] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:36:43] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:36:43] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:41:43] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:41:43] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:46:43] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:46:43] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:51:44] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:51:44] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
+[2026-09-19 09:56:44] Pyspy dump for PID 567 (py-spy dump --native --pid 567):
+Process 567: sglang::data_parallel_controller
+Python v3.11.15 (/usr/local/python3.11.15/bin/python3.11)
+
+Thread 567 (idle): "MainThread"
+    wait4 (libc.so.6)
+    os_waitpid (libpython3.11.so.1.0)
+    poll (multiprocessing/popen_fork.py:27)
+    wait (multiprocessing/popen_fork.py:43)
+    join (multiprocessing/process.py:149)
+    run_data_parallel_controller_process (data_parallel_controller.py:872)
+    run (multiprocessing/process.py:108)
+    _bootstrap (multiprocessing/process.py:314)
+    _main (multiprocessing/spawn.py:135)
+    spawn_main (multiprocessing/spawn.py:122)
+    <module> (<string>:1)
+    0xffff86027400 (libc.so.6)
+Thread 123632 (idle): "Thread-1 (_watchdog_thread)"
+    poll (libc.so.6)
+    poll (poll2.h:39)
+    select_poll_poll_impl (selectmodule.c:654)
+    select_poll_poll (selectmodule.c.h:223)
+    select (selectors.py:415)
+    _communicate (subprocess.py:2115)
+    communicate (subprocess.py:1209)
+    run (subprocess.py:550)
+    pyspy_dump_schedulers (utils/cudacore_pyspy_dump_utils.py:84)
+    _watchdog_once (utils/watchdog.py:152)
+    _watchdog_thread (utils/watchdog.py:127)
+    run (threading.py:982)
+    _bootstrap_inner (threading.py:1045)
+    _bootstrap (threading.py:1002)
+    thread_run (libpython3.11.so.1.0)
+    0xffff860803c8 (libc.so.6)
+    0xffff860e9fdc (libc.so.6)
+
+[2026-09-19 09:56:44] DataParallelController watchdog timeout (self.watchdog_timeout=300, self.soft=True)
+
+
