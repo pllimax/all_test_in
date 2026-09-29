@@ -14279,3 +14279,75 @@ Evaluating[gpqa_diamond]:  99%|█████████▉| 197/198 [2:52:16<
 [A2026-09-30 03:04:17 - evalscope - [32mINFO[0m: Evaluating[gpqa_diamond]  99%| 197/198 [Elapsed: 2:53:16 < Remaining: 03:12, 192.55s/it][0m
 Running[eval]:   0%|          | 0/1 [2:53:16<?, ?benchmark/s]
 [2026-09-30 03:04:17 DP2 TP8 EP8] Decode batch, #running-req: 1, #token: 86528, token usage: 0.61, accept len: 2.80, accept rate: 0.60, npu graph: True, gen throughput (token/s): 36.46, #queue-req: 0
+[2026-09-30 03:04:20 DP2 TP8 EP8] Decode batch, #running-req: 1, #token: 86656, token usage: 0.61, accept len: 2.27, accept rate: 0.42, npu graph: True, gen throughput (token/s): 29.61, #queue-req: 0
+[2026-09-30 03:04:23 DP2 TP8 EP8] Decode batch, #running-req: 1, #token: 86784, token usage: 0.62, accept len: 2.38, accept rate: 0.46, npu graph: True, gen throughput (token/s): 31.02, #queue-req: 0
+[2026-09-30 03:04:26 DP2 TP8 EP8] Decode batch, #running-req: 1, #token: 86912, token usage: 0.62, accept len: 2.75, accept rate: 0.58, npu graph: True, gen throughput (token/s): 35.77, #queue-req: 0
+[2026-09-30 03:04:30 DP2 TP8 EP8] Decode batch, #running-req: 1, #token: 87040, token usage: 0.62, accept len: 3.40, accept rate: 0.80, npu graph: True, gen throughput (token/s): 44.22, #queue-req: 0
+Evaluating[gpqa_diamond]:  99%|█████████▉| 197/198 [2:53:16<03:12, 192.55s/it][A
+Evaluating[gpqa_diamond]: 100%|██████████| 198/198 [2:53:32<00:00, 208.86s/it][A
+[A2026-09-30 03:04:32 - evalscope - [32mINFO[0m: Evaluating[gpqa_diamond] 100%| 198/198 [Elapsed: 2:53:32 < Remaining: 00:00, 208.86s/it][0m
+Running[eval]:   0%|          | 0/1 [2:53:32<?, ?benchmark/s]
+Evaluating[gpqa_diamond]: 100%|██████████| 198/198 [2:53:32<00:00, 208.86s/it][A
+Evaluating[gpqa_diamond]: 100%|██████████| 198/198 [2:53:32<00:00, 52.59s/it] 
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: gpqa_diamond: predictions complete, aggregating scores...[0m
+Running[eval]:   0%|          | 0/1 [2:53:32<?, ?benchmark/s]
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: Aggregating scores for subset: default[0m
+Running[eval]:   0%|          | 0/1 [2:53:32<?, ?benchmark/s]
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: Generating report...[0m
+Running[eval]:   0%|          | 0/1 [2:53:32<?, ?benchmark/s]
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: 
+gpqa_diamond report table:
+┌──────────────┬──────────────┬────────────┬──────────┬───────┬─────────┐
+│ Model        │ Dataset      │ Metric     │ Subset   │   Num │ Score   │
+├──────────────┼──────────────┼────────────┼──────────┼───────┼─────────┤
+│ GLM-5.2-w8a8 │ GPQA-Diamond │ Accuracy ↑ │ default  │   198 │ 88.9%   │
+└──────────────┴──────────────┴────────────┴──────────┴───────┴─────────┘ 
+[0m
+Running[eval]:   0%|          | 0/1 [2:53:32<?, ?benchmark/s]
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: Skipping report analysis (`analysis_report=False`).[0m
+Running[eval]:   0%|          | 0/1 [2:53:32<?, ?benchmark/s]
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: Dump report to: /root/.cache/tests/output/main-20260929-1613-36541308424-1/Release_Branch_Cut--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_16p_gpqa/20260930_001100/reports/GLM-5.2-w8a8/gpqa_diamond.json 
+[0m
+Running[eval]:   0%|          | 0/1 [2:53:32<?, ?benchmark/s]
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: 
+gpqa_diamond perf table:
+Model         Dataset         Num  Avg Lat     Avg TTFT     Avg TPOT    Avg Thpt      Avg In    Avg Out
+------------  ------------  -----  ----------  -----------  ----------  ----------  --------  ---------
+GLM-5.2-w8a8  GPQA-Diamond    198  1286.304 s  199515.9 ms  45.9 ms     17.9 tok/s       272      23029
+[0m
+Running[eval]:   0%|          | 0/1 [2:53:32<?, ?benchmark/s]
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: Benchmark gpqa_diamond evaluation finished.[0m
+Running[eval]:   0%|          | 0/1 [2:53:32<?, ?benchmark/s]
+Running[eval]: 100%|██████████| 1/1 [2:53:32<00:00, 10412.36s/benchmark]
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: Running[eval] 100%| 1/1 [Elapsed: 2:53:32 < Remaining: 00:00, 10412.36s/benchmark][0m
+Running[eval]: 100%|██████████| 1/1 [2:53:32<00:00, 10412.36s/benchmark]
+Running[eval]: 100%|██████████| 1/1 [2:53:32<00:00, 10412.36s/benchmark]
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: Overall report table: 
+┌──────────────┬──────────────┬────────────┬──────────┬───────┬─────────┐
+│ Model        │ Dataset      │ Metric     │ Subset   │   Num │ Score   │
+├──────────────┼──────────────┼────────────┼──────────┼───────┼─────────┤
+│ GLM-5.2-w8a8 │ GPQA-Diamond │ Accuracy ↑ │ default  │   198 │ 88.9%   │
+└──────────────┴──────────────┴────────────┴──────────┴───────┴─────────┘ 
+[0m
+2026-09-30 03:04:32 - evalscope - [32mINFO[0m: Overall perf table: 
+Model         Dataset         Num  Avg Lat     Avg TTFT     Avg TPOT    Avg Thpt      Avg In    Avg Out
+------------  ------------  -----  ----------  -----------  ----------  ----------  --------  ---------
+GLM-5.2-w8a8  GPQA-Diamond    198  1286.304 s  199515.9 ms  45.9 ms     17.9 tok/s       272      23029 
+[0m
+2026-09-30 03:04:33 - evalscope - [32mINFO[0m: HTML report generated: /root/.cache/tests/output/main-20260929-1613-36541308424-1/Release_Branch_Cut--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_16p_gpqa/20260930_001100/reports/report.html[0m
+2026-09-30 03:04:33 - evalscope - [32mINFO[0m: Finished evaluation for GLM-5.2-w8a8 on ['gpqa_diamond'][0m
+2026-09-30 03:04:33 - evalscope - [32mINFO[0m: Output directory: /root/.cache/tests/output/main-20260929-1613-36541308424-1/Release_Branch_Cut--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_16p_gpqa/20260930_001100[0m
+2026-09-30 03:04:35,371 - INFO - run_evalscope finished: pid=55208 returncode=0
+2026-09-30 03:04:35,372 - INFO - process group pgid=55208 already gone
+2026-09-30 03:04:35,372 - INFO - Command executed successfully
+2026-09-30 03:04:35,372 - INFO - Found evalscope report file: /root/.cache/tests/output/main-20260929-1613-36541308424-1/Release_Branch_Cut--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_16p_gpqa/20260930_001100/reports/GLM-5.2-w8a8/gpqa_diamond.json
+2026-09-30 03:04:35,373 - INFO - The Final Accuracy from output: 0.889
+/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py:593: ResourceWarning: unclosed file <_io.TextIOWrapper name=8 encoding='UTF-8'>
+  metrics = run_evalscope(
+[METRIC] accuracy=0.889 labels={"test_case": "TestNPUGLM_5_2_W8A8_16P_GPQA", "type": "accuracy"}
+[METRIC] accuracy_baseline=0.912 labels={"test_case": "TestNPUGLM_5_2_W8A8_16P_GPQA", "type": "accuracy"}
+.
+----------------------------------------------------------------------
+Ran 1 test in 11041.781s
+
+OK
