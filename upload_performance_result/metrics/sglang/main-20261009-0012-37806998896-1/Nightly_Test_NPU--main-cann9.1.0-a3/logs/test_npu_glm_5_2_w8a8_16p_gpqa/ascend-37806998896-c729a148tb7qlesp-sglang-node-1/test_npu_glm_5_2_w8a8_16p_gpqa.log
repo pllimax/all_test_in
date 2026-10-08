@@ -11995,3 +11995,263 @@ FileNotFoundError: [Errno 2] No such file or directory: '/root/.cache/sglang/tri
 [ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
 [ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
 [ERROR] TBE Subprocess[task_distribute] raise error[], main process disappeared!
+[CI Test Method] TestNPUGLM_5_2_W8A8_16P_GPQA.test_npu_glm_5_2_w8a8_16p_gpqa
+2026-10-09 02:35:02,912 - INFO - get env SGLANG_TEST_MAX_RETRY = 0
+2026-10-09 02:35:02,912 - INFO - get env METRICS_DATA_FILE = /root/.cache/tests/output/main-20261009-0012-37806998896-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_16p_gpqa
+2026-10-09 02:35:02,912 - INFO - The metrics result file: /root/.cache/tests/output/main-20261009-0012-37806998896-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_16p_gpqa
+2026-10-09 02:35:02,913 - INFO - Generated evalscope script: /tmp/evalscope_run_GLM-5.2-w8a8_gpqa_diamond.py
+evalscope found in the system python, reuse it instead of installing.
+2026-10-09 02:35:18,569 - INFO - Command: test_env_evalscope/bin/python /tmp/evalscope_run_GLM-5.2-w8a8_gpqa_diamond.py
+2026-10-09 02:35:18,570 - INFO - run_evalscope spawned: pid=57193 pgid=57193 cmd=test_env_evalscope/bin/python /tmp/evalscope_run_GLM-5.2-w8a8_gpqa_diamond.py
+2026-10-09 02:35:20 - evalscope - [33mWARNING[0m: Deprecated: The `timeout` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.timeout` instead.[0m
+2026-10-09 02:35:20 - evalscope - [33mWARNING[0m: Deprecated: The `stream` parameter is deprecated and will be removed in v2.0.0. Use `generation_config.stream` instead.[0m
+2026-10-09 02:35:20 - evalscope - [32mINFO[0m: Args: Task config is provided with TaskConfig type.[0m
+2026-10-09 02:35:26,655 - torch_npu.env - INFO: get env ASCEND_HOME_PATH = /usr/local/Ascend/cann-9.1.0
+2026-10-09 02:35:27 - evalscope - [32mINFO[0m: Running with native backend[0m
+2026-10-09 02:35:27 - evalscope - [32mINFO[0m: Dump task config to /root/.cache/tests/output/main-20261009-0012-37806998896-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_16p_gpqa/20261009_023527/configs/task_config.yaml[0m
+2026-10-09 02:35:27 - evalscope - [32mINFO[0m: {
+    "model_id": "GLM-5.2-w8a8",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gpqa_diamond"
+    ],
+    "dataset_args": {},
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 32,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20261009-0012-37806998896-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_16p_gpqa/20261009_023527",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://172.22.3.158:6677/v1/chat/completions",
+    "api_key": "**********",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge": {
+        "strategy": "auto",
+        "models": [],
+        "contract": {
+            "system_prompt": null,
+            "prompt_template": null,
+            "score_mapping": null,
+            "score_type": "pattern"
+        },
+        "repeats": 1,
+        "position_swap": "auto",
+        "aggregation": "mean",
+        "min_valid_judges": 1
+    },
+    "analysis_report": false,
+    "collect_perf": true,
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "evalscope_version": "1.12.0",
+    "model": "GLM-5.2-w8a8",
+    "generation_config": {
+        "timeout": 60000.0,
+        "retries": 2,
+        "batch_size": 32,
+        "stream": true,
+        "max_tokens": 131072,
+        "top_p": 0.95,
+        "temperature": 1.0
+    },
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "agent_config": null
+}[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+2026-10-09 02:35:27 - evalscope - [32mINFO[0m: Start loading benchmark dataset: gpqa_diamond[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+Processing records:   0%|          | 0/198 [00:00<?, ?it/s][A
+Processing records: 100%|██████████| 198/198 [00:00<00:00, 49776.56it/s]
+2026-10-09 02:35:27 - evalscope - [33mWARNING[0m: gpqa_diamond: 198 samples to evaluate (1 subset, --limit=100000 per subset). Remove `--limit` for a formal evaluation.[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+2026-10-09 02:35:27 - evalscope - [32mINFO[0m: Subsets of gpqa_diamond: ['default'][0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:00<?, ?it/s][A
+[A2026-10-09 02:35:27 - evalscope - [32mINFO[0m: Loading model for prediction...[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:00<?, ?it/s][A
+[A2026-10-09 02:35:27 - evalscope - [32mINFO[0m: Creating model GLM-5.2-w8a8 with eval_type=openai_api base_url=http://172.22.3.158:6677/v1/chat/completions, config={'timeout': 60000.0, 'retries': 2, 'retry_interval': 10, 'batch_size': 32, 'stream': True, 'max_tokens': 131072, 'top_p': 0.95, 'temperature': 1.0, 'anthropic_cache_strategy': 'evaluation'}, model_args={}[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:00<?, ?it/s][A
+[A2026-10-09 02:35:27 - evalscope - [32mINFO[0m: Model loaded successfully.[0m
+Running[eval]:   0%|          | 0/1 [00:00<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:00<?, ?it/s][A2026-10-09 02:35:27,886 - torch_npu.env - INFO: get env PATH = /usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/bin:/usr/local/Ascend/cann-9.1.0/bin:/usr/local/Ascend/cann-9.1.0/tools/ccec_compiler/bin:/usr/local/Ascend/cann-9.1.0/tools/profiler/bin:/usr/local/Ascend/cann-9.1.0/tools/ascend_system_advisor/asys:/usr/local/Ascend/cann-9.1.0/tools/show_kernel_debug_data:/usr/local/Ascend/cann-9.1.0/tools/msobjdump:/usr/local/Ascend/nnal/atb/latest/atb/cxx_abi_1/bin:/usr/local/Ascend/ascend-toolkit/latest/bin:/usr/local/Ascend/ascend-toolkit/latest/compiler/ccec_compiler/bin:/usr/local/Ascend/ascend-toolkit/latest/tools/ccec_compiler/bin:/usr/local/python3.12.13/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+2026-10-09 02:35:27,918 - openai._base_client - INFO: Retrying request to /chat/completions in 0.420072 seconds
+2026-10-09 02:35:27,921 - openai._base_client - INFO: Retrying request to /chat/completions in 0.496874 seconds
+2026-10-09 02:35:27,921 - openai._base_client - INFO: Retrying request to /chat/completions in 0.465621 seconds
+2026-10-09 02:35:27,922 - openai._base_client - INFO: Retrying request to /chat/completions in 0.472099 seconds
+2026-10-09 02:35:27,923 - openai._base_client - INFO: Retrying request to /chat/completions in 0.407941 seconds
+2026-10-09 02:35:27,923 - openai._base_client - INFO: Retrying request to /chat/completions in 0.415413 seconds
+2026-10-09 02:35:27,924 - openai._base_client - INFO: Retrying request to /chat/completions in 0.388478 seconds
+2026-10-09 02:35:27,924 - openai._base_client - INFO: Retrying request to /chat/completions in 0.489133 seconds
+2026-10-09 02:35:27,924 - openai._base_client - INFO: Retrying request to /chat/completions in 0.447260 seconds
+2026-10-09 02:35:27,924 - openai._base_client - INFO: Retrying request to /chat/completions in 0.496275 seconds
+2026-10-09 02:35:27,924 - openai._base_client - INFO: Retrying request to /chat/completions in 0.472670 seconds
+2026-10-09 02:35:27,925 - openai._base_client - INFO: Retrying request to /chat/completions in 0.436831 seconds
+2026-10-09 02:35:27,925 - openai._base_client - INFO: Retrying request to /chat/completions in 0.496683 seconds
+2026-10-09 02:35:27,925 - openai._base_client - INFO: Retrying request to /chat/completions in 0.475145 seconds
+2026-10-09 02:35:27,925 - openai._base_client - INFO: Retrying request to /chat/completions in 0.418764 seconds
+2026-10-09 02:35:27,925 - openai._base_client - INFO: Retrying request to /chat/completions in 0.431882 seconds
+2026-10-09 02:35:27,925 - openai._base_client - INFO: Retrying request to /chat/completions in 0.472445 seconds
+2026-10-09 02:35:27,926 - openai._base_client - INFO: Retrying request to /chat/completions in 0.426342 seconds
+2026-10-09 02:35:27,926 - openai._base_client - INFO: Retrying request to /chat/completions in 0.398821 seconds
+2026-10-09 02:35:27,926 - openai._base_client - INFO: Retrying request to /chat/completions in 0.499188 seconds
+2026-10-09 02:35:27,926 - openai._base_client - INFO: Retrying request to /chat/completions in 0.399273 seconds
+2026-10-09 02:35:27,927 - openai._base_client - INFO: Retrying request to /chat/completions in 0.412733 seconds
+2026-10-09 02:35:27,927 - openai._base_client - INFO: Retrying request to /chat/completions in 0.457469 seconds
+2026-10-09 02:35:27,927 - openai._base_client - INFO: Retrying request to /chat/completions in 0.480565 seconds
+2026-10-09 02:35:27,927 - openai._base_client - INFO: Retrying request to /chat/completions in 0.380348 seconds
+2026-10-09 02:35:27,967 - openai._base_client - INFO: Retrying request to /chat/completions in 0.457926 seconds
+2026-10-09 02:35:27,967 - openai._base_client - INFO: Retrying request to /chat/completions in 0.488407 seconds
+2026-10-09 02:35:27,968 - openai._base_client - INFO: Retrying request to /chat/completions in 0.487910 seconds
+2026-10-09 02:35:27,969 - openai._base_client - INFO: Retrying request to /chat/completions in 0.394063 seconds
+2026-10-09 02:35:27,969 - openai._base_client - INFO: Retrying request to /chat/completions in 0.424534 seconds
+2026-10-09 02:35:27,969 - openai._base_client - INFO: Retrying request to /chat/completions in 0.399109 seconds
+2026-10-09 02:35:27,969 - openai._base_client - INFO: Retrying request to /chat/completions in 0.408784 seconds
+2026-10-09 02:35:28,309 - openai._base_client - INFO: Retrying request to /chat/completions in 0.865943 seconds
+2026-10-09 02:35:28,316 - openai._base_client - INFO: Retrying request to /chat/completions in 0.756721 seconds
+2026-10-09 02:35:28,327 - openai._base_client - INFO: Retrying request to /chat/completions in 0.905366 seconds
+2026-10-09 02:35:28,328 - openai._base_client - INFO: Retrying request to /chat/completions in 0.861990 seconds
+2026-10-09 02:35:28,336 - openai._base_client - INFO: Retrying request to /chat/completions in 0.792649 seconds
+2026-10-09 02:35:28,341 - openai._base_client - INFO: Retrying request to /chat/completions in 0.845370 seconds
+2026-10-09 02:35:28,342 - openai._base_client - INFO: Retrying request to /chat/completions in 0.784573 seconds
+2026-10-09 02:35:28,343 - openai._base_client - INFO: Retrying request to /chat/completions in 0.855662 seconds
+2026-10-09 02:35:28,347 - openai._base_client - INFO: Retrying request to /chat/completions in 0.823857 seconds
+2026-10-09 02:35:28,355 - openai._base_client - INFO: Retrying request to /chat/completions in 0.988544 seconds
+2026-10-09 02:35:28,360 - openai._base_client - INFO: Retrying request to /chat/completions in 0.943025 seconds
+2026-10-09 02:35:28,364 - openai._base_client - INFO: Retrying request to /chat/completions in 0.927653 seconds
+2026-10-09 02:35:28,365 - openai._base_client - INFO: Retrying request to /chat/completions in 0.980052 seconds
+2026-10-09 02:35:28,369 - openai._base_client - INFO: Retrying request to /chat/completions in 0.941802 seconds
+2026-10-09 02:35:28,375 - openai._base_client - INFO: Retrying request to /chat/completions in 0.974750 seconds
+2026-10-09 02:35:28,378 - openai._base_client - INFO: Retrying request to /chat/completions in 0.930507 seconds
+2026-10-09 02:35:28,386 - openai._base_client - INFO: Retrying request to /chat/completions in 0.841079 seconds
+2026-10-09 02:35:28,393 - openai._base_client - INFO: Retrying request to /chat/completions in 0.908792 seconds
+2026-10-09 02:35:28,394 - openai._base_client - INFO: Retrying request to /chat/completions in 0.907455 seconds
+2026-10-09 02:35:28,400 - openai._base_client - INFO: Retrying request to /chat/completions in 0.947623 seconds
+2026-10-09 02:35:28,401 - openai._base_client - INFO: Retrying request to /chat/completions in 0.933256 seconds
+2026-10-09 02:35:28,401 - openai._base_client - INFO: Retrying request to /chat/completions in 0.765836 seconds
+2026-10-09 02:35:28,403 - openai._base_client - INFO: Retrying request to /chat/completions in 0.837991 seconds
+2026-10-09 02:35:28,409 - openai._base_client - INFO: Retrying request to /chat/completions in 0.847717 seconds
+2026-10-09 02:35:28,417 - openai._base_client - INFO: Retrying request to /chat/completions in 0.957215 seconds
+2026-10-09 02:35:28,420 - openai._base_client - INFO: Retrying request to /chat/completions in 0.817718 seconds
+2026-10-09 02:35:28,424 - openai._base_client - INFO: Retrying request to /chat/completions in 0.959149 seconds
+2026-10-09 02:35:28,425 - openai._base_client - INFO: Retrying request to /chat/completions in 0.905136 seconds
+2026-10-09 02:35:28,427 - openai._base_client - INFO: Retrying request to /chat/completions in 0.752619 seconds
+2026-10-09 02:35:28,427 - openai._base_client - INFO: Retrying request to /chat/completions in 0.840000 seconds
+2026-10-09 02:35:28,457 - openai._base_client - INFO: Retrying request to /chat/completions in 0.860763 seconds
+2026-10-09 02:35:28,458 - openai._base_client - INFO: Retrying request to /chat/completions in 0.828846 seconds
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]
+Evaluating[gpqa_diamond]:   0%|          | 0/198 [00:01<?, ?it/s][A
+[A2026-10-09 02:35:29 - evalscope - [33mWARNING[0m: Attempt 1 / 2 failed: Connection error.. Retrying...[0m
+Running[eval]:   0%|          | 0/1 [00:01<?, ?benchmark/s]

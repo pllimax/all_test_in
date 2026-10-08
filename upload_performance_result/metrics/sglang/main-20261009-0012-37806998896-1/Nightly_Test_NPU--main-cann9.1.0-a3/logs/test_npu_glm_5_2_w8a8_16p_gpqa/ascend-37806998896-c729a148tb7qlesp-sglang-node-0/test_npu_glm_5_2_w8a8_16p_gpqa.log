@@ -19412,3 +19412,25 @@ Traceback (most recent call last):
   File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_multi_node_utils.py", line 497, in launch_pd_mix_node
     raise RuntimeError(f"Failed to start node on {host_ip}: {e}")
 RuntimeError: Failed to start node on 172.22.3.181: Server process exited with code -9. Check server logs for errors.
+E
+======================================================================
+ERROR: setUpClass (__main__.TestNPUGLM_5_2_W8A8_16P_GPQA)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/sgl-workspace/sglang/python/sglang/test/test_utils.py", line 2304, in safe_setUpClass
+    orig_func(klass)
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 548, in setUpClass
+    cls.start_pd_mix_master_node()
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_multi_node_utils.py", line 414, in wrapper
+    return func(self, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_accuracy_utils.py", line 563, in start_pd_mix_master_node
+    wait_server_ready(f"{cls.base_url}/health")
+  File "/sgl-workspace/sglang/python/sglang/test/ascend/e2e/test_npu_multi_node_utils.py", line 867, in wait_server_ready
+    raise RuntimeError(
+RuntimeError: Server http://172.22.3.181:6677/health failed to start in 3600s (elapsed: 3600.89s)
+
+----------------------------------------------------------------------
+Ran 0 tests in 3600.895s
+
+FAILED (errors=1)
