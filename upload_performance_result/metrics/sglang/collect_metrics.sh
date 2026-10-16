@@ -329,6 +329,22 @@ _file_mtime() {
     stat -c '%Y' "$1" 2>/dev/null || stat -f '%m' "$1" 2>/dev/null
 }
 
+# 确保文件以换行符结尾：CI 生成的源文件末尾可能缺换行，
+# 直接 >> 追加元信息会贴在最后一行数据后面，影响解析与可读性。
+# 末尾已无换行时补一个换行 + 空行；末尾本来就是换行结尾则补一个空行。
+_ensure_trailing_blank_line() {
+    local f="$1"
+    [ -f "${f}" ] || return 0
+    [ -s "${f}" ] || return 0
+    local last_byte
+    last_byte=$(tail -c 1 "${f}" | od -An -tu1 | tr -d '[:space:]')
+    if [ "${last_byte}" = "10" ]; then
+        echo "" >> "${f}"
+    else
+        printf '\n\n' >> "${f}"
+    fi
+}
+
 # workflow 白名单过滤：WF_FILTER 为空时恒通过。
 # 参数: $1=workflow 基础名（已去掉 --{image_label} 后缀），或 $2 传入完整路径
 #       （此时从路径中剥离 SRC_BASE 前缀取第二段作为 workflow 段）。
@@ -479,10 +495,10 @@ for CURRENT_DATE in "${DATES[@]}"; do
         dst_file="${PERF_TARGET_DIR}/${subdir_name_clean}__${MARK_DATE}.txt"
         cp "${src_file}" "${dst_file}"
 
-        # 在文件末尾追加原始修改时间描述
+        # 在文件末尾追加原始修改时间描述（先保证与原数据间有空行分隔）
         mtime_human=$(_mtime_human "${mtime_epoch}")
+        _ensure_trailing_blank_line "${dst_file}"
         {
-            echo ""
             echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
             echo "# [collect_metrics] 源目录日期: ${MARK_DATE}"
             echo "# [collect_metrics] CI运行目录: ${suite_name}/${subdir_name}"
@@ -590,9 +606,9 @@ for CURRENT_DATE in "${DATES[@]}"; do
         fi
         cp "${eval_src}" "${eval_dst}"
 
-        # 在文件末尾追加原始修改时间描述
+        # 在文件末尾追加原始修改时间描述（先保证与原数据间有空行分隔）
+        _ensure_trailing_blank_line "${eval_dst}"
         {
-            echo ""
             echo "# [collect_metrics] 文件原始修改时间: ${mtime_human}"
         } >> "${eval_dst}"
 
