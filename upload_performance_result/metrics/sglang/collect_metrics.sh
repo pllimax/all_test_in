@@ -595,9 +595,28 @@ for CURRENT_DATE in "${DATES[@]}"; do
         eval_dst="${EVAL_TARGET_DIR}/${ts_name_clean}__${MARK_DATE}.log"
         # 若已存在同名文件：
         #   - 同一源运行（原始修改时间一致）→ 直接覆盖，保证重复收集幂等
-        #   - 不同源运行（如不同 workflow 目录的同名用例）→ 追加序号后缀区分
+        #   - 内容与已有副本相同（多次执行的相同尝试）→ 跳过，避免同内容多文件拷贝膨胀仓库
+        #   - 不同源运行且内容不同（如不同 workflow 目录的同名用例）→ 追加序号后缀区分
         mtime_human=$(_mtime_human "${mtime_epoch}")
         if [ -f "${eval_dst}" ] && ! grep -qF "文件原始修改时间: ${mtime_human}" "${eval_dst}"; then
+            # 与已有任一副本内容相同则跳过。
+            # 注意副本尾部追加了元信息行（且前面带空行分隔），需剥离元信息行及尾随空行后再比较；
+            # 源文件也可能含尾注（重复收集场景），同样剥离。
+            dup=0
+            strip_tail() { awk '{ if ($0 ~ /^# \[collect_metrics\] 文件原始修改时间:/) exit; buf[NR]=$0 } END{ last=NR; while(last>0 && buf[last]=="") last--; for(i=1;i<=last;i++) print buf[i] }' "$1" 2>/dev/null | md5sum | awk '{print $1}'; }
+            src_sum=$(strip_tail "${eval_src}")
+            for exist_f in "${EVAL_TARGET_DIR}/${ts_name_clean}__${MARK_DATE}"*.log; do
+                [ -f "${exist_f}" ] || continue
+                exist_sum=$(strip_tail "${exist_f}")
+                if [ -n "${src_sum}" ] && [ "${src_sum}" = "${exist_sum}" ]; then
+                    dup=1
+                    break
+                fi
+            done
+            if [ ${dup} -eq 1 ]; then
+                echo "[EVAL-SKIP] ${ts_name_clean}__${MARK_DATE}: 与既有副本内容相同，跳过（$(basename "${exist_f}")）"
+                continue
+            fi
             suffix=1
             while [ -f "${EVAL_TARGET_DIR}/${ts_name_clean}__${MARK_DATE}-${suffix}.log" ]; do
                 suffix=$((suffix + 1))
