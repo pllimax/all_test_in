@@ -30,7 +30,7 @@
 set -euo pipefail
 
 # ---- 默认值（可被环境变量 / 本地配置文件覆盖） ----
-GITEE_REPO="${GITEE_REPO:-https://gitee.com/pllimax/all_test_in.git}"
+GITEE_REPO="${GITEE_REPO:-https://gitee.com/pllimax_admin/all_test_in.git}"
 GITHUB_REPO="${GITHUB_REPO:-https://github.com/pllimax/all_test_in.git}"
 BRANCH="${BRANCH:-main}"
 WORK_DIR="${WORK_DIR:-/opt/sync-gitee2github}"
