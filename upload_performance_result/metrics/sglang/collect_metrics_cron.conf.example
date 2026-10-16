@@ -46,6 +46,10 @@ SRC_BASE="/data/ascend-ci-share-pkking-sglang/tests/output"
 # 多机用例日志基础路径（仅 --branch 时拉取 test_npu_* 完整日志）
 LOG_BASE="/data/ascend-ci-share-pkking-sglang/tests/logs/log"
 
+# workflow 白名单过滤（20261016 新增）：只收集指定 workflow，逗号分隔前缀匹配，
+# 留空或注释=不过滤。Release_Branch_Cut 等非 nightly run 会被排除。
+WF_FILTER="Nightly_Test_NPU"
+
 # 数据仓地址（默认 gitee，公开仓可直接 clone；推送 token 见下方）
 GIT_REPO="https://gitee.com/pllimax_admin/all_test_in.git"
 

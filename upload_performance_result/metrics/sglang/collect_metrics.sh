@@ -31,6 +31,12 @@ LOG_BASE="${LOG_BASE:-/data/ascend-ci-share-pkking-sglang/tests/logs/log}"
 # 20261016 起默认关闭：多机日志已占仓库容量 99%（>1GB），且 dashboard 不解析仓内 logs。
 # 如需临时拉取，可设 COLLECT_LOGS=true 或 --collect-logs 显式开启。
 COLLECT_LOGS="${COLLECT_LOGS:-false}"
+# workflow 过滤（20261016 新增）：逗号分隔的 workflow 基础名白名单（前缀匹配，
+# 兼容 {workflow}--{image_label} 目录名）。留空=不过滤（收集全部 workflow）。
+# 示例：WF_FILTER="Nightly_Test_NPU"      只收集 nightly
+#       WF_FILTER="Nightly_Test_NPU,Full_Test_NPU"  收集 nightly + fulltest
+# 性能/精度收集与多机日志拉取均受此过滤约束。
+WF_FILTER="${WF_FILTER:-}"
 # 上传推送重试配置：git push 超时/失败时，等待 UPLOAD_RETRY_DELAY 秒后重试，最多重试 UPLOAD_RETRY 次。
 # 可用环境变量/本地配置(collect_metrics.local.conf)覆盖。
 UPLOAD_RETRY="${UPLOAD_RETRY:-5}"
@@ -98,6 +104,10 @@ while [[ $# -gt 0 ]]; do
             COLLECT_LOGS=false
             shift
             ;;
+        --wf-filter)
+            WF_FILTER="$2"
+            shift 2
+            ;;
         --help|-h)
             echo "用法: $0 [选项] [日期...]"
             echo ""
@@ -119,6 +129,8 @@ while [[ $# -gt 0 ]]; do
             echo "                        分支模式下结果按 CI 目录名({branch}-{date}-{run_id}-{attempt})/workflow目录 存放，不使用日期"
             echo "  --collect-logs        拉取多机用例完整日志（默认关闭，仅 --branch 时生效，临时开启用）"
             echo "  --no-collect-logs     不拉取多机用例完整日志（默认行为）"
+            echo "  --wf-filter LIST      workflow 白名单过滤（逗号分隔基础名，前缀匹配；"
+            echo "                        留空=不过滤；影响性能/精度收集与多机日志拉取）"
             echo "  --help, -h            显示此帮助信息"
             echo ""
             echo "收集内容:"
@@ -137,6 +149,7 @@ while [[ $# -gt 0 ]]; do
             echo "  GIT_LOCAL_DIR         Git本地临时目录"
             echo "  BRANCH                仅收集指定分支"
             echo "  COLLECT_LOGS          是否拉取多机用例完整日志 (true/false，默认 false)"
+            echo "  WF_FILTER             workflow 白名单（逗号分隔，前缀匹配，留空不过滤）"
             echo ""
             echo "示例:"
             echo "  $0 20260716               # 单个日期"
@@ -192,6 +205,20 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # 设置 Git 本地目录默认值（依赖 SCRIPT_DIR）
 if [ -z "$GIT_LOCAL_DIR" ]; then
     GIT_LOCAL_DIR="${SCRIPT_DIR}/.all_test_in_repo"
+fi
+
+# 入口互斥锁：防止 cron 与手动执行并发（并发 git fetch/reset 会互相踩踏，
+# 且 NFS 上被占用文件 rm 后残留 .nfs* 导致仓库目录删不掉）。
+# -n 非阻塞：拿不到锁立即退出，不会排队等上一个实例跑完。
+LOCK_FILE="${TMPDIR:-/tmp}/collect_metrics.lock"
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"${LOCK_FILE}" || { echo "错误: 无法创建锁文件 ${LOCK_FILE}"; exit 1; }
+    if ! flock -n 9; then
+        echo "错误: 另一个 collect_metrics 实例正在运行（锁: ${LOCK_FILE}），退出。"
+        exit 1
+    fi
+else
+    echo "警告: 系统缺少 flock 命令，跳过互斥锁（建议安装 util-linux），请勿并发执行本脚本。"
 fi
 
 # 本次收集文件清单：仅上传本次实际收集的用例文件，
@@ -264,6 +291,11 @@ fi
 # ============================================================
 echo "========== 配置信息 =========="
 echo "源目录基础路径: ${SRC_BASE}"
+if [ -n "${WF_FILTER}" ]; then
+    echo "workflow 过滤:  ${WF_FILTER} (白名单前缀匹配)"
+else
+    echo "workflow 过滤:  无 (收集全部 workflow)"
+fi
 if [ -n "${BRANCH:-}" ]; then
     echo "分支筛选:       ${BRANCH} (${#SEARCH_ROOTS[@]} 个任务目录)"
     echo "多机日志基础:   ${LOG_BASE} (仅拉取 test_npu_* 完整日志)"
@@ -295,6 +327,32 @@ TOTAL_EVAL_COUNT=0
 # 失败时输出空字符串，调用方据此跳过。
 _file_mtime() {
     stat -c '%Y' "$1" 2>/dev/null || stat -f '%m' "$1" 2>/dev/null
+}
+
+# workflow 白名单过滤：WF_FILTER 为空时恒通过。
+# 参数: $1=workflow 基础名（已去掉 --{image_label} 后缀），或 $2 传入完整路径
+#       （此时从路径中剥离 SRC_BASE 前缀取第二段作为 workflow 段）。
+# 与 WF_FILTER 中任一逗号分隔项做前缀匹配。返回 0=通过 1=被过滤。
+_wf_allowed() {
+    [ -z "${WF_FILTER}" ] && return 0
+    local seg item
+    if [ -n "${2:-}" ]; then
+        local rel="${2#${SRC_BASE}/}"
+        rel="${rel#*/}"    # 跳过 CI 目录段（{branch}-{date}-{run_id}-{attempt}）
+        local wf="${rel%%/*}"
+        seg="${wf%%--*}"   # 去掉 --{image_label} 后缀取基础名
+    else
+        seg="$1"
+    fi
+    local IFS=','
+    for item in ${WF_FILTER}; do
+        item=$(echo "${item}" | xargs)   # 去首尾空白
+        [ -z "${item}" ] && continue
+        case "${seg}" in
+            "${item}"*) return 0 ;;
+        esac
+    done
+    return 1
 }
 
 # 将秒级时间戳格式化为 YYYYmmdd（日期模式归类用）。
@@ -372,6 +430,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     # 递归查找所有 bench_serving_metrics.txt，根据文件实际修改时间归类到对应日期目录
     while IFS= read -r src_file; do
         [ -f "${src_file}" ] || continue
+        _wf_allowed "${src_file}" || continue
 
         # 新结构: subdir = {suite}-{timestamp}/{tc_name}，subdir_name 即 {tc_name}
         # 旧结构: subdir = {tc_name}-{timestamp}
@@ -459,6 +518,7 @@ for CURRENT_DATE in "${DATES[@]}"; do
     eval_count=0
     while IFS= read -r eval_src; do
         [ -f "${eval_src}" ] || continue
+        _wf_allowed "${eval_src}" || continue
 
         # 新结构路径: .../output/{branch}-{date}-{run_id}-{attempt}/{workflow}/{type}/{suite}-{timestamp}/{tc_name}/[eval_ts]/logs/eval_log.log
         # 注意 CI 中 {suite}-{timestamp}/{tc_name} 下可能还有一层 {eval_ts}（eval 执行时间戳目录）
@@ -581,6 +641,8 @@ if [ -n "${BRANCH:-}" ] && [ "${COLLECT_LOGS}" = true ]; then
         for wf_dir in "${log_ci_dir}"/*; do
             [ -d "${wf_dir}" ] || continue
             wf_name=$(basename "${wf_dir}")
+            # workflow 白名单过滤（与性能/精度收集一致）；wf_name 去掉 --{image_label} 后缀后匹配
+            _wf_allowed "${wf_name%%--*}" || continue
             # 只拉取 test_npu_ 开头的多机用例完整日志目录
             for case_dir in "${wf_dir}"/test_npu_*; do
                 [ -d "${case_dir}" ] || continue
@@ -647,13 +709,13 @@ if [ -d "${GIT_LOCAL_DIR}/.git" ]; then
         # 增量更新失败（如远程被 force push 导致历史不相关），重新克隆
         echo "增量更新失败，正在重新克隆仓库..."
         cd /
-        rm -rf "${GIT_LOCAL_DIR}"
+        _rm_repo_dir
         git clone --depth=1 "${GIT_CLONE_URL}" "${GIT_LOCAL_DIR}"
         echo "重新克隆完成"
     fi
 else
     echo "克隆仓库..."
-    rm -rf "${GIT_LOCAL_DIR}"
+    _rm_repo_dir
     git clone --depth=1 "${GIT_CLONE_URL}" "${GIT_LOCAL_DIR}"
 fi
 
@@ -694,6 +756,24 @@ _copy_upload_files() {
         mkdir -p "$(dirname "${dst}")"
         cp -a "${f}" "${dst}"
     done < "${UPLOAD_LIST}"
+}
+
+# 删除本地 git 仓库目录（带校验）：
+# NFS 上若文件仍被其他进程持有，rm 后会残留 .nfs* 文件导致目录删不净，
+# 带着"半删除"目录去 clone 会报 already exists and is not an empty directory。
+# 因此删除后校验：失败重试一次（等 10s 让持有者关闭句柄），仍失败则报错退出。
+_rm_repo_dir() {
+    [ ! -d "${GIT_LOCAL_DIR}" ] && return 0
+    rm -rf "${GIT_LOCAL_DIR}" || true
+    if [ -d "${GIT_LOCAL_DIR}" ]; then
+        echo "警告: 首次删除 ${GIT_LOCAL_DIR} 未删净（可能有 .nfs* 残留或并发进程持有），10s 后重试..."
+        sleep 10
+        rm -rf "${GIT_LOCAL_DIR}" || true
+        if [ -d "${GIT_LOCAL_DIR}" ]; then
+            echo "错误: 无法删除 ${GIT_LOCAL_DIR}。请用 lsof +D 检查持有进程（NFS .nfs* 残留），处理后重跑。"
+            exit 1
+        fi
+    fi
 }
 
 # 带超时重试的推送：git push 超时/失败时，等待 UPLOAD_RETRY_DELAY 秒后重试，最多重试 UPLOAD_RETRY 次。
@@ -750,7 +830,7 @@ else
             # rebase 冲突（他人改动了本批次文件）：重新克隆，仅重放本次收集的文件
             echo "警告: rebase 冲突（远端存在并发更新），重新克隆后重放本次收集文件..."
             cd /
-            rm -rf "${GIT_LOCAL_DIR}"
+            _rm_repo_dir
             git clone --depth=1 "${GIT_CLONE_URL}" "${GIT_LOCAL_DIR}" || exit 1
             cd "${GIT_LOCAL_DIR}"
             # 重新克隆后需重新固化提交身份
