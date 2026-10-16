@@ -1,0 +1,99 @@
+2026-09-30 12:42:34 - evalscope - INFO: Running with native backend
+2026-09-30 12:42:34 - evalscope - INFO: Dump task config to /root/.cache/tests/output/main-20260930-0011-36595924687-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_kimi_k3_w4a8_32p_gpqa/20260930_124234/configs/task_config.yaml
+2026-09-30 12:42:34 - evalscope - INFO: {
+    "model_id": "Kimi-K3-W4A8",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gpqa_diamond"
+    ],
+    "dataset_args": {},
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 32,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20260930-0011-36595924687-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_kimi_k3_w4a8_32p_gpqa/20260930_124234",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://172.22.3.227:6677/v1/chat/completions",
+    "api_key": "**********",
+    "timeout": 10000.0,
+    "stream": true,
+    "judge": {
+        "strategy": "auto",
+        "models": [],
+        "contract": {
+            "system_prompt": null,
+            "prompt_template": null,
+            "score_mapping": null,
+            "score_type": "pattern"
+        },
+        "repeats": 1,
+        "position_swap": "auto",
+        "aggregation": "mean",
+        "min_valid_judges": 1
+    },
+    "analysis_report": false,
+    "collect_perf": true,
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "evalscope_version": "1.12.0",
+    "model": "Kimi-K3-W4A8",
+    "generation_config": {
+        "timeout": 10000.0,
+        "batch_size": 32,
+        "stream": true,
+        "max_tokens": 131072,
+        "top_p": 0.95,
+        "temperature": 1.0,
+        "extra_body": {
+            "reasoning_effort": "max"
+        }
+    },
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "agent_config": null
+}
+2026-09-30 12:42:34 - evalscope - INFO: Start loading benchmark dataset: gpqa_diamond
+2026-09-30 12:42:34 - evalscope - WARNING: gpqa_diamond: 198 samples to evaluate (1 subset, --limit=100000 per subset). Remove `--limit` for a formal evaluation.
+2026-09-30 12:42:34 - evalscope - INFO: Subsets of gpqa_diamond: ['default']
+2026-09-30 12:42:34 - evalscope - INFO: Loading model for prediction...
+2026-09-30 12:42:34 - evalscope - INFO: Creating model Kimi-K3-W4A8 with eval_type=openai_api base_url=http://172.22.3.227:6677/v1/chat/completions, config={'timeout': 10000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 32, 'stream': True, 'max_tokens': 131072, 'top_p': 0.95, 'temperature': 1.0, 'anthropic_cache_strategy': 'evaluation', 'extra_body': {'reasoning_effort': 'max'}}, model_args={}
+2026-09-30 12:42:35 - evalscope - INFO: Model loaded successfully.
+2026-09-30 12:43:35 - evalscope - INFO: Evaluating[gpqa_diamond]   4%| 7/198 [Elapsed: 01:00 < Remaining: 18:57,  5.96s/it]
+2026-09-30 12:44:35 - evalscope - INFO: Evaluating[gpqa_diamond]   8%| 16/198 [Elapsed: 02:00 < Remaining: 18:22,  6.06s/it]
+2026-09-30 12:45:35 - evalscope - INFO: Evaluating[gpqa_diamond]  13%| 26/198 [Elapsed: 03:00 < Remaining: 14:08,  4.93s/it]
+2026-09-30 12:46:35 - evalscope - INFO: Evaluating[gpqa_diamond]  16%| 32/198 [Elapsed: 04:00 < Remaining: 29:30, 10.67s/it]
+2026-09-30 12:47:35 - evalscope - INFO: Evaluating[gpqa_diamond]  16%| 32/198 [Elapsed: 05:00 < Remaining: 29:30, 10.67s/it]
+2026-09-30 12:48:35 - evalscope - INFO: Evaluating[gpqa_diamond]  18%| 36/198 [Elapsed: 06:00 < Remaining: 52:08, 19.31s/it]
+2026-09-30 12:49:35 - evalscope - INFO: Evaluating[gpqa_diamond]  20%| 39/198 [Elapsed: 07:00 < Remaining: 47:49, 18.05s/it]
+2026-09-30 12:50:35 - evalscope - INFO: Evaluating[gpqa_diamond]  23%| 46/198 [Elapsed: 08:00 < Remaining: 20:04,  7.92s/it]
+2026-09-30 12:51:36 - evalscope - INFO: Evaluating[gpqa_diamond]  25%| 50/198 [Elapsed: 09:01 < Remaining: 27:54, 11.31s/it]
+2026-09-30 12:52:36 - evalscope - INFO: Evaluating[gpqa_diamond]  30%| 59/198 [Elapsed: 10:01 < Remaining: 15:35,  6.73s/it]
+2026-09-30 12:53:36 - evalscope - INFO: Evaluating[gpqa_diamond]  32%| 64/198 [Elapsed: 11:01 < Remaining: 21:25,  9.60s/it]
+2026-09-30 12:54:36 - evalscope - INFO: Evaluating[gpqa_diamond]  34%| 68/198 [Elapsed: 12:01 < Remaining: 33:30, 15.47s/it]
+2026-09-30 12:55:36 - evalscope - INFO: Evaluating[gpqa_diamond]  35%| 70/198 [Elapsed: 13:01 < Remaining: 33:45, 15.83s/it]
+2026-09-30 12:56:37 - evalscope - INFO: Evaluating[gpqa_diamond]  38%| 75/198 [Elapsed: 14:02 < Remaining: 21:14, 10.37s/it]
+2026-09-30 12:57:37 - evalscope - INFO: Evaluating[gpqa_diamond]  39%| 78/198 [Elapsed: 15:02 < Remaining: 45:15, 22.63s/it]
+2026-09-30 12:58:37 - evalscope - INFO: Evaluating[gpqa_diamond]  43%| 86/198 [Elapsed: 16:02 < Remaining: 14:37,  7.83s/it]
+2026-09-30 12:59:37 - evalscope - INFO: Evaluating[gpqa_diamond]  45%| 89/198 [Elapsed: 17:03 < Remaining: 24:28, 13.47s/it]
+2026-09-30 13:00:38 - evalscope - INFO: Evaluating[gpqa_diamond]  47%| 94/198 [Elapsed: 18:03 < Remaining: 23:07, 13.34s/it]
+2026-09-30 13:01:38 - evalscope - INFO: Evaluating[gpqa_diamond]  49%| 97/198 [Elapsed: 19:03 < Remaining: 31:39, 18.80s/it]
+
+# [collect_metrics] 文件原始修改时间: 2026-09-30 13:01:46

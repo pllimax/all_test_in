@@ -1,0 +1,137 @@
+2026-08-30 13:31:13 - evalscope - INFO: Running with native backend
+2026-08-30 13:31:13 - evalscope - INFO: Dump task config to /root/.cache/tests/output/main-20260830-0017-33262542868-1/Nightly_Test_NPU/accuracy/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26/20260830_133113/configs/task_config.yaml
+2026-08-30 13:31:13 - evalscope - INFO: {
+    "model": "GLM-5.1-w4a8",
+    "model_id": "GLM-5.1-w4a8",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "aime26"
+    ],
+    "dataset_args": {
+        "aime26": {
+            "name": "aime26",
+            "dataset_id": "evalscope/aime26",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "default"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 0,
+            "few_shot_random": false,
+            "train_split": null,
+            "eval_split": "test",
+            "prompt_template": "\nSolve the following math problem step by step. Put your answer inside \\boxed{{}}.\n\n{question}\n\nRemember to put your answer inside \\boxed{{}}.",
+            "few_shot_prompt_template": null,
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "AIME-2026",
+            "description": "\n## Overview\n\nAIME 2026 (American Invitational Mathematics Examination 2026) is a benchmark based on problems from the prestigious AIME competition, one of the most challenging high school mathematics contests in the United States. It tests advanced mathematical reasoning and problem-solving skills.\n\n## Task Description\n\n- **Task Type**: Competition Mathematics Problem Solving\n- **Input**: AIME-level mathematical problem\n- **Output**: Integer answer (0-999) with step-by-step reasoning\n- **Difficulty**: Advanced high school / early undergraduate level\n\n## Key Features\n\n- Problems from AIME I and AIME II 2026 competitions\n- Answers are always integers between 0 and 999\n- Requires creative mathematical reasoning and problem-solving\n- Topics: algebra, geometry, number theory, combinatorics, probability\n- Represents top-tier high school mathematics competition difficulty\n\n## Evaluation Notes\n\n- Default configuration uses **0-shot** evaluation\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- Uses LLM-as-judge for mathematical equivalence checking\n",
+            "paper_url": null,
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536,
+        "temperature": 1.0
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20260830-0017-33262542868-1/Nightly_Test_NPU/accuracy/test_npu_glm5_1_w4a8_1p1d_32p_in64k_out1k_50ms_aime26/20260830_133113",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://172.22.3.79:6677/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-08-30 13:31:13 - evalscope - INFO: Start loading benchmark dataset: aime26
+2026-08-30 13:31:14 - evalscope - INFO: Start evaluating 1 subsets of aime26: ['default']
+2026-08-30 13:31:14 - evalscope - INFO: Unified pool: 30 items to process, 0 already fully cached (30 total across all subsets).
+2026-08-30 13:31:14 - evalscope - INFO: Loading model for prediction...
+2026-08-30 13:31:14 - evalscope - INFO: Creating model GLM-5.1-w4a8 with eval_type=openai_api base_url=http://172.22.3.79:6677/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536, 'temperature': 1.0}, model_args={}
+2026-08-30 13:31:14 - evalscope - INFO: Model loaded successfully.
+2026-08-30 13:32:14 - evalscope - INFO: Evaluating[aime26]   0%| 0/30 [Elapsed: 01:00 < Remaining: ?, ?it/s]
+2026-08-30 13:33:14 - evalscope - INFO: Evaluating[aime26]   0%| 0/30 [Elapsed: 02:00 < Remaining: ?, ?it/s]
+2026-08-30 13:34:15 - evalscope - INFO: Evaluating[aime26]   3%| 1/30 [Elapsed: 03:00 < Remaining: 1:15:06, 155.39s/it]
+2026-08-30 13:35:15 - evalscope - INFO: Evaluating[aime26]   3%| 1/30 [Elapsed: 04:01 < Remaining: 1:15:06, 155.39s/it]
+2026-08-30 13:36:15 - evalscope - INFO: Evaluating[aime26]   7%| 2/30 [Elapsed: 05:01 < Remaining: 54:28, 116.73s/it]
+2026-08-30 13:37:16 - evalscope - INFO: Evaluating[aime26]  10%| 3/30 [Elapsed: 06:01 < Remaining: 48:27, 107.68s/it]
+2026-08-30 13:38:16 - evalscope - INFO: Evaluating[aime26]  10%| 3/30 [Elapsed: 07:02 < Remaining: 48:27, 107.68s/it]
+2026-08-30 13:39:16 - evalscope - INFO: Evaluating[aime26]  10%| 3/30 [Elapsed: 08:02 < Remaining: 48:27, 107.68s/it]
+2026-08-30 13:40:17 - evalscope - INFO: Evaluating[aime26]  10%| 3/30 [Elapsed: 09:03 < Remaining: 48:27, 107.68s/it]
+2026-08-30 13:41:17 - evalscope - INFO: Evaluating[aime26]  17%| 5/30 [Elapsed: 10:03 < Remaining: 44:02, 105.69s/it]
+2026-08-30 13:42:17 - evalscope - INFO: Evaluating[aime26]  20%| 6/30 [Elapsed: 11:03 < Remaining: 31:43, 79.30s/it]
+2026-08-30 13:43:18 - evalscope - INFO: Evaluating[aime26]  23%| 7/30 [Elapsed: 12:04 < Remaining: 28:14, 73.66s/it]
+2026-08-30 13:44:18 - evalscope - INFO: Evaluating[aime26]  27%| 8/30 [Elapsed: 13:04 < Remaining: 24:00, 65.47s/it]
+2026-08-30 13:45:18 - evalscope - INFO: Evaluating[aime26]  27%| 8/30 [Elapsed: 14:04 < Remaining: 24:00, 65.47s/it]
+2026-08-30 13:46:18 - evalscope - INFO: Evaluating[aime26]  30%| 9/30 [Elapsed: 15:04 < Remaining: 30:12, 86.29s/it]
+2026-08-30 13:47:19 - evalscope - INFO: Evaluating[aime26]  33%| 10/30 [Elapsed: 16:05 < Remaining: 27:59, 83.99s/it]
+2026-08-30 13:48:19 - evalscope - INFO: Evaluating[aime26]  37%| 11/30 [Elapsed: 17:05 < Remaining: 21:16, 67.17s/it]
+2026-08-30 13:49:19 - evalscope - INFO: Evaluating[aime26]  40%| 12/30 [Elapsed: 18:05 < Remaining: 23:31, 78.39s/it]
+2026-08-30 13:50:19 - evalscope - INFO: Evaluating[aime26]  43%| 13/30 [Elapsed: 19:05 < Remaining: 19:36, 69.20s/it]
+2026-08-30 13:51:20 - evalscope - INFO: Evaluating[aime26]  47%| 14/30 [Elapsed: 20:06 < Remaining: 16:01, 60.09s/it]
+2026-08-30 13:52:20 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 21:06 < Remaining: 16:51, 67.44s/it]
+2026-08-30 13:53:20 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 22:06 < Remaining: 16:51, 67.44s/it]
+2026-08-30 13:54:20 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 23:06 < Remaining: 16:51, 67.44s/it]
+2026-08-30 13:55:20 - evalscope - INFO: Evaluating[aime26]  53%| 16/30 [Elapsed: 24:06 < Remaining: 22:35, 96.83s/it]
+2026-08-30 13:56:20 - evalscope - INFO: Evaluating[aime26]  57%| 17/30 [Elapsed: 25:06 < Remaining: 18:34, 85.76s/it]
+2026-08-30 13:57:20 - evalscope - INFO: Evaluating[aime26]  60%| 18/30 [Elapsed: 26:06 < Remaining: 17:18, 86.52s/it]
+2026-08-30 13:58:20 - evalscope - INFO: Evaluating[aime26]  60%| 18/30 [Elapsed: 27:06 < Remaining: 17:18, 86.52s/it]
+2026-08-30 13:59:20 - evalscope - INFO: Evaluating[aime26]  60%| 18/30 [Elapsed: 28:06 < Remaining: 17:18, 86.52s/it]
+
+# [collect_metrics] 文件原始修改时间: 2026-08-30 13:59:25

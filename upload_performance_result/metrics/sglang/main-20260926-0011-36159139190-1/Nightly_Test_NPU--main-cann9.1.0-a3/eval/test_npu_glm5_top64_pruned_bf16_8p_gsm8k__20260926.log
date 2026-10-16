@@ -1,0 +1,81 @@
+2026-09-25 16:54:44 - evalscope - INFO: Running with native backend
+2026-09-25 16:54:44 - evalscope - INFO: Dump task config to /root/.cache/tests/output/main-20260926-0011-36159139190-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-16-npu-a3/test_npu_glm5_top64_pruned_bf16_8p_gsm8k/20260925_165444/configs/task_config.yaml
+2026-09-25 16:54:44 - evalscope - INFO: {
+    "model_id": "GLM-5-top64-pruned-gsm8k",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gsm8k"
+    ],
+    "dataset_args": {},
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100,
+    "eval_batch_size": 16,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20260926-0011-36159139190-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-16-npu-a3/test_npu_glm5_top64_pruned_bf16_8p_gsm8k/20260925_165444",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20466/v1/chat/completions",
+    "api_key": "**********",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge": {
+        "strategy": "auto",
+        "models": [],
+        "contract": {
+            "system_prompt": null,
+            "prompt_template": null,
+            "score_mapping": null,
+            "score_type": "pattern"
+        },
+        "repeats": 1,
+        "position_swap": "auto",
+        "aggregation": "mean",
+        "min_valid_judges": 1
+    },
+    "analysis_report": false,
+    "collect_perf": true,
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "evalscope_version": "1.12.0",
+    "model": "GLM-5-top64-pruned-gsm8k",
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 16,
+        "stream": true,
+        "max_tokens": 2048,
+        "temperature": 0.01
+    },
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "agent_config": null
+}
+2026-09-25 16:54:44 - evalscope - INFO: Start loading benchmark dataset: gsm8k
+2026-09-25 16:54:44 - evalscope - WARNING: gsm8k: 100 samples to evaluate (1 subset, --limit=100 per subset). Remove `--limit` for a formal evaluation.
+2026-09-25 16:54:44 - evalscope - INFO: Subsets of gsm8k: ['main']
+2026-09-25 16:54:44 - evalscope - INFO: Loading model for prediction...
+2026-09-25 16:54:44 - evalscope - INFO: Creating model GLM-5-top64-pruned-gsm8k with eval_type=openai_api base_url=http://127.0.0.1:20466/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 16, 'stream': True, 'max_tokens': 2048, 'temperature': 0.01, 'anthropic_cache_strategy': 'evaluation'}, model_args={}
+2026-09-25 16:54:44 - evalscope - INFO: Model loaded successfully.
+2026-09-25 16:55:44 - evalscope - INFO: Evaluating[gsm8k]   5%| 5/100 [Elapsed: 01:00 < Remaining: 13:41,  8.65s/it]
+2026-09-25 16:56:44 - evalscope - INFO: Evaluating[gsm8k]  11%| 11/100 [Elapsed: 02:00 < Remaining: 15:34, 10.50s/it]
+2026-09-25 16:57:44 - evalscope - INFO: Evaluating[gsm8k]  23%| 23/100 [Elapsed: 03:00 < Remaining: 16:58, 13.22s/it]
+2026-09-25 16:58:45 - evalscope - INFO: Evaluating[gsm8k]  36%| 36/100 [Elapsed: 04:00 < Remaining: 04:12,  3.95s/it]
+2026-09-25 16:59:45 - evalscope - INFO: Evaluating[gsm8k]  49%| 49/100 [Elapsed: 05:00 < Remaining: 02:56,  3.45s/it]
+
+# [collect_metrics] 文件原始修改时间: 2026-09-26 00:59:48

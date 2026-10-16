@@ -1,0 +1,198 @@
+2026-08-31 19:16:52 - evalscope - INFO: Running with native backend
+2026-08-31 19:16:52 - evalscope - INFO: Dump task config to /root/.cache/tests/output/main-20260901-0020-33413510810-1/Nightly_Test_NPU/accuracy/nightly-acc-16-npu-a3/test_npu_deepseek_v3_2_8p_aime25/20260831_191652/configs/task_config.yaml
+2026-08-31 19:16:52 - evalscope - INFO: {
+    "model": "DeepSeek-V3.2-Exp-W8A8",
+    "model_id": "DeepSeek-V3.2-Exp-W8A8",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gsm8k"
+    ],
+    "dataset_args": {
+        "gsm8k": {
+            "name": "gsm8k",
+            "dataset_id": "AI-ModelScope/gsm8k",
+            "output_types": [
+                "generation"
+            ],
+            "subset_list": [
+                "main"
+            ],
+            "default_subset": "default",
+            "few_shot_num": 4,
+            "few_shot_random": false,
+            "train_split": "train",
+            "eval_split": "test",
+            "prompt_template": "{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+            "few_shot_prompt_template": "Here are some examples of how to solve similar problems:\n\n{fewshot}\n\n{question}\nPlease reason step by step, and put your final answer within \\boxed{{}}.",
+            "system_prompt": null,
+            "query_template": null,
+            "pretty_name": "GSM8K",
+            "description": "\n## Overview\n\nGSM8K (Grade School Math 8K) is a high-quality dataset of 8.5K linguistically diverse grade school math word problems created by human problem writers. The dataset is specifically designed to evaluate and improve the multi-step mathematical reasoning capabilities of language models.\n\n## Task Description\n\n- **Task Type**: Mathematical Word Problem Solving\n- **Input**: Natural language math word problem\n- **Output**: Numerical answer derived through step-by-step reasoning\n- **Difficulty**: Grade school level (2-8 reasoning steps required)\n\n## Key Features\n\n- Problems require basic arithmetic operations (addition, subtraction, multiplication, division)\n- Solutions involve 2 to 8 sequential reasoning steps\n- High linguistic diversity in problem formulations\n- Human-written problems ensuring natural language quality\n- Clear numerical answers for objective evaluation\n\n## Evaluation Notes\n\n- Default configuration uses **4-shot** examples with Chain-of-Thought (CoT) prompting\n- Answers should be formatted within `\\boxed{}` for proper extraction\n- The metric extracts numerical values for accuracy comparison\n- Supports both zero-shot and few-shot evaluation modes\n",
+            "paper_url": "https://arxiv.org/abs/2110.14168",
+            "data_statistics": null,
+            "sample_example": null,
+            "tags": [
+                "Math",
+                "Reasoning"
+            ],
+            "filters": null,
+            "metric_list": [
+                {
+                    "acc": {
+                        "numeric": true
+                    }
+                }
+            ],
+            "aggregation": "mean",
+            "shuffle": false,
+            "shuffle_choices": false,
+            "force_redownload": false,
+            "review_timeout": null,
+            "extra_params": {},
+            "sandbox_config": {},
+            "max_image_bytes": null
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536,
+        "temperature": 1.0
+    },
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20260901-0020-33413510810-1/Nightly_Test_NPU/accuracy/nightly-acc-16-npu-a3/test_npu_deepseek_v3_2_8p_aime25/20260831_191652",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20166/v1/chat/completions",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge_strategy": "auto",
+    "judge_worker_num": null,
+    "judge_model_args": {},
+    "analysis_report": false,
+    "collect_perf": true,
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "agent_config": null,
+    "evalscope_version": "0.0.0_dev"
+}
+2026-08-31 19:16:52 - evalscope - INFO: Start loading benchmark dataset: gsm8k
+2026-08-31 19:16:53 - evalscope - INFO: Start evaluating 1 subsets of gsm8k: ['main']
+2026-08-31 19:16:53 - evalscope - INFO: Unified pool: 1319 items to process, 0 already fully cached (1319 total across all subsets).
+2026-08-31 19:16:53 - evalscope - INFO: Loading model for prediction...
+2026-08-31 19:16:53 - evalscope - INFO: Creating model DeepSeek-V3.2-Exp-W8A8 with eval_type=openai_api base_url=http://127.0.0.1:20166/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536, 'temperature': 1.0}, model_args={}
+2026-08-31 19:16:53 - evalscope - INFO: Model loaded successfully.
+2026-08-31 19:17:53 - evalscope - INFO: Evaluating[gsm8k]   1%| 15/1319 [Elapsed: 01:00 < Remaining: 27:51,  1.28s/it]
+2026-08-31 19:18:53 - evalscope - INFO: Evaluating[gsm8k]   3%| 38/1319 [Elapsed: 02:00 < Remaining: 1:27:07,  4.08s/it]
+2026-08-31 19:19:54 - evalscope - INFO: Evaluating[gsm8k]   5%| 66/1319 [Elapsed: 03:00 < Remaining: 54:23,  2.60s/it]
+2026-08-31 19:20:54 - evalscope - INFO: Evaluating[gsm8k]   8%| 99/1319 [Elapsed: 04:01 < Remaining: 39:54,  1.96s/it]
+2026-08-31 19:21:54 - evalscope - INFO: Evaluating[gsm8k]  10%| 127/1319 [Elapsed: 05:01 < Remaining: 46:51,  2.36s/it]
+2026-08-31 19:22:55 - evalscope - INFO: Evaluating[gsm8k]  12%| 157/1319 [Elapsed: 06:01 < Remaining: 47:10,  2.44s/it]
+2026-08-31 19:23:55 - evalscope - INFO: Evaluating[gsm8k]  14%| 187/1319 [Elapsed: 07:01 < Remaining: 55:12,  2.93s/it]
+2026-08-31 19:24:55 - evalscope - INFO: Evaluating[gsm8k]  17%| 220/1319 [Elapsed: 08:02 < Remaining: 24:57,  1.36s/it]
+2026-08-31 19:25:56 - evalscope - INFO: Evaluating[gsm8k]  19%| 248/1319 [Elapsed: 09:02 < Remaining: 19:41,  1.10s/it]
+2026-08-31 19:26:56 - evalscope - INFO: Evaluating[gsm8k]  21%| 277/1319 [Elapsed: 10:03 < Remaining: 41:20,  2.38s/it]
+2026-08-31 19:27:56 - evalscope - INFO: Evaluating[gsm8k]  23%| 307/1319 [Elapsed: 11:03 < Remaining: 44:42,  2.65s/it]
+2026-08-31 19:28:57 - evalscope - INFO: Evaluating[gsm8k]  25%| 333/1319 [Elapsed: 12:03 < Remaining: 27:00,  1.64s/it]
+2026-08-31 19:29:57 - evalscope - INFO: Evaluating[gsm8k]  28%| 363/1319 [Elapsed: 13:03 < Remaining: 39:16,  2.46s/it]
+2026-08-31 19:30:57 - evalscope - INFO: Evaluating[gsm8k]  30%| 395/1319 [Elapsed: 14:04 < Remaining: 37:32,  2.44s/it]
+2026-08-31 19:31:57 - evalscope - INFO: Evaluating[gsm8k]  32%| 423/1319 [Elapsed: 15:04 < Remaining: 32:53,  2.20s/it]
+2026-08-31 19:32:58 - evalscope - INFO: Evaluating[gsm8k]  34%| 450/1319 [Elapsed: 16:04 < Remaining: 23:58,  1.65s/it]
+2026-08-31 19:33:58 - evalscope - INFO: Evaluating[gsm8k]  37%| 485/1319 [Elapsed: 17:05 < Remaining: 23:51,  1.72s/it]
+2026-08-31 19:34:58 - evalscope - INFO: Evaluating[gsm8k]  39%| 511/1319 [Elapsed: 18:05 < Remaining: 30:07,  2.24s/it]
+2026-08-31 19:35:59 - evalscope - INFO: Evaluating[gsm8k]  41%| 541/1319 [Elapsed: 19:05 < Remaining: 28:26,  2.19s/it]
+2026-08-31 19:36:59 - evalscope - INFO: Evaluating[gsm8k]  43%| 571/1319 [Elapsed: 20:06 < Remaining: 21:55,  1.76s/it]
+2026-08-31 19:37:59 - evalscope - INFO: Evaluating[gsm8k]  46%| 603/1319 [Elapsed: 21:06 < Remaining: 17:47,  1.49s/it]
+2026-08-31 19:39:00 - evalscope - INFO: Evaluating[gsm8k]  48%| 629/1319 [Elapsed: 22:06 < Remaining: 28:24,  2.47s/it]
+2026-08-31 19:40:00 - evalscope - INFO: Evaluating[gsm8k]  50%| 665/1319 [Elapsed: 23:07 < Remaining: 27:44,  2.55s/it]
+2026-08-31 19:41:00 - evalscope - INFO: Evaluating[gsm8k]  53%| 693/1319 [Elapsed: 24:07 < Remaining: 27:34,  2.64s/it]
+2026-08-31 19:42:01 - evalscope - INFO: Evaluating[gsm8k]  55%| 726/1319 [Elapsed: 25:07 < Remaining: 18:21,  1.86s/it]
+2026-08-31 19:43:01 - evalscope - INFO: Evaluating[gsm8k]  57%| 756/1319 [Elapsed: 26:08 < Remaining: 19:22,  2.06s/it]
+2026-08-31 19:44:01 - evalscope - INFO: Evaluating[gsm8k]  60%| 788/1319 [Elapsed: 27:08 < Remaining: 22:49,  2.58s/it]
+2026-08-31 19:45:02 - evalscope - INFO: Evaluating[gsm8k]  62%| 817/1319 [Elapsed: 28:08 < Remaining: 09:00,  1.08s/it]
+2026-08-31 19:46:02 - evalscope - INFO: Evaluating[gsm8k]  64%| 841/1319 [Elapsed: 29:08 < Remaining: 15:14,  1.91s/it]
+2026-08-31 19:47:02 - evalscope - INFO: Evaluating[gsm8k]  66%| 874/1319 [Elapsed: 30:09 < Remaining: 11:28,  1.55s/it]
+2026-08-31 19:48:02 - evalscope - INFO: Evaluating[gsm8k]  69%| 907/1319 [Elapsed: 31:09 < Remaining: 12:29,  1.82s/it]
+2026-08-31 19:49:03 - evalscope - INFO: Evaluating[gsm8k]  71%| 935/1319 [Elapsed: 32:09 < Remaining: 10:52,  1.70s/it]
+2026-08-31 19:50:03 - evalscope - INFO: Evaluating[gsm8k]  73%| 961/1319 [Elapsed: 33:10 < Remaining: 12:31,  2.10s/it]
+2026-08-31 19:51:03 - evalscope - INFO: Evaluating[gsm8k]  75%| 984/1319 [Elapsed: 34:10 < Remaining: 16:59,  3.04s/it]
+2026-08-31 19:52:04 - evalscope - INFO: Evaluating[gsm8k]  77%| 1015/1319 [Elapsed: 35:10 < Remaining: 07:28,  1.47s/it]
+2026-08-31 19:53:04 - evalscope - INFO: Evaluating[gsm8k]  79%| 1044/1319 [Elapsed: 36:11 < Remaining: 07:32,  1.64s/it]
+2026-08-31 19:54:04 - evalscope - INFO: Evaluating[gsm8k]  81%| 1072/1319 [Elapsed: 37:11 < Remaining: 05:38,  1.37s/it]
+2026-08-31 19:55:05 - evalscope - INFO: Evaluating[gsm8k]  83%| 1101/1319 [Elapsed: 38:11 < Remaining: 08:07,  2.24s/it]
+2026-08-31 19:56:05 - evalscope - INFO: Evaluating[gsm8k]  86%| 1133/1319 [Elapsed: 39:12 < Remaining: 03:48,  1.23s/it]
+2026-08-31 19:57:05 - evalscope - INFO: Evaluating[gsm8k]  88%| 1159/1319 [Elapsed: 40:12 < Remaining: 06:34,  2.47s/it]
+2026-08-31 19:58:06 - evalscope - INFO: Evaluating[gsm8k]  90%| 1192/1319 [Elapsed: 41:12 < Remaining: 02:58,  1.40s/it]
+2026-08-31 19:59:06 - evalscope - INFO: Evaluating[gsm8k]  93%| 1223/1319 [Elapsed: 42:13 < Remaining: 02:06,  1.32s/it]
+2026-08-31 20:00:06 - evalscope - INFO: Evaluating[gsm8k]  95%| 1251/1319 [Elapsed: 43:13 < Remaining: 04:11,  3.69s/it]
+2026-08-31 20:01:07 - evalscope - INFO: Evaluating[gsm8k]  98%| 1293/1319 [Elapsed: 44:13 < Remaining: 00:46,  1.78s/it]
+2026-08-31 20:02:07 - evalscope - INFO: Evaluating[gsm8k] 100%| 1313/1319 [Elapsed: 45:14 < Remaining: 00:17,  2.93s/it]
+2026-08-31 20:03:07 - evalscope - INFO: Evaluating[gsm8k] 100%| 1316/1319 [Elapsed: 46:14 < Remaining: 00:29,  9.77s/it]
+2026-08-31 20:04:07 - evalscope - INFO: Evaluating[gsm8k] 100%| 1317/1319 [Elapsed: 47:14 < Remaining: 00:40, 20.35s/it]
+2026-08-31 20:05:07 - evalscope - INFO: Evaluating[gsm8k] 100%| 1317/1319 [Elapsed: 48:14 < Remaining: 00:40, 20.35s/it]
+2026-08-31 20:06:07 - evalscope - INFO: Evaluating[gsm8k] 100%| 1318/1319 [Elapsed: 49:14 < Remaining: 00:51, 51.40s/it]
+2026-08-31 20:06:08 - evalscope - INFO: Evaluating[gsm8k] 100%| 1319/1319 [Elapsed: 49:15 < Remaining: 00:00, 41.38s/it]
+2026-08-31 20:06:08 - evalscope - INFO: Unified pool finished for gsm8k.
+2026-08-31 20:06:08 - evalscope - INFO: Aggregating scores for subset: main
+2026-08-31 20:06:08 - evalscope - INFO: Generating report...
+2026-08-31 20:06:08 - evalscope - INFO: 
+gsm8k report table:
+┌────────────────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model                  │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├────────────────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ DeepSeek-V3.2-Exp-W8A8 │ gsm8k     │ mean_acc │ main     │  1319 │  0.9644 │ default │
+└────────────────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-08-31 20:06:08 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-08-31 20:06:08 - evalscope - INFO: Dump report to: /root/.cache/tests/output/main-20260901-0020-33413510810-1/Nightly_Test_NPU/accuracy/nightly-acc-16-npu-a3/test_npu_deepseek_v3_2_8p_aime25/20260831_191652/reports/DeepSeek-V3.2-Exp-W8A8/gsm8k.json 
+
+2026-08-31 20:06:08 - evalscope - INFO: 
+gsm8k perf table:
+Model                   Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                                (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+----------------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+DeepSeek-V3.2-Exp-W8A8  gsm8k       1319    128.644     3093.11      627.55        1.56   583.951    200.849
+
+2026-08-31 20:06:08 - evalscope - INFO: Benchmark gsm8k evaluation finished.
+2026-08-31 20:06:08 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 49:16 < Remaining: 00:00, 2956.20s/benchmark]
+2026-08-31 20:06:08 - evalscope - INFO: Overall report table: 
+┌────────────────────────┬───────────┬──────────┬──────────┬───────┬─────────┬─────────┐
+│ Model                  │ Dataset   │ Metric   │ Subset   │   Num │   Score │ Cat.0   │
+├────────────────────────┼───────────┼──────────┼──────────┼───────┼─────────┼─────────┤
+│ DeepSeek-V3.2-Exp-W8A8 │ gsm8k     │ mean_acc │ main     │  1319 │  0.9644 │ default │
+└────────────────────────┴───────────┴──────────┴──────────┴───────┴─────────┴─────────┘ 
+
+2026-08-31 20:06:08 - evalscope - INFO: Overall perf table: 
+Model                   Dataset      Num    Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt    Avg In    Avg Out
+                                                (s)        (ms)        (ms)     (tok/s)       Tok        Tok
+----------------------  ---------  -----  ---------  ----------  ----------  ----------  --------  ---------
+DeepSeek-V3.2-Exp-W8A8  gsm8k       1319    128.644     3093.11      627.55        1.56   583.951    200.849 
+
+2026-08-31 20:06:09 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/main-20260901-0020-33413510810-1/Nightly_Test_NPU/accuracy/nightly-acc-16-npu-a3/test_npu_deepseek_v3_2_8p_aime25/20260831_191652/reports/report.html
+2026-08-31 20:06:09 - evalscope - INFO: Finished evaluation for DeepSeek-V3.2-Exp-W8A8 on ['gsm8k']
+2026-08-31 20:06:09 - evalscope - INFO: Output directory: /root/.cache/tests/output/main-20260901-0020-33413510810-1/Nightly_Test_NPU/accuracy/nightly-acc-16-npu-a3/test_npu_deepseek_v3_2_8p_aime25/20260831_191652
+
+# [collect_metrics] 文件原始修改时间: 2026-09-01 04:06:09

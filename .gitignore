@@ -1,0 +1,40 @@
+# Git 数据缓存目录（不提交）
+.data_repo/
+
+# 受管源码仓稀疏克隆缓存（方案A，不提交）
+.testcases_repo/
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE 配置
+.vscode/
+.idea/
+
+# 日志文件
+*.log
+
+# 但保留 collect_metrics.sh 收集的精度测试日志
+!upload_performance_result/metrics/sglang/**/eval/*.log
+
+# 多机用例完整日志不入库（20261016 起占仓库容量过大，且 dashboard 不解析仓内 logs）
+upload_performance_result/metrics/sglang/**/logs/
+
+# 临时文件
+_*
+
+# 个人配置文件（不提交本地配置）
+upload_performance_result/dashboard_config.json
+
+# 本地覆盖配置（可含 GIT_TOKEN 等敏感信息，不入库）
+upload_performance_result/metrics/sglang/collect_metrics.local.conf
+
+# collect_metrics_cron 本地配置（可含 token 等敏感信息，不入库；模板见 .example）
+upload_performance_result/metrics/sglang/collect_metrics_cron.conf
+
+# Gitee->GitHub 同步本地配置（可含 token，不入库）
+sync_gitee_to_github.conf
+
+Modify HCCL_BUFFSIZE Parameter.md
