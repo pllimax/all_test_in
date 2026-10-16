@@ -697,6 +697,25 @@ else
     GIT_CLONE_URL="${GIT_REPO}"
 fi
 
+# 删除本地 git 仓库目录（带校验）：
+# NFS 上若文件仍被其他进程持有，rm 后会残留 .nfs* 文件导致目录删不净，
+# 带着"半删除"目录去 clone 会报 already exists and is not an empty directory。
+# 因此删除后校验：失败重试一次（等 10s 让持有者关闭句柄），仍失败则报错退出。
+# 注意：必须在克隆/更新逻辑之前定义（bash 按执行顺序解析函数）。
+_rm_repo_dir() {
+    [ ! -d "${GIT_LOCAL_DIR}" ] && return 0
+    rm -rf "${GIT_LOCAL_DIR}" || true
+    if [ -d "${GIT_LOCAL_DIR}" ]; then
+        echo "警告: 首次删除 ${GIT_LOCAL_DIR} 未删净（可能有 .nfs* 残留或并发进程持有），10s 后重试..."
+        sleep 10
+        rm -rf "${GIT_LOCAL_DIR}" || true
+        if [ -d "${GIT_LOCAL_DIR}" ]; then
+            echo "错误: 无法删除 ${GIT_LOCAL_DIR}。请用 lsof +D 检查持有进程（NFS .nfs* 残留），处理后重跑。"
+            exit 1
+        fi
+    fi
+}
+
 # 克隆或更新仓库
 if [ -d "${GIT_LOCAL_DIR}/.git" ]; then
     echo "更新已有仓库..."
@@ -756,24 +775,6 @@ _copy_upload_files() {
         mkdir -p "$(dirname "${dst}")"
         cp -a "${f}" "${dst}"
     done < "${UPLOAD_LIST}"
-}
-
-# 删除本地 git 仓库目录（带校验）：
-# NFS 上若文件仍被其他进程持有，rm 后会残留 .nfs* 文件导致目录删不净，
-# 带着"半删除"目录去 clone 会报 already exists and is not an empty directory。
-# 因此删除后校验：失败重试一次（等 10s 让持有者关闭句柄），仍失败则报错退出。
-_rm_repo_dir() {
-    [ ! -d "${GIT_LOCAL_DIR}" ] && return 0
-    rm -rf "${GIT_LOCAL_DIR}" || true
-    if [ -d "${GIT_LOCAL_DIR}" ]; then
-        echo "警告: 首次删除 ${GIT_LOCAL_DIR} 未删净（可能有 .nfs* 残留或并发进程持有），10s 后重试..."
-        sleep 10
-        rm -rf "${GIT_LOCAL_DIR}" || true
-        if [ -d "${GIT_LOCAL_DIR}" ]; then
-            echo "错误: 无法删除 ${GIT_LOCAL_DIR}。请用 lsof +D 检查持有进程（NFS .nfs* 残留），处理后重跑。"
-            exit 1
-        fi
-    fi
 }
 
 # 带超时重试的推送：git push 超时/失败时，等待 UPLOAD_RETRY_DELAY 秒后重试，最多重试 UPLOAD_RETRY 次。
