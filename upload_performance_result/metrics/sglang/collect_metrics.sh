@@ -346,20 +346,23 @@ _ensure_trailing_blank_line() {
 }
 
 # workflow 白名单过滤：WF_FILTER 为空时恒通过。
-# 参数: $1=workflow 基础名（已去掉 --{image_label} 后缀），或 $2 传入完整路径
-#       （此时从路径中剥离 SRC_BASE 前缀取第二段作为 workflow 段）。
+# 参数: $1=workflow 基础名（已去掉 --{image_label} 后缀）或完整文件路径（含 / 即按路径解析），
+#       也可将完整路径作为 $2 传入（$1 留空，兼容两种调用方式）。
 # 与 WF_FILTER 中任一逗号分隔项做前缀匹配。返回 0=通过 1=被过滤。
 _wf_allowed() {
     [ -z "${WF_FILTER}" ] && return 0
-    local seg item
-    if [ -n "${2:-}" ]; then
-        local rel="${2#${SRC_BASE}/}"
-        rel="${rel#*/}"    # 跳过 CI 目录段（{branch}-{date}-{run_id}-{attempt}）
-        local wf="${rel%%/*}"
-        seg="${wf%%--*}"   # 去掉 --{image_label} 后缀取基础名
-    else
-        seg="$1"
-    fi
+    local seg item p="${1:-}"
+    [ -n "${2:-}" ] && p="$2"
+    case "${p}" in
+        */*)
+            # 完整路径：剥 SRC_BASE 前缀 → 跳过 CI 目录段 → 取 workflow 段并去掉 --{image_label} 后缀
+            local rel="${p#${SRC_BASE}/}"
+            rel="${rel#*/}"    # 跳过 CI 目录段（{branch}-{date}-{run_id}-{attempt}）
+            seg="${rel%%/*}"
+            seg="${seg%%--*}"
+            ;;
+        *) seg="${p}" ;;
+    esac
     local IFS=','
     for item in ${WF_FILTER}; do
         item=$(echo "${item}" | xargs)   # 去首尾空白
