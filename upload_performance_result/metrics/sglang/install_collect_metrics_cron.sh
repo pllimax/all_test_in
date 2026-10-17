@@ -50,7 +50,7 @@ _stop() {
 
     # 1) 移除 crontab 条目
     if crontab -l 2>/dev/null | grep -q "collect_metrics_cron.sh"; then
-        (crontab -l 2>/dev/null || true) | grep -v "collect_metrics_cron.sh" | crontab -
+        (crontab -l 2>/dev/null || true) | grep -v "collect_metrics_cron.sh" | crontab - || true
         echo "[1/2] 已移除 crontab 定时任务"
     else
         echo "[1/2] 未发现已注册的 crontab 定时任务（无需移除）"
@@ -102,14 +102,14 @@ if [ -n "${CONF}" ]; then
 fi
 CRON_LINE="${INTERVAL} /bin/bash ${CRON_SCRIPT} ${CRON_ARGS} >/dev/null 2>&1"
 
-# 移除已存在的 collect_metrics_cron 任务（防重复注册）
-(crontab -l 2>/dev/null || true) | grep -v "collect_metrics_cron.sh" | crontab -
-
-# 注册新任务
-{
-    crontab -l 2>/dev/null || true
-    echo "${CRON_LINE}"
-} | crontab -
+# 移除已存在的 collect_metrics_cron 任务（防重复注册），
+# 并注册新任务。grep 过滤后可能无任何输出（空 crontab 或仅剩本任务行），
+# 此时 grep 返回 1，属正常情况，用 || true 兜底避免 set -e 中断。
+_tmpcron="${TMPDIR:-/tmp}/cron_collect.$$"
+crontab -l 2>/dev/null | grep -v "collect_metrics_cron.sh" > "${_tmpcron}" || true
+echo "${CRON_LINE}" >> "${_tmpcron}"
+crontab "${_tmpcron}"
+rm -f "${_tmpcron}"
 
 echo "已注册 crontab 任务:"
 echo "  ${CRON_LINE}"

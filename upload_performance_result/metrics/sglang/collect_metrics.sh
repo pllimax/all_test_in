@@ -769,6 +769,9 @@ if [ -d "${GIT_LOCAL_DIR}/.git" ]; then
     # 先尝试增量更新（fetch + reset）
     if git fetch origin --depth=1 2>/dev/null && \
        git reset --hard origin/main 2>/dev/null; then
+        # reset --hard 不清理 untracked：上次推送失败残留的旧数据文件会被
+        # 本次 git add 再次提交，把陈旧数据推回远端，故对目标路径做 clean
+        git clean -fd "${GIT_TARGET_PATH}" 2>/dev/null || true
         echo "仓库更新成功"
     else
         # 增量更新失败（如远程被 force push 导致历史不相关），重新克隆

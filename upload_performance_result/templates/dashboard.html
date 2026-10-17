@@ -631,8 +631,18 @@ document.addEventListener('keydown', (e) => {
 });
 
 async function loadData() {
-  const resp = await fetch('/api/data');
-  const newData = await resp.json();
+  // 拉取失败（网络异常/服务端错误/非 JSON/格式异常）时保留上一次成功数据与界面不变，
+  // 避免每 60s 轮询产生未捕获的 Promise rejection 或用空数据覆盖表格
+  let newData;
+  try {
+    const resp = await fetch('/api/data');
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    newData = await resp.json();
+    if (!Array.isArray(newData)) throw new Error('响应不是数组');
+  } catch (e) {
+    console.warn('[loadData] 拉取数据失败，保留上次数据:', e);
+    return;
+  }
   newData.forEach(d => { d._id = buildTestCaseId(d); });
   // 序列化比对：数据未变化时跳过 populateFilters/onFilterChange 的整体重绘，
   // 避免每 60s 轮询都重建整张表格（也保留已展开的历史行/趋势图状态）

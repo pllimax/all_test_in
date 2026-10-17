@@ -129,7 +129,8 @@ if git merge-base "github/$BRANCH" "gitee/$BRANCH" >/dev/null 2>&1; then
     else
         echo "[sync] merge 冲突，改用文件级合并同步 ${SYNC_PATH}..."
         git merge --abort 2>/dev/null || true
-        git checkout -f "github/$BRANCH"
+        git reset --hard "github/$BRANCH" 2>/dev/null || true
+        git clean -fd 2>/dev/null || true
         _file_level_sync
     fi
 else
@@ -149,7 +150,8 @@ elif git pull --no-rebase --no-edit github "$BRANCH" && git push github "$BRANCH
 else
     echo "[sync] push 冲突，改用文件级合并 ${SYNC_PATH} 后重试"
     git merge --abort 2>/dev/null || true
-    git checkout -f "github/$BRANCH"
+    git reset --hard "github/$BRANCH" 2>/dev/null || true
+    git clean -fd 2>/dev/null || true
     _file_level_sync
     git push github "$BRANCH"
 fi

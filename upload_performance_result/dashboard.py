@@ -94,6 +94,11 @@ DEFAULT_IMAGE_VERSION = "a3-cann9.0.0"  # 历史无镜像标签数据的归一�
 DEFAULT_CASE_IMAGE = "a3-cann9.1.0"     # 用例未配置 images 字段时的默认镜像（nightly 主镜像已切换 cann9.1.0）
 VALID_IMAGE_VERSIONS = {"a3-cann9.1.0", "a3-cann9.0.0", "a5"}
 
+# 占位行（未执行行）生成时间窗（天）：仅生成近 N 天及各分支最新一天的占位符。
+# 前端历史窗口默认 7 天、最大 365 天，窗口外的"未执行"行无展示价值；
+# 无时间窗会导致 /api/data payload 与 GitHub job 解析队列随历史数据无限膨胀。
+PLACEHOLDER_HISTORY_DAYS = int(os.environ.get("PLACEHOLDER_HISTORY_DAYS", "90") or "90")
+
 # 用例 → suite 全局映射（构建成功后缓存）
 _suite_case_map = None       # {suite: [case_name, ...]}
 _case_suite_map = None       # {case_name: suite}
@@ -2430,8 +2435,16 @@ def collect_all_data(eval_data=None, accuracy_data=None):
         for r in filtered
     )
 
+    # 占位行时间窗：仅生成近 PLACEHOLDER_HISTORY_DAYS 天 + 各分支最新一天的占位符。
+    # 前端历史窗口（默认 7 天，最大 365 天）之外的"未执行"行没有展示价值，
+    # 全量历史占位行使 payload 与 GitHub job 解析队列随历史数据无限膨胀。
+    _ph_cutoff = (datetime.datetime.now() - datetime.timedelta(days=PLACEHOLDER_HISTORY_DAYS)).strftime("%Y%m%d")
+    branch_latest = {b: max(dates) for b, dates in branch_dates.items() if dates}
+
     for branch, dates in branch_dates.items():
         for date in sorted(dates):
+            if date < _ph_cutoff and date != branch_latest.get(branch):
+                continue
             rid, rwf = run_context.get((branch, date), ("", ""))
             for yaml_name, info in expected.items():
                 labels = info["labels"]
