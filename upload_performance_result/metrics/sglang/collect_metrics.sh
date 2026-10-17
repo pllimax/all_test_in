@@ -293,6 +293,10 @@ echo "========== 配置信息 =========="
 echo "源目录基础路径: ${SRC_BASE}"
 if [ -n "${WF_FILTER}" ]; then
     echo "workflow 过滤:  ${WF_FILTER} (白名单前缀匹配)"
+    if [ -z "${BRANCH:-}" ]; then
+        echo "警告: WF_FILTER 与日期模式（无 --branch）同用时，按 SRC_BASE 下第二段目录名前缀匹配；"
+        echo "      旧日期结构（{日期}/{用例名}-...）无 workflow 段，可能全部被过滤，建议仅分支模式使用。"
+    fi
 else
     echo "workflow 过滤:  无 (收集全部 workflow)"
 fi
@@ -468,14 +472,26 @@ for CURRENT_DATE in "${DATES[@]}"; do
             continue
         fi
 
-        # 非分支模式：仅收集实际修改日期与请求日期一致的文件。
-        # 否则 find 会命中全树所有历史文件，导致指定单日收集偏多、
-        # 同一文件被多个日期重复收集。
-        if [ -z "${BRANCH:-}" ]; then
+        # 日期过滤与文件名日期标记：
+        #   分支模式：文件名日期标记取 CI 运行目录中的 run 日期（幂等，重复收集不产生新文件）；
+        #             显式指定日期时按 run 日期过滤（否则会扫到全树历史 CI 目录，
+        #             且此前把历史文件统一按 CURRENT_DATE 命名，造成跨日期错标污染）。
+        #   日期模式：仅收集实际修改日期与请求日期一致的文件，
+        #             否则 find 会命中全树所有历史文件，导致指定单日收集偏多、
+        #             同一文件被多个日期重复收集。
+        top_info=$(_ci_top_level "${src_file}")
+        if [ -n "${BRANCH:-}" ]; then
+            run_date=$(_ci_run_date "${top_info%%|*}")
+            if [ ${#SPECIFIED_DATES[@]} -gt 0 ] && [ "${run_date}" != "${CURRENT_DATE}" ]; then
+                continue
+            fi
+            MARK_DATE="${run_date}"
+        else
             actual_date=$(_mtime_date "${mtime_epoch}")
             if [ "${actual_date}" != "${CURRENT_DATE}" ]; then
                 continue
             fi
+            MARK_DATE="${CURRENT_DATE}"
         fi
 
         # 计算目标目录（分支模式按 CI 目录，否则按实际修改日期）
@@ -485,15 +501,6 @@ for CURRENT_DATE in "${DATES[@]}"; do
             continue
         fi
         mkdir -p "${PERF_TARGET_DIR}"
-
-        # 分支模式且未显式指定日期时，文件名日期标记取 CI 运行目录中的 run 日期，
-        # 而非"今天"，保证同一运行结果被多次定时收集时文件名不变（幂等，不产生重复文件）
-        top_info=$(_ci_top_level "${src_file}")
-        if [ -n "${BRANCH:-}" ] && [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
-            MARK_DATE=$(_ci_run_date "${top_info%%|*}")
-        else
-            MARK_DATE="${CURRENT_DATE}"
-        fi
 
         dst_file="${PERF_TARGET_DIR}/${subdir_name_clean}__${MARK_DATE}.txt"
         cp "${src_file}" "${dst_file}"
@@ -570,12 +577,21 @@ for CURRENT_DATE in "${DATES[@]}"; do
             continue
         fi
 
-        # 非分支模式：仅收集实际修改日期与请求日期一致的文件（与性能收集保持一致）
-        if [ -z "${BRANCH:-}" ]; then
+        # 日期过滤与文件名日期标记（与性能收集保持一致，详见 perf 循环同位置注释）：
+        # 分支模式按 CI 目录 run 日期过滤并命名；日期模式按文件 mtime 过滤并以请求日期命名。
+        top_info=$(_ci_top_level "${eval_src}")
+        if [ -n "${BRANCH:-}" ]; then
+            run_date=$(_ci_run_date "${top_info%%|*}")
+            if [ ${#SPECIFIED_DATES[@]} -gt 0 ] && [ "${run_date}" != "${CURRENT_DATE}" ]; then
+                continue
+            fi
+            MARK_DATE="${run_date}"
+        else
             actual_date=$(_mtime_date "${mtime_epoch}")
             if [ "${actual_date}" != "${CURRENT_DATE}" ]; then
                 continue
             fi
+            MARK_DATE="${CURRENT_DATE}"
         fi
 
         # 计算目标目录（分支模式按 CI 目录 + /eval，否则按实际修改日期 + /eval）
@@ -585,14 +601,6 @@ for CURRENT_DATE in "${DATES[@]}"; do
             continue
         fi
         mkdir -p "${EVAL_TARGET_DIR}"
-
-        # 分支模式且未显式指定日期时，文件名日期标记取 CI 运行目录中的 run 日期（幂等）
-        top_info=$(_ci_top_level "${eval_src}")
-        if [ -n "${BRANCH:-}" ] && [ ${#SPECIFIED_DATES[@]} -eq 0 ]; then
-            MARK_DATE=$(_ci_run_date "${top_info%%|*}")
-        else
-            MARK_DATE="${CURRENT_DATE}"
-        fi
 
         # 命名: {tc_name_clean}__{源目录日期}.log
         eval_dst="${EVAL_TARGET_DIR}/${ts_name_clean}__${MARK_DATE}.log"
