@@ -788,8 +788,18 @@ def _attach_script_urls(items):
                     if not ph_suite:
                         ph_suite = JOB_LOG_METRIC_FALLBACK_SUITES.get(yaml_name)
                     if ph_suite:
-                        # 仅取镜像一致的主变体（与下方 per-case 继承一致，不做跨变体兜底）
-                        for name in _suite_name_candidates(ph_suite, item.get("image_norm", ""))[:1]:
+                        # 镜像感知候选：优先本镜像变体；本镜像变体 job 不在本 run
+                        # （如 CI 切单镜像后已无 -cann910 后缀 job）而另一变体存在
+                        # 时切换到另一变体。run 内只会执行单镜像的 suite job，
+                        # job 存在性校验保证双镜像场景不串镜像。
+                        ph_cands = _suite_name_candidates(ph_suite, item.get("image_norm", ""))
+                        if (
+                            len(ph_cands) > 1
+                            and ph_cands[0] not in jobs_for_run
+                            and ph_cands[1] in jobs_for_run
+                        ):
+                            ph_cands = ph_cands[::-1]
+                        for name in ph_cands[:1]:
                             if name in jobs_for_run:
                                 ph_job = jobs_for_run[name]
                                 break
@@ -855,10 +865,21 @@ def _attach_script_urls(items):
             # 镜像感知：优先取与本行镜像一致的套件变体日志
             # （cann9.1.0 行 → -cann910 后缀变体，其余 → 原套件名）；
             # 主变体无该用例时兜底另一变体，两个变体都没抓到则走下方反查。
-            # 占位行仅接受主变体（不做跨变体兜底/反查）：占位 = 本镜像当日
-            # 无数据，另一镜像变体日志里的执行证据不能代表本镜像行。
+            # 占位行仅读唯一存在 job 的变体（见下方镜像安全逻辑）。
             suite_candidates = _suite_name_candidates(suite, item.get("image_norm", ""))
             if placeholder:
+                # 占位行默认仅读本镜像变体；本镜像变体 suite job 不在本 run
+                # （如 CI 切单镜像后已无 -cann910 后缀 job）而另一变体存在时
+                # 切换变体。run 内只会执行单镜像的 suite job（双镜像时代的
+                # run 也只含本镜像后缀变体），job 存在性校验保证不串镜像；
+                # 两变体 job 都不存在时维持仅主变体，不放宽。
+                jobs_ph = jobs_cache.get((repo, run_id)) or {}
+                if (
+                    len(suite_candidates) > 1
+                    and suite_candidates[0] not in jobs_ph
+                    and suite_candidates[1] in jobs_ph
+                ):
+                    suite_candidates = suite_candidates[::-1]
                 suite_candidates = suite_candidates[:1]
             for v in suite_candidates:
                 e = func_log_cache.get((repo, run_id, v, is_function))
@@ -870,10 +891,14 @@ def _attach_script_urls(items):
                     entry = e
                     break
         if entry is None:
-            if placeholder:
+            if placeholder and suite:
+                # 已知 suite 且按上方镜像规则取完候选仍无该用例结果：
+                # 本镜像当日确实无执行证据，维持「未执行」
                 continue
             # 用例未通过注册表映射到 suite（注册表稀疏检出可能滞后于社区新增用例）：
-            # 从已解析的 suite job 日志中反查该用例，避免实际已执行却显示「未执行」
+            # 从已解析的 suite job 日志中反查该用例，避免实际已执行却显示「未执行」。
+            # 占位行（注册表完全无映射）同样允许反查：map 只包含本 run 实际执行的
+            # job 日志解析结果（run 单镜像执行），`base in map` 过滤天然镜像安全。
             for (r, rid, s, f), e in func_log_cache.items():
                 if (r, rid) == (repo, run_id) and base in e.get("map", {}):
                     entry = e
