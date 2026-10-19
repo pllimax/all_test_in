@@ -102,6 +102,7 @@ PLACEHOLDER_HISTORY_DAYS = int(os.environ.get("PLACEHOLDER_HISTORY_DAYS", "90") 
 # 用例 → suite 全局映射（构建成功后缓存）
 _suite_case_map = None       # {suite: [case_name, ...]}
 _case_suite_map = None       # {case_name: suite}
+_nightly_cases = None        # {case_name, ...} 注册表标记 nightly=True 的用例集合
 _suite_map_ts = 0.0
 _suite_map_lock = threading.RLock()  # 保护 suite 映射缓存的并发读写
 
@@ -763,6 +764,7 @@ def _attach_script_urls(items):
     # 用例通过 suite→用例 映射匹配到聚合 job。
     jobs_cache = fetch_run_jobs_for_items(items)
     case_suite_map = get_case_suite_map()
+    nightly_cases = get_nightly_cases()
     for item in items:
         run_id = str(item.get("run_id", "") or "")
         run_url = item.get("run_url", "")
@@ -891,14 +893,30 @@ def _attach_script_urls(items):
                     entry = e
                     break
         if entry is None:
-            if placeholder and suite:
-                # 已知 suite 且按上方镜像规则取完候选仍无该用例结果：
-                # 本镜像当日确实无执行证据，维持「未执行」
-                continue
+            if placeholder:
+                if suite:
+                    # 已知 suite 且按上方镜像规则取完候选仍无该用例结果：
+                    # 本镜像当日确实无执行证据，维持「未执行」
+                    continue
+                # 仅处理 nightly 用例（数据来源含 nightly，或注册表标记
+                # nightly=True）；仅 fulltest 的用例不反查（保持「未执行」）。
+                # source 判定不依赖注册表新鲜度（注册表滞后时 YAML 配置的
+                # 用例仍可命中）；注册表不可用（None）时跳过注册表判定，
+                # 避免同步失败导致 nightly 用例全部失去反查兜底。
+                srcs = str(item.get("source", "") or "").split(",")
+                is_nightly = "nightly" in srcs or not srcs[0]
+                if not is_nightly and nightly_cases is not None:
+                    is_nightly = (
+                        yaml_name in nightly_cases
+                        or ("test_npu_" + base) in nightly_cases
+                    )
+                if not is_nightly:
+                    continue
             # 用例未通过注册表映射到 suite（注册表稀疏检出可能滞后于社区新增用例）：
             # 从已解析的 suite job 日志中反查该用例，避免实际已执行却显示「未执行」。
-            # 占位行（注册表完全无映射）同样允许反查：map 只包含本 run 实际执行的
-            # job 日志解析结果（run 单镜像执行），`base in map` 过滤天然镜像安全。
+            # 占位行（注册表完全无映射的 nightly 用例）同样允许反查：map 只包含
+            # 本 run 实际执行的 job 日志解析结果（run 单镜像执行），
+            # `base in map` 过滤天然镜像安全。
             for (r, rid, s, f), e in func_log_cache.items():
                 if (r, rid) == (repo, run_id) and base in e.get("map", {}):
                     entry = e
@@ -3051,7 +3069,7 @@ def sync_suite_registry():
                     return
 
         with _suite_map_lock:
-            _suite_case_map, _case_suite_map = _build_suite_maps_from_registry(repo_root)
+            _suite_case_map, _case_suite_map, _nightly_cases = _build_suite_maps_from_registry(repo_root)
             _suite_map_ts = time.time()
         n_suites = len(_suite_case_map) if _suite_case_map else 0
         print(f"[suite] 构建 suite→用例 映射完成: {n_suites} 个 suite")
@@ -3060,16 +3078,18 @@ def sync_suite_registry():
 
 
 def _build_suite_maps_from_registry(repo_root):
-    """扫描用例注册目录，解析 register_npu_ci 调用，返回 (suite_cases, case_suite)。
+    """扫描用例注册目录，解析 register_npu_ci 调用，返回 (suite_cases, case_suite, nightly_cases)。
 
     对每个 .py 文件解析所有 register_npu_ci(...) 调用参数，优先记录
-    nightly=True 且 suite 非空的 suite（聚合 suite job 命名规则）。
+    nightly=True 且 suite 非空的 suite（聚合 suite job 命名规则）；
+    nightly_cases 收集所有标记 nightly=True 的用例（无论是否配置 suite）。
     """
     suite_cases = {}
     case_suite = {}
+    nightly_cases = set()
     scan_root = os.path.join(repo_root, SUITE_REGISTRY_SUBDIR)
     if not os.path.isdir(scan_root):
-        return suite_cases, case_suite
+        return suite_cases, case_suite, nightly_cases
     for root, _, files in os.walk(scan_root):
         for fname in sorted(files):
             if not fname.endswith(".py"):
@@ -3099,6 +3119,8 @@ def _build_suite_maps_from_registry(repo_root):
                 args_block = content[m.end() - 1:end]
                 suite_m = re.search(r"suite\s*=\s*['\"]([^'\"]+)['\"]", args_block)
                 nightly_m = re.search(r"nightly\s*=\s*True", args_block)
+                if nightly_m:
+                    nightly_cases.add(case_name)
                 if suite_m and nightly_m:
                     suite = suite_m.group(1).strip()
                     if suite:
@@ -3111,23 +3133,34 @@ def _build_suite_maps_from_registry(repo_root):
                         if case_name not in case_suite or \
                            (suite.startswith("nightly-") and not case_suite[case_name].startswith("nightly-")):
                             case_suite[case_name] = suite
-    return suite_cases, case_suite
+    return suite_cases, case_suite, nightly_cases
 
 
 def get_case_suite_map():
     """返回用例 → suite 映射（懒构建，未同步时尝试本地已缓存映射）。"""
-    global _suite_case_map, _case_suite_map, _suite_map_ts
+    global _suite_case_map, _case_suite_map, _nightly_cases, _suite_map_ts
     with _suite_map_lock:
         if _case_suite_map is None:
             # 尝试从本地缓存目录直接解析（无需网络）
             try:
                 repo_root = SUITE_REGISTRY_CACHE_DIR
                 if os.path.isdir(os.path.join(repo_root, ".git")):
-                    _suite_case_map, _case_suite_map = _build_suite_maps_from_registry(repo_root)
+                    _suite_case_map, _case_suite_map, _nightly_cases = _build_suite_maps_from_registry(repo_root)
                     _suite_map_ts = time.time()
             except Exception:
                 _case_suite_map = {}
         return _case_suite_map or {}
+
+
+def get_nightly_cases():
+    """返回注册表标记 nightly=True 的用例名集合（随 suite 映射一同构建）。
+
+    注册表不可用时返回 None，调用方应退回不限制行为（避免同步失败
+    导致所有用例被误判为仅 fulltest）。
+    """
+    get_case_suite_map()
+    with _suite_map_lock:
+        return _nightly_cases
 
 
 # cann9.1.0 镜像行的 suite job 名后缀（CI 矩阵对 cann9.1.0 镜像的 suite job
