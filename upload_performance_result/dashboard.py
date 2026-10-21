@@ -2033,15 +2033,26 @@ def _load_testcases_config():
             print(f"[testcases-config] Warning: {TESTCASES_CONFIG_FILE} 格式异常（应为对象），忽略")
             return None
         # 补全动态推导字段，供 collect_all_data / 占位符逻辑使用
+        # 功能用例仅在 nightly 流水线执行，source 不含 nightly 的功能用例
+        # 在平台上永远拿不到执行数据，直接排除，不在界面上展示
+        filtered = {}
+        skipped_func = 0
         for name, info in data.items():
             if not isinstance(info, dict):
+                continue
+            srcs = [s.strip() for s in str(info.get("source", "")).split(",") if s.strip()]
+            if info.get("type") == "function" and "nightly" not in srcs:
+                skipped_func += 1
                 continue
             info["labels"] = parse_yaml_test_name(name)
             info["yaml_name"] = name
             # 镜像版本：未配置默认 [a3-cann9.0.0]，非法值告警忽略
             info["images"] = _parse_config_images(info.get("images"), name)
-        print(f"[testcases-config] 从本地配置文件加载 {len(data)} 个需展示用例: {TESTCASES_CONFIG_FILE}")
-        return data
+            filtered[name] = info
+        print(f"[testcases-config] 从本地配置文件加载 {len(filtered)} 个需展示用例: {TESTCASES_CONFIG_FILE}")
+        if skipped_func:
+            print(f"[testcases-config] 已排除 {skipped_func} 个非 nightly 来源的功能用例（不展示）")
+        return filtered
     except Exception as e:
         print(f"[testcases-config] Warning: 加载配置文件失败 {e}，回退到动态扫描")
         return None
