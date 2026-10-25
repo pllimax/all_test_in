@@ -1,0 +1,131 @@
+2026-10-25 16:17:35 - evalscope - INFO: Running with native backend
+2026-10-25 16:17:35 - evalscope - INFO: Dump task config to /root/.cache/tests/output/main-20261026-0009-40210324369-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_in64k_out1k_prefix90_50ms_aime26/20261025_161735/configs/task_config.yaml
+2026-10-25 16:17:35 - evalscope - INFO: {
+    "model_id": "Qwen3.6-35B-A3B",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "aime26"
+    ],
+    "dataset_args": {},
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20261026-0009-40210324369-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_in64k_out1k_prefix90_50ms_aime26/20261025_161735",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20066/v1/chat/completions",
+    "api_key": "**********",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge": {
+        "strategy": "auto",
+        "models": [],
+        "contract": {
+            "system_prompt": null,
+            "prompt_template": null,
+            "score_mapping": null,
+            "score_type": "pattern"
+        },
+        "repeats": 1,
+        "position_swap": "auto",
+        "aggregation": "mean",
+        "min_valid_judges": 1
+    },
+    "analysis_report": false,
+    "collect_perf": true,
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "evalscope_version": "1.14.0",
+    "model": "Qwen3.6-35B-A3B",
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 65536,
+        "temperature": 0.0,
+        "repetition_penalty": 1.08
+    },
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "agent_config": null
+}
+2026-10-25 16:17:35 - evalscope - INFO: Start loading benchmark dataset: aime26
+2026-10-25 16:17:35 - evalscope - WARNING: aime26: 30 samples to evaluate (1 subset, --limit=100000 per subset). Remove `--limit` for a formal evaluation.
+2026-10-25 16:17:35 - evalscope - INFO: Subsets of aime26: ['default']
+2026-10-25 16:17:35 - evalscope - INFO: Loading model for prediction...
+2026-10-25 16:17:35 - evalscope - INFO: Creating model Qwen3.6-35B-A3B with eval_type=openai_api base_url=http://127.0.0.1:20066/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 65536, 'temperature': 0.0, 'repetition_penalty': 1.08, 'anthropic_cache_strategy': 'evaluation'}, model_args={}
+2026-10-25 16:17:35 - evalscope - INFO: Model loaded successfully.
+2026-10-25 16:18:35 - evalscope - INFO: Evaluating[aime26]   0%| 0/30 [Elapsed: 01:00 < Remaining: ?, ?it/s]
+2026-10-25 16:19:35 - evalscope - INFO: Evaluating[aime26]   3%| 1/30 [Elapsed: 02:00 < Remaining: 43:31, 90.04s/it]
+2026-10-25 16:20:35 - evalscope - INFO: Evaluating[aime26]   7%| 2/30 [Elapsed: 03:00 < Remaining: 30:17, 64.90s/it]
+2026-10-25 16:21:35 - evalscope - INFO: Evaluating[aime26]  10%| 3/30 [Elapsed: 04:00 < Remaining: 32:43, 72.72s/it]
+2026-10-25 16:22:35 - evalscope - INFO: Evaluating[aime26]  10%| 3/30 [Elapsed: 05:00 < Remaining: 32:43, 72.72s/it]
+2026-10-25 16:23:36 - evalscope - INFO: Evaluating[aime26]  23%| 7/30 [Elapsed: 06:01 < Remaining: 11:38, 30.36s/it]
+2026-10-25 16:24:36 - evalscope - INFO: Evaluating[aime26]  37%| 11/30 [Elapsed: 07:01 < Remaining: 05:05, 16.10s/it]
+2026-10-25 16:25:36 - evalscope - INFO: Evaluating[aime26]  50%| 15/30 [Elapsed: 08:01 < Remaining: 03:36, 14.42s/it]
+2026-10-25 16:26:36 - evalscope - INFO: Evaluating[aime26]  60%| 18/30 [Elapsed: 09:01 < Remaining: 03:25, 17.08s/it]
+2026-10-25 16:27:36 - evalscope - INFO: Evaluating[aime26]  70%| 21/30 [Elapsed: 10:01 < Remaining: 03:15, 21.74s/it]
+2026-10-25 16:28:36 - evalscope - INFO: Evaluating[aime26]  73%| 22/30 [Elapsed: 11:01 < Remaining: 03:01, 22.72s/it]
+2026-10-25 16:29:36 - evalscope - INFO: Evaluating[aime26]  87%| 26/30 [Elapsed: 12:01 < Remaining: 01:07, 16.85s/it]
+2026-10-25 16:30:36 - evalscope - INFO: Evaluating[aime26]  90%| 27/30 [Elapsed: 13:01 < Remaining: 01:25, 28.60s/it]
+2026-10-25 16:31:36 - evalscope - INFO: Evaluating[aime26]  90%| 27/30 [Elapsed: 14:01 < Remaining: 01:25, 28.60s/it]
+2026-10-25 16:32:37 - evalscope - INFO: Evaluating[aime26]  90%| 27/30 [Elapsed: 15:01 < Remaining: 01:25, 28.60s/it]
+2026-10-25 16:33:37 - evalscope - INFO: Evaluating[aime26]  97%| 29/30 [Elapsed: 16:01 < Remaining: 00:58, 58.18s/it]
+2026-10-25 16:34:03 - evalscope - INFO: Evaluating[aime26] 100%| 30/30 [Elapsed: 16:28 < Remaining: 00:00, 49.65s/it]
+2026-10-25 16:34:03 - evalscope - INFO: aime26: predictions complete, aggregating scores...
+2026-10-25 16:34:03 - evalscope - INFO: Aggregating scores for subset: default
+2026-10-25 16:34:03 - evalscope - INFO: Generating report...
+2026-10-25 16:34:03 - evalscope - INFO: 
+aime26 report table:
+┌─────────────────┬───────────┬────────────┬──────────┬───────┬─────────┐
+│ Model           │ Dataset   │ Metric     │ Subset   │   Num │ Score   │
+├─────────────────┼───────────┼────────────┼──────────┼───────┼─────────┤
+│ Qwen3.6-35B-A3B │ AIME-2026 │ Accuracy ↑ │ default  │    30 │ 86.7%   │
+└─────────────────┴───────────┴────────────┴──────────┴───────┴─────────┘ 
+
+2026-10-25 16:34:03 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-10-25 16:34:03 - evalscope - INFO: Dump report to: /root/.cache/tests/output/main-20261026-0009-40210324369-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_in64k_out1k_prefix90_50ms_aime26/20261025_161735/reports/Qwen3.6-35B-A3B/aime26.json 
+
+2026-10-25 16:34:03 - evalscope - INFO: 
+aime26 perf table:
+Model            Dataset      Num  Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt       Avg In    Avg Out
+---------------  ---------  -----  ---------  ----------  ----------  -----------  --------  ---------
+Qwen3.6-35B-A3B  AIME-2026     30  515.486 s  841.4 ms    16.3 ms     62.41 tok/s       163      32171
+
+2026-10-25 16:34:03 - evalscope - INFO: Benchmark aime26 evaluation finished.
+2026-10-25 16:34:03 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 16:28 < Remaining: 00:00, 988.70s/benchmark]
+2026-10-25 16:34:03 - evalscope - INFO: Overall report table: 
+┌─────────────────┬───────────┬────────────┬──────────┬───────┬─────────┐
+│ Model           │ Dataset   │ Metric     │ Subset   │   Num │ Score   │
+├─────────────────┼───────────┼────────────┼──────────┼───────┼─────────┤
+│ Qwen3.6-35B-A3B │ AIME-2026 │ Accuracy ↑ │ default  │    30 │ 86.7%   │
+└─────────────────┴───────────┴────────────┴──────────┴───────┴─────────┘ 
+
+2026-10-25 16:34:03 - evalscope - INFO: Overall perf table: 
+Model            Dataset      Num  Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt       Avg In    Avg Out
+---------------  ---------  -----  ---------  ----------  ----------  -----------  --------  ---------
+Qwen3.6-35B-A3B  AIME-2026     30  515.486 s  841.4 ms    16.3 ms     62.41 tok/s       163      32171 
+
+2026-10-25 16:34:04 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/main-20261026-0009-40210324369-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_in64k_out1k_prefix90_50ms_aime26/20261025_161735/reports/report.html
+2026-10-25 16:34:04 - evalscope - INFO: Finished evaluation for Qwen3.6-35B-A3B on ['aime26']
+2026-10-25 16:34:04 - evalscope - INFO: Output directory: /root/.cache/tests/output/main-20261026-0009-40210324369-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_qwen3_6_35b_a3b_1p_in64k_out1k_prefix90_50ms_aime26/20261025_161735
+
+# [collect_metrics] 文件原始修改时间: 2026-10-26 00:34:04
