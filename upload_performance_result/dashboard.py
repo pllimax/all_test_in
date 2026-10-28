@@ -631,8 +631,58 @@ def _get_git_branch(repo_root):
     return ""
 
 
+def _script_path_priority(rel_path):
+    """用例脚本路径优先级（数值越小越优先）：同一脚本名在多个目录存在时，
+    优先取 NPU nightly 实际执行的路径，避免链接指向 xpu/ 等无关变体。"""
+    p = "/" + rel_path.lower()
+    for rank, marker in enumerate(("/registered/npu/", "/registered/ascend/",
+                                   "/registered/unit/", "/registered/xpu/")):
+        if marker in p:
+            return rank
+    return 9
+
+
+def _list_registered_scripts(repo_root):
+    """列出 test/registered 下受版本控制的用例脚本（相对路径，按优先级排序）。
+
+    优先 `git ls-files`：源码仓为稀疏检出（仅 ascend/npu，如 nightly 仓），
+    索引中仍保留全部受控路径，可覆盖 unit/ 等未检出目录的用例脚本，
+    避免这些用例的脚本链接缺失（如 test_vision_backend_selection）。
+    git 不可用或仓库异常时回退到 ascend/npu 目录遍历。
+    """
+    rels = []
+    try:
+        result = _run(
+            ["git", "ls-files", "test/registered"],
+            cwd=repo_root, capture_output=True, text=True, timeout=30,
+        )
+        if result.returncode == 0:
+            rels = [
+                ln.strip() for ln in result.stdout.splitlines()
+                if ln.strip().endswith(".py")
+                and not os.path.basename(ln.strip()).startswith("__")
+            ]
+    except Exception:
+        rels = []
+    if not rels:
+        for sub in ("ascend", "npu"):
+            scripts_root = os.path.join(repo_root, "test", "registered", sub)
+            if not os.path.isdir(scripts_root):
+                continue
+            for dirpath, _, filenames in os.walk(scripts_root):
+                for filename in filenames:
+                    if not filename.endswith(".py") or filename.startswith("__"):
+                        continue
+                    rels.append(
+                        os.path.relpath(
+                            os.path.join(dirpath, filename), repo_root
+                        ).replace("\\", "/")
+                    )
+    return sorted(rels, key=lambda r: (_script_path_priority(r), r))
+
+
 def collect_script_urls(force=False):
-    """扫描各测试脚本仓（test/registered/{ascend|npu}），构建脚本 → Git 平台链接映射。
+    """扫描各测试脚本仓（test/registered），构建脚本 → Git 平台链接映射。
     每次启动 dashboard 时通过 force=True 重建；此后每 SCRIPT_URLS_CACHE_TTL 秒自动重扫。
     """
     global _script_urls_cache, _script_urls_cache_ts
@@ -651,20 +701,11 @@ def collect_script_urls(force=False):
         branch = _get_git_branch(repo_root)
         if not web_base or not branch:
             continue
-        for sub in ("ascend", "npu"):
-            scripts_root = os.path.join(repo_root, "test", "registered", sub)
-            if not os.path.isdir(scripts_root):
-                continue
-            for dirpath, _, filenames in os.walk(scripts_root):
-                for filename in filenames:
-                    if not filename.endswith(".py") or filename.startswith("__"):
-                        continue
-                    script_name = filename[:-3]
-                    rel_path = os.path.relpath(
-                        os.path.join(dirpath, filename), repo_root
-                    ).replace("\\", "/")
-                    url = f"{web_base}/blob/{branch}/{rel_path}"
-                    results.setdefault(script_name, {})[src_name] = url
+        for rel_path in _list_registered_scripts(repo_root):
+            script_name = os.path.basename(rel_path)[:-3]
+            url = f"{web_base}/blob/{branch}/{rel_path}"
+            # 同名脚本多目录并存时保留优先级最高的路径（首次写入即最优）
+            results.setdefault(script_name, {}).setdefault(src_name, url)
 
     with _script_urls_lock:
         _script_urls_cache = results
@@ -2847,6 +2888,25 @@ def _is_sparse_worktree(repo_root):
         return False
 
 
+def _clear_stale_git_lock(repo_root, max_age=600):
+    """清理上次 fetch/reset 超时被强制中断时遗留的 git 锁文件（超过 max_age 秒视为陈旧）。
+    仅清理明显的陈锁，返回是否清理过，供调用方重试一次。"""
+    git_dir = os.path.join(repo_root, ".git")
+    if not os.path.isdir(git_dir):
+        return False
+    now = time.time()
+    cleared = False
+    for name in ("shallow.lock", "index.lock", "FETCH_HEAD.lock"):
+        p = os.path.join(git_dir, name)
+        try:
+            if os.path.isfile(p) and now - os.path.getmtime(p) > max_age:
+                os.remove(p)
+                cleared = True
+        except OSError:
+            pass
+    return cleared
+
+
 def _remove_dir_force(path):
     """可靠删除目录：Windows 上 .git 文件常带只读属性，shutil.rmtree 会失败，
     先解除只读再删除。返回是否成功。"""
@@ -3040,15 +3100,30 @@ def sync_suite_registry():
             if not _is_sparse_worktree(repo_root):
                 _remove_dir_force(repo_root)
             else:
+                fetch_cmd = [
+                    "git", "fetch", SUITE_REGISTRY_REPO_URL,
+                    SUITE_REGISTRY_BRANCH, "--depth=1",
+                ]
                 result = _run(
-                    ["git", "fetch", "origin", SUITE_REGISTRY_BRANCH, "--depth=1"],
-                    cwd=repo_root, capture_output=True, text=True, timeout=120,
+                    fetch_cmd, cwd=repo_root, capture_output=True, text=True, timeout=180,
                 )
+                if result.returncode != 0 and _clear_stale_git_lock(repo_root):
+                    # 上次 fetch 超时被中断会留下 .git/shallow.lock 等锁文件，
+                    # 后续每次 fetch 都会失败并一直用陈旧映射（用例→suite 错配，
+                    # 表现为用例实际通过却显示「未执行」）。清理陈锁后重试一次。
+                    print(f"[suite] retry after clearing stale lock: {result.stderr.strip()}")
+                    result = _run(
+                        fetch_cmd, cwd=repo_root, capture_output=True, text=True, timeout=180,
+                    )
                 if result.returncode != 0:
                     print(f"[suite] fetch failed: {result.stderr.strip()}")
                 else:
+                    # 显式按 URL 抓取（避免缓存仓 origin 被改成镜像分支导致
+                    # 映射停留在旧版本），并 reset 到 FETCH_HEAD：`git fetch
+                    # origin <branch>` 不更新 origin/<branch> 引用，reset 到
+                    # origin/main 会静默失败、工作区永远停留在旧提交。
                     _run(
-                        ["git", "reset", "--hard", f"origin/{SUITE_REGISTRY_BRANCH}"],
+                        ["git", "reset", "--hard", "FETCH_HEAD"],
                         cwd=repo_root, capture_output=True, text=True, timeout=60,
                     )
         if not os.path.isdir(os.path.join(repo_root, ".git")):
