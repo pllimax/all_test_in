@@ -14,13 +14,13 @@ base-b-test-2-npu-a3,test/registered/npu/basic_function/parallel_strategy/expert
 base-b-test-2-npu-a3,test/registered/npu/basic_function/parallel_strategy/expert_parallelism/test_npu_moe_dense_tp_size.py,DeepSeek-Coder-V2-Lite 设 moe-dense-tp-size=1 加 EPLB，验证 GSM8K>0.79,2.0
 base-b-test-2-npu-a3,test/registered/npu/basic_function/parallel_strategy/expert_parallelism/test_npu_moe_runner_backend.py,DeepSeek-Coder-V2-Lite 验证 moe-runner-backend 取 triton/auto 时推理正常,3.2
 base-b-test-2-npu-a3,test/registered/npu/basic_function/runtime_opts/test_npu_mla_fia_hicache_bf16.py,Moonlight-16B-A3B 开 FIA 与 HiCache bf16 TP2，验证 evalscope GSM8K≥0.83,2.6
-base-b-test-2-npu-a3,test/registered/npu/basic_function/runtime_opts/test_npu_tp2_bf16.py,Qwen2.5-7B TP2 bf16，验证 GSM8K 精度不低于 0.85,1.6
+base-b-test-2-npu-a3,test/registered/npu/basic_function/runtime_opts/test_npu_tp2_bf16.py,Qwen2.5-7B TP2 bf16，验证 GSM8K 精度不低于 0.85,1.5
 base-b-test-2-npu-a3,test/registered/npu/basic_function/runtime_opts/test_npu_tp2_fia_bf16.py,Qwen2.5-7B TP2 开 ASCEND_USE_FIA 注意力，验证 GSM8K 精度不低于 0.85,1.2
 base-b-test-4-npu-a3,test/registered/npu/basic_function/dp_attn/test_npu_dp_attention.py,多模型验证 DP 注意力：约束输出、mixed-chunk、retract 及 VL 图像推理,11.6
 base-b-test-4-npu-a3,test/registered/npu/basic_function/pd_disaggregation/test_npu_pd_disaggregation.py,Qwen3-32B PD 分离配 HiCache 文件存储，验证缓存命中与多轮缓存 token 递增,4.7
 base-b-test-4-npu-a3,test/registered/npu/basic_function/quant/test_npu_w4a4_quantization.py,Qwen3-32B W4A4 量化 TP4 部署，验证 GSM8K 精度不低于 0.80,2.0
 base-b-test-4-npu-a3,test/registered/npu/basic_function/speculative_inference/test_npu_speculative_multi_npu.py,Qwen3-32B W8A8 TP4 EAGLE3，验证 draft 加载格式 dummy 与 revision 参数生效,2.5
-base-b-test-8-npu-a3,test/registered/npu/basic_function/parallel_strategy/expert_parallelism/test_npu_eplb_min_rebalancing_utilization_threshold.py,Qwen3-30B-A3B TP8 EPLB，验证利用率阈值 0.05 跳过、0.95 触发再平衡,4.2
+base-b-test-8-npu-a3,test/registered/npu/basic_function/parallel_strategy/expert_parallelism/test_npu_eplb_min_rebalancing_utilization_threshold.py,Qwen3-30B-A3B TP8 EPLB，验证利用率阈值 0.05 跳过、0.95 触发再平衡,4.1
 base-b-test-16-npu-a3,test/registered/npu/basic_function/speculative_inference/test_npu_speculative_moe_a2a_backend.py,DeepSeek-R1-0528 TP16 投机配 ascend_fuseep MoE 通信，验证 GSM8K≥0.95,8.8
 base-c-test-acc-2-npu-a3,test/registered/npu/accuracy/moonshotai_moonlight_16b_a3b/test_npu_moonlight_16b_a3b_bf16_1p_gsm8k.py,Moonlight-16B-A3B bf16 TP2 精度回归，验证 GSM8K≥0.837,12.6
 base-c-test-perf-2-npu-a3,test/registered/npu/performance/qwen3_6_27b/test_npu_qwen3_6_27b_1p_in1024x1024_30_out1024_50ms.py,Qwen3.6-27B 多模态图像 1024x1024 压测，验证 TPOT≤50ms 且吞吐≥800.8 tok/s,7.3
@@ -30,7 +30,7 @@ base-c-test-perf-16-npu-a3,test/registered/npu/performance/qwen3_5_397b/test_npu
 multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[ernie_image_t2i_1npu],ERNIE-Image 文生图单卡端到端（禁 warmup，按请求触发）,3.5
 multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[glm_image_t2i_1npu],GLM-Image 文生图单卡端到端,5.6
 multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[flux_image_t2i_npu],FLUX.1-dev 文生图单卡，含输出一致性校验,3.9
-multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[flux_2_klein_4b_t2i_1npu],FLUX.2-Klein-4B 文生图单卡端到端,1.4
+multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[flux_2_klein_4b_t2i_1npu],FLUX.2-Klein-4B 文生图单卡端到端,1.5
 multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[z_image_t2i_1npu],Z-Image 文生图单卡端到端,1.9
 multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[wan2_1_t2v_1.3b_1_npu],Wan2.1-T2V-1.3B 文生视频单卡端到端,3.6
 multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[joyai_image_edit_ti2i_1npu],JoyAI image-edit 图像编辑单卡（免一致性/组件精度校验）,3.9
