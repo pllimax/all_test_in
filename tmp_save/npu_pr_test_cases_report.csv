@@ -1,0 +1,43 @@
+﻿Suite/Job,用例脚本,测试点（一句话）,用例近期平均执行时长(分)
+base-a-test-npu,test/registered/unit/npu/attention/test_npu_ascend_backend.py,单测 ascend 注意力后端：掩码生成、DSA 索引展开、KV 重排及 MLA 前缀计算正确性,0.2
+base-a-test-npu,test/registered/unit/npu/attention/test_npu_ascend_dsv4_backend.py,单测 DeepSeek V4 ascend 后端：压缩位置填充、draft 缓存定位、Hadamard 与稀疏注意力调度,0.2
+base-b-test-1-npu-a3,test/registered/npu/basic_function/HiCache/test_npu_hicache_mha.py,Qwen2.5-7B 开启层级缓存 HiCache，验证 GSM8K 精度不低于 0.85,1.8
+base-b-test-1-npu-a3,test/registered/npu/basic_function/backends/test_npu_sampling_backend.py,Qwen2.5-7B 用 ascend 采样后端，验证 MMLU≥0.65 且贪心解码批量输出一致,1.2
+base-b-test-1-npu-a3,test/registered/npu/basic_function/quant/test_npu_autoround_dense.py,Qwen3-8B auto-round INT4 稠密量化，验证 GSM8K 精度不低于 0.85,1.5
+base-b-test-1-npu-a3,test/registered/npu/basic_function/quant/test_npu_autoround_moe.py,Qwen3-30B-A3B auto-round INT4 MoE 量化，验证 GSM8K 精度不低于 0.85,5.6
+base-b-test-1-npu-a3,test/registered/npu/basic_function/quant/test_npu_gptq_moe.py,Qwen3-30B-A3B GPTQ INT4 MoE 量化，验证 GSM8K 精度不低于 0.85,3.6
+base-b-test-1-npu-a3,test/registered/npu/basic_function/runtime_opts/test_npu_tp1_bf16.py,Qwen2.5-7B TP1 bf16 基线，验证 GSM8K 精度不低于 0.84,1.2
+base-b-test-1-npu-a3,test/registered/npu/basic_function/speculative_inference/test_npu_basic_sanity_eagle3.py,Qwen3-8B EAGLE3 最小投机配置冒烟：API 契约、解码正确性与 GSM8K≥0.74,1.4
+base-b-test-1-npu-a3,test/registered/npu/basic_function/speculative_inference/test_npu_eagle3.py,Qwen3-8B EAGLE3 投机解码（4 步 draft5、decode 模式），验证 GSM8K≥0.81,1.2
+base-b-test-1-npu-a3,test/registered/unit/layers/attention/test_vision_backend_selection.py,单测视觉注意力后端选择优先级，及 ascend 融合算子对带 mask 输入回退 SDPA,0.2
+base-b-test-2-npu-a3,test/registered/npu/basic_function/parallel_strategy/expert_parallelism/test_npu_expert_distribution_recorder_mode.py,Qwen3-30B-A3B 验证专家分布记录四种模式（stat 等）正常推理并导出 .pt 文件,9.4
+base-b-test-2-npu-a3,test/registered/npu/basic_function/parallel_strategy/expert_parallelism/test_npu_moe_dense_tp_size.py,DeepSeek-Coder-V2-Lite 设 moe-dense-tp-size=1 加 EPLB，验证 GSM8K>0.79,2.0
+base-b-test-2-npu-a3,test/registered/npu/basic_function/parallel_strategy/expert_parallelism/test_npu_moe_runner_backend.py,DeepSeek-Coder-V2-Lite 验证 moe-runner-backend 取 triton/auto 时推理正常,3.2
+base-b-test-2-npu-a3,test/registered/npu/basic_function/runtime_opts/test_npu_mla_fia_hicache_bf16.py,Moonlight-16B-A3B 开 FIA 与 HiCache bf16 TP2，验证 evalscope GSM8K≥0.83,2.6
+base-b-test-2-npu-a3,test/registered/npu/basic_function/runtime_opts/test_npu_tp2_bf16.py,Qwen2.5-7B TP2 bf16，验证 GSM8K 精度不低于 0.85,1.6
+base-b-test-2-npu-a3,test/registered/npu/basic_function/runtime_opts/test_npu_tp2_fia_bf16.py,Qwen2.5-7B TP2 开 ASCEND_USE_FIA 注意力，验证 GSM8K 精度不低于 0.85,1.2
+base-b-test-4-npu-a3,test/registered/npu/basic_function/dp_attn/test_npu_dp_attention.py,多模型验证 DP 注意力：约束输出、mixed-chunk、retract 及 VL 图像推理,11.6
+base-b-test-4-npu-a3,test/registered/npu/basic_function/pd_disaggregation/test_npu_pd_disaggregation.py,Qwen3-32B PD 分离配 HiCache 文件存储，验证缓存命中与多轮缓存 token 递增,4.7
+base-b-test-4-npu-a3,test/registered/npu/basic_function/quant/test_npu_w4a4_quantization.py,Qwen3-32B W4A4 量化 TP4 部署，验证 GSM8K 精度不低于 0.80,2.0
+base-b-test-4-npu-a3,test/registered/npu/basic_function/speculative_inference/test_npu_speculative_multi_npu.py,Qwen3-32B W8A8 TP4 EAGLE3，验证 draft 加载格式 dummy 与 revision 参数生效,2.5
+base-b-test-8-npu-a3,test/registered/npu/basic_function/parallel_strategy/expert_parallelism/test_npu_eplb_min_rebalancing_utilization_threshold.py,Qwen3-30B-A3B TP8 EPLB，验证利用率阈值 0.05 跳过、0.95 触发再平衡,4.2
+base-b-test-16-npu-a3,test/registered/npu/basic_function/speculative_inference/test_npu_speculative_moe_a2a_backend.py,DeepSeek-R1-0528 TP16 投机配 ascend_fuseep MoE 通信，验证 GSM8K≥0.95,8.8
+base-c-test-acc-2-npu-a3,test/registered/npu/accuracy/moonshotai_moonlight_16b_a3b/test_npu_moonlight_16b_a3b_bf16_1p_gsm8k.py,Moonlight-16B-A3B bf16 TP2 精度回归，验证 GSM8K≥0.837,12.6
+base-c-test-perf-2-npu-a3,test/registered/npu/performance/qwen3_6_27b/test_npu_qwen3_6_27b_1p_in1024x1024_30_out1024_50ms.py,Qwen3.6-27B 多模态图像 1024x1024 压测，验证 TPOT≤50ms 且吞吐≥800.8 tok/s,7.3
+base-c-test-perf-2-npu-a3,test/registered/npu/performance/qwen3_6_27b/test_npu_qwen3_6_27b_w8a8_1p_in64k_out1k_50ms.py,Qwen3.6-27B W8A8 长文本 64K 输入压测，验证 TPOT≤50ms 且吞吐≥57.85,5.6
+base-c-test-perf-2-npu-a3,test/registered/npu/performance/qwen3_6_35b_a3b/test_npu_qwen3_6_35b_a3b_1p_in64k_out1k_prefix90_50ms.py,Qwen3.6-35B-A3B 64K 输入 90% 共享前缀压测，验证 TPOT≤50ms 且吞吐≥660,5.1
+base-c-test-perf-16-npu-a3,test/registered/npu/performance/qwen3_5_397b/test_npu_qwen3_5_397b_w4a8_8p_in3k5_out1k5_50ms.py,Qwen3.5-397B W4A8 16 卡 TP 加 DP 注意力大并发压测，验证 TPOT≤50ms 且吞吐≥5415,9.7
+multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[ernie_image_t2i_1npu],ERNIE-Image 文生图单卡端到端（禁 warmup，按请求触发）,3.5
+multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[glm_image_t2i_1npu],GLM-Image 文生图单卡端到端,5.6
+multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[flux_image_t2i_npu],FLUX.1-dev 文生图单卡，含输出一致性校验,3.9
+multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[flux_2_klein_4b_t2i_1npu],FLUX.2-Klein-4B 文生图单卡端到端,1.4
+multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[z_image_t2i_1npu],Z-Image 文生图单卡端到端,1.9
+multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[wan2_1_t2v_1.3b_1_npu],Wan2.1-T2V-1.3B 文生视频单卡端到端,3.6
+multimodal-gen-test-1-npu-a3（suite 1-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_1_npu.py::[joyai_image_edit_ti2i_1npu],JoyAI image-edit 图像编辑单卡（免一致性/组件精度校验）,3.9
+multimodal-gen-test-4-npu-a3（suite 2-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_2_npu.py::[flux_2_image_t2i_2npu],FLUX.2 文生图双卡 TP2 端到端,4.3
+multimodal-gen-test-4-npu-a3（suite 2-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_2_npu.py::[qwen_image_t2i_2npu],Qwen-Image 文生图双卡 ring-attention（ulysses1+ring2）,5.4
+multimodal-gen-test-4-npu-a3（suite 2-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_2_npu.py::[wan2_2_t2v_14b_w8a8_2npu],Wan2.2-T2V-A14B W8A8 文生视频双卡 ulysses TP2,7.5
+multimodal-gen-test-4-npu-a3（suite 2-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_2_npu.py::[minimax_h3_t2va_2npu],MiniMax-H3 文生视频+音频双卡 TP2（CacheDiT+laser_attn）,8.2
+multimodal-gen-test-4-npu-a3（suite 2-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_2_npu.py::[ltx_2_ti2va_2npu],LTX-2 图文生视频+音频双卡 ulysses TP2,10.7
+multimodal-gen-test-4-npu-a3（suite 2-npu）,python/sglang/multimodal_gen/test/server/ascend/test_server_2_npu.py::[mova_360p_ti2va_2npu],MoVA-360P 图文生视频+音频双卡 TP2（DiT 层级卸载）,3.6
+multimodal-gen-test-4-npu-a3（suite 2-npu）,python/sglang/multimodal_gen/test/server/ascend/test_glm_image_distributed.py,GLM-Image 双卡分布式推理独立测试脚本,7.6
