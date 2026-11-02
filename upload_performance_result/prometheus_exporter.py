@@ -338,9 +338,9 @@ def parse_filename(filename):
     if extra_bs:
         output_len = (output_len + "_" + extra_bs) if output_len else extra_bs
 
-    # Extract parallelism (e.g., _1p1d_32p, _8p, _2p1d_32p, _1p)
+    # Extract parallelism (e.g., _1p1d_32p, _8p, _2p1d_32p, _2p2d_32p_dcp, _1p)
     parallelism = ""
-    p_match = re.search(r"_(\d+p\d*d?(?:_\d+p)?)$", name)
+    p_match = re.search(r"_(\d+p\d*d?(?:_\d+p)?(?:_(?:dcp|pcp))?)$", name)
     if p_match:
         parallelism = p_match.group(1)
         name = name[: p_match.start()]
