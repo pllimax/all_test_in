@@ -85,8 +85,9 @@ REPORTS_DIR = SCRIPT_DIR / "npu_reports"
 # ============================================================
 
 CI_STATE_FILE = SCRIPT_DIR / "analyzed_ci_runs.json"
-CI_RUNS_TO_SCAN = 500  # 拉取最近完成的 run 数量上限（安全上限，防止极端海量）
+CI_RUNS_TO_SCAN = 2500  # 拉取最近完成的 run 数量上限（安全上限，防止极端海量）
 CI_RUNS_WINDOW_DAYS = 1  # 分析“前一天”（北京时间）完成的 run；设为 0 则关闭窗口过滤，退化为最近 CI_RUNS_TO_SCAN 条
+CI_CREATED_LOOKBACK_DAYS = 3  # 分页提前终止的宽限：列表按 created 倒序，run 完成时间可能比创建晚 1~2 天（积压），故多回溯几天再停
 CI_TZ = timezone(timedelta(hours=8))  # 北京时间（窗口/统计按此区）
 CI_MIN_RUN_DURATION_MIN = 5  # run 总耗时 < 此值视为未跑到测试阶段，跳过
 CI_MIN_JOB_DURATION_MIN = 0.5  # job < 此值视为 skip（check-changes/pr-gate 等）
@@ -206,15 +207,18 @@ def ci_window_days():
 
 
 def fetch_ci_runs():
-    """获取 pr-test-npu.yml 在“前一天”（北京时间）内完成的 workflow runs。
+    """获取 pr-test-npu.yml 在“前一天”（北京时间）内**完成**的 workflow runs。
 
-    默认窗口为北京时间 [昨天00:00, 今天00:00)；CI_RUNS_TO_SCAN 保留为极端海量时的安全上限。
+    窗口按 completed_at 划分（北京时间 [昨天00:00, 今天00:00)）：run 的结论只有
+    完成时才确定，按完成时间划窗口可让排队积压、晚完成的 run 自然落入其完成日
+    的次日报告，不会漏采。CI_RUNS_TO_SCAN 保留为极端海量时的安全上限。
     窗口关闭（CI_RUNS_WINDOW_DAYS=0）时退化为拉取最近 CI_RUNS_TO_SCAN 条 completed run。
     """
     url = f"https://api.github.com/repos/{TARGET_OWNER}/{TARGET_REPO}/actions/workflows/pr-test-npu.yml/runs"
 
     # 时间窗口（北京时间）；漏采时 ci_window_days() 自动扩大以回补
     start_utc = end_utc = None
+    stop_created = None  # created 早于此值即可安全终止分页
     window_days = ci_window_days()
     if window_days > 0:
         bj_now = datetime.now(CI_TZ)
@@ -223,28 +227,33 @@ def fetch_ci_runs():
             timezone.utc
         )
         end_utc = today0.astimezone(timezone.utc)
+        stop_created = start_utc - timedelta(days=CI_CREATED_LOOKBACK_DAYS)
 
     all_runs = []
     page = 1
     stop = False
     while not stop and len(all_runs) < CI_RUNS_TO_SCAN:
-        # 注意：GitHub API 带 status=completed 过滤时返回顺序不稳定（实测可能从最旧开始），
-        # 因此不传该参数（默认按 created_at 倒序返回最新 run），改为在本地过滤 completed
+        # 注意：列表按 created_at 倒序返回（与 completed 顺序不完全一致），
+        # 因此不能在 created < 窗口起点时就终止，需放宽到多回溯
+        # CI_CREATED_LOOKBACK_DAYS 天，再在本地按 completed_at 精确过滤
         data = api_get(url, params={"per_page": 100, "page": page})
         runs = data.get("workflow_runs", [])
         if not runs:
             break
         for r in runs:
-            if r.get("status") != "completed":
+            if r.get("status") != "completed" or not r.get("completed_at"):
                 continue
+            created = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
+            if stop_created is not None and created < stop_created:
+                # 已翻到积压宽限期之前（按 created 倒序），提前终止
+                stop = True
+                break
             if start_utc is not None:
-                created = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
-                if created < start_utc:
-                    # 已翻到窗口之前（列表按 created_at 倒序），提前终止
-                    stop = True
-                    break
-                if created >= end_utc:
-                    continue  # 今天 0 点之后新触发的 run，不在“昨天”窗口内
+                completed = datetime.fromisoformat(
+                    r["completed_at"].replace("Z", "+00:00")
+                )
+                if completed < start_utc or completed >= end_utc:
+                    continue  # 不在“昨天完成”窗口内
             all_runs.append(r)
             if len(all_runs) >= CI_RUNS_TO_SCAN:
                 break
@@ -510,6 +519,11 @@ def analyze_ci_jobs():
             f"  [CI] 分析 Run #{run_id} ({run_dur:.1f}min) branch={run['head_branch']}..."
         )
 
+        # 成功 run 只计数（保留 job 结论等元数据用于统计），不下载日志、不做 AI 归因
+        run_is_success = run["conclusion"] == "success"
+        if run_is_success:
+            print("    ✅ 成功 run（仅计数，跳过日志下载）")
+
         # 获取 jobs
         try:
             url = f"https://api.github.com/repos/{TARGET_OWNER}/{TARGET_REPO}/actions/runs/{run_id}/jobs"
@@ -590,6 +604,10 @@ def analyze_ci_jobs():
                     }
                     job_entry["no_log"] = True
                     print(f"    ⏭️ 排队取消（无日志）: {name}")
+                elif run_is_success:
+                    # 成功 run 内的失败 job（罕见，如收尾 meta job）只计数，不下载日志
+                    job_entry["no_log"] = True
+                    print(f"    ⏭️ 成功 run 内的失败 job，仅计数: {name}")
                 else:
                     print(
                         f"    ⚠️ 失败 job: {name} ({j_dur:.1f}min)，下载日志 AI 分析..."
@@ -597,8 +615,11 @@ def analyze_ci_jobs():
                     pending.append((run_idx, job_idx, j["id"], name, True))
             elif con == "success":
                 job_entry["alert"] = False
-                print(f"    ✅ 成功 job: {name} ({j_dur:.1f}min)，下载日志提取用例...")
-                pending.append((run_idx, job_idx, j["id"], name, False))
+                if run_is_success:
+                    print(f"    ✅ 成功 job: {name} ({j_dur:.1f}min)，仅计数")
+                else:
+                    print(f"    ✅ 成功 job: {name} ({j_dur:.1f}min)，下载日志提取用例...")
+                    pending.append((run_idx, job_idx, j["id"], name, False))
             else:
                 job_entry["alert"] = False
 
@@ -706,6 +727,13 @@ def generate_ci_report(ci_results) -> str:
     lines = []
     lines.append(f"# NPU CI 执行监控（{window_label}）")
     lines.append(f"**生成时间**: {now}")
+    lines.append(
+        f"**统计窗口**: 按 run **完成时间**（北京时间 {window_label} 00:00 ~ 24:00），"
+        "排队积压、晚完成的 run 归入其完成日的次日报告"
+    )
+    lines.append(
+        "**分析口径**: 成功 run 仅计数（不下载日志），失败 run 逐 job 下载日志并 AI 归因"
+    )
     lines.append(f"**分析 Run 数**: {len(ci_results)}")
     lines.append("")
     lines.append("---")
@@ -816,6 +844,11 @@ def generate_ci_report(ci_results) -> str:
     # 3. 用例统计
     lines.append("## 📋 各用例失败统计")
     lines.append("")
+    lines.append(
+        "> 注：成功 run 的日志不下载，用例“成功”数仅统计失败 run 中成功 job 的日志提取结果，"
+        "实际成功率高于此表数值。"
+    )
+    lines.append("")
     test_case_stats = {}
     for run_entry in ci_results:
         for j in run_entry.get("jobs", []):
@@ -891,6 +924,9 @@ def generate_ci_report(ci_results) -> str:
 
     for run_entry in ci_results:
         alert_jobs = [j for j in run_entry.get("jobs", []) if j.get("alert")]
+        if not alert_jobs:
+            # 成功 run（无告警 job）只计数，不输出明细小节，控制报告体积
+            continue
         normal_jobs = [j for j in run_entry.get("jobs", []) if not j.get("alert")]
 
         lines.append("")
