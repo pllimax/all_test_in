@@ -307,6 +307,13 @@ def parse_filename(filename):
     # These are performance benchmark modes, not datasets — strip without setting dataset.
     name = re.sub(r"_(ttft|tpot)$", "", name)
 
+    # Strip multi-node mix benchmark markers (e.g. _mix_in128k_out1_prefill,
+    # _mix_in128k_out1k_decode_prefix). The mix/workload split is not a model,
+    # quantization or sequence-length label; the full name is still kept in yaml_name.
+    if "_mix_" in name:
+        name = name.replace("_mix_", "_", 1)
+        name = re.sub(r"_(?:prefill|decode|prefill_prefix|decode_prefix)$", "", name)
+
     # Extract input_len for multimodal cases first (e.g., _in1024x1024_30, _in1080p_30)
     # Resolution -> input_len, frame count -> output_len
     input_len = ""
@@ -353,6 +360,13 @@ def parse_filename(filename):
         name = name[: q_match.start()]
 
     model = name
+
+    # Normalize model variants back to their model family, since these suffixes
+    # describe the checkpoint rather than a different model:
+    #   _MMDD checkpoint date (e.g. deepseek_v4_flash_0731, deepseek_v4_pro_0813)
+    #   _topN_pruned pruning marker (e.g. glm5_top64_pruned -> glm5)
+    model = re.sub(r"_(?:0[1-9]|1[012])(?:0[1-9]|[12]\d|3[01])$", "", model)
+    model = re.sub(r"_top\d+_pruned$", "", model)
 
     return {
         "model": model,
