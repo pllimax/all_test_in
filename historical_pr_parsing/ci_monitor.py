@@ -951,8 +951,11 @@ def generate_ci_report(ci_results) -> str:
 # ============================================================
 
 
-def run_git_with_retry(cmd, cwd, retries=3, delay=15):
-    """执行 git 命令，网络瞬断导致失败时自动重试（fetch/push 用）"""
+def run_git_with_retry(cmd, cwd, retries=5, delay=30):
+    """执行 git 命令，网络瞬断导致失败时自动重试（fetch/push 用）。
+
+    指数退避：30s/60s/120s/240s，总覆盖约 7.5 分钟的网络中断窗口
+    """
     result = None
     for attempt in range(1, retries + 1):
         result = subprocess.run(cmd, cwd=str(cwd))
@@ -960,7 +963,7 @@ def run_git_with_retry(cmd, cwd, retries=3, delay=15):
             return
         print(f"[git] 命令失败 (exit {result.returncode})，第 {attempt}/{retries} 次重试")
         if attempt < retries:
-            time.sleep(delay)
+            time.sleep(min(delay * (2 ** (attempt - 1)), 300))
     result.check_returncode()
 
 
