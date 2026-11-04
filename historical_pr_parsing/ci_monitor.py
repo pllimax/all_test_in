@@ -272,6 +272,39 @@ def fetch_ci_runs():
 # ============================================================
 
 
+# 失败日志关键词归因规则：按顺序匹配，首个命中的直接作为归因结果返回，
+# 不再调用 AI（确定性模式用规则，避免 AI 误判，如把 exit code 5 臆断为"无用例收集"）
+LOG_ATTRIBUTION_RULES = [
+    (
+        ("Malloc pin memory failed, host out of memory",),
+        {
+            "category": "环境问题",
+            "summary": "宿主机内存不足，server pinned memory 分配失败，各调度器崩溃",
+            "detail": "日志命中 'Malloc pin memory failed, host out of memory'：server 各 "
+                      "TP/EP 调度器因 host OOM 同时异常退出。常见于同一作业内多个 accuracy "
+                      "用例连跑、前一用例资源未完全释放，需检查 runner 内存水位与用例间清理",
+        },
+    ),
+    (
+        ("Server process exited with code -9",),
+        {
+            "category": "环境问题",
+            "summary": "sglang server 进程被 SIGKILL(-9)，通常为 host OOM 所致",
+            "detail": "测试框架在 setUpClass 检测到 server 进程异常终止（exit -9），"
+                      "用例未真正执行即失败，属于环境/资源问题而非精度回归",
+        },
+    ),
+]
+
+
+def rule_based_attribution(log_text):
+    """对日志做关键词规则归因，命中返回归因 dict，未命中返回 None"""
+    for patterns, result in LOG_ATTRIBUTION_RULES:
+        if any(p in log_text for p in patterns):
+            return dict(result)
+    return None
+
+
 def ai_analyze_ci_log(job_name, log_text):
     """将日志尾部 + 关键错误片段发给 AI 分析失败原因"""
     if not AI_API_KEY:
@@ -280,6 +313,11 @@ def ai_analyze_ci_log(job_name, log_text):
             "summary": "AI_API_KEY 未配置，跳过分析",
             "detail": "",
         }
+
+    # 关键词规则归因：命中确定性模式直接返回，不调用 AI
+    ruled = rule_based_attribution(log_text)
+    if ruled:
+        return ruled
 
     # 截取：日志开头2000字 + 最后5000字（错误通常在末尾）
     if len(log_text) > 8000:
@@ -294,6 +332,11 @@ def ai_analyze_ci_log(job_name, log_text):
 
 日志:
 {log_snippet}
+
+背景知识：
+- 本流水线用例脚本退出码 5 表示 unittest 存在 errors（FAILED (errors=N)），最常见原因是
+  setUpClass 阶段 sglang server 启动失败（如 host OOM、进程被 SIGKILL），不要臆断为
+  "pytest 无用例收集/用例未找到"；请以日志中的真实错误（Traceback/RuntimeError/Exception）为准。
 
 请用JSON格式回答：
 {{"category": "性能回归|精度回归|环境问题|代码错误|超时|其他", "summary": "一句话原因（中文）", "detail": "具体说明（中文，100字以内）"}}"""
