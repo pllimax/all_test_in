@@ -276,22 +276,29 @@ def fetch_ci_runs():
 # 不再调用 AI（确定性模式用规则，避免 AI 误判，如把 exit code 5 臆断为"无用例收集"）
 LOG_ATTRIBUTION_RULES = [
     (
-        ("Malloc pin memory failed, host out of memory",),
+        (
+            "Malloc pin memory failed, host out of memory",
+            "rtsMallocHost execution failed",
+        ),
         {
             "category": "环境问题",
-            "summary": "宿主机内存不足，server pinned memory 分配失败，各调度器崩溃",
-            "detail": "日志命中 'Malloc pin memory failed, host out of memory'：server 各 "
-                      "TP/EP 调度器因 host OOM 同时异常退出。常见于同一作业内多个 accuracy "
-                      "用例连跑、前一用例资源未完全释放，需检查 runner 内存水位与用例间清理",
+            "summary": "宿主机内存不足，host 内存分配失败，server 崩溃/被杀",
+            "detail": "日志命中 host 内存分配失败（'Malloc pin memory failed' 或 "
+                      "'rtsMallocHost ... out of memory'）：server 各 TP/EP 调度器因 host "
+                      "OOM 同时异常退出，随后被 SIGKILL（exit -9/137）。常见于同一作业内"
+                      "多个用例连跑、前一用例资源未完全释放，需检查 runner 内存水位与用例间清理",
         },
     ),
     (
-        ("Server process exited with code -9",),
+        (
+            "Server process exited with code -9",
+            "exited rc=-9",
+        ),
         {
             "category": "环境问题",
             "summary": "sglang server 进程被 SIGKILL(-9)，通常为 host OOM 所致",
-            "detail": "测试框架在 setUpClass 检测到 server 进程异常终止（exit -9），"
-                      "用例未真正执行即失败，属于环境/资源问题而非精度回归",
+            "detail": "测试框架/fixture 检测到 server 进程异常终止（rc=-9，用例表现为 "
+                      "exit code 137），用例未真正执行即失败，属于环境/资源问题而非精度回归",
         },
     ),
 ]
