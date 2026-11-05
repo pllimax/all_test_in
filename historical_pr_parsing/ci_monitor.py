@@ -209,10 +209,14 @@ def ci_window_days():
 def fetch_ci_runs():
     """获取 pr-test-npu.yml 在“前一天”（北京时间）内**完成**的 workflow runs。
 
-    窗口按 completed_at 划分（北京时间 [昨天00:00, 今天00:00)）：run 的结论只有
+    窗口按完成时间划分（北京时间 [昨天00:00, 今天00:00)）：run 的结论只有
     完成时才确定，按完成时间划窗口可让排队积压、晚完成的 run 自然落入其完成日
     的次日报告，不会漏采。CI_RUNS_TO_SCAN 保留为极端海量时的安全上限。
     窗口关闭（CI_RUNS_WINDOW_DAYS=0）时退化为拉取最近 CI_RUNS_TO_SCAN 条 completed run。
+
+    注意：GitHub runs 列表端点出现过 completed_at=null 的批量异常（status/conclusion
+    正常），因此完成时间一律以 completed_at 为准、缺失时用 updated_at 兜底；
+    终止分页的 stop 检查只依赖 created_at，且必须先于任何 completed_at 依赖执行。
     """
     url = f"https://api.github.com/repos/{TARGET_OWNER}/{TARGET_REPO}/actions/workflows/pr-test-npu.yml/runs"
 
@@ -232,26 +236,28 @@ def fetch_ci_runs():
     all_runs = []
     page = 1
     stop = False
-    while not stop and len(all_runs) < CI_RUNS_TO_SCAN:
+    # GitHub 列表分页硬上限 40000 条（per_page=100 时 page>400 返回 422）
+    while not stop and len(all_runs) < CI_RUNS_TO_SCAN and page <= 400:
         # 注意：列表按 created_at 倒序返回（与 completed 顺序不完全一致），
         # 因此不能在 created < 窗口起点时就终止，需放宽到多回溯
-        # CI_CREATED_LOOKBACK_DAYS 天，再在本地按 completed_at 精确过滤
+        # CI_CREATED_LOOKBACK_DAYS 天，再在本地按完成时间精确过滤
         data = api_get(url, params={"per_page": 100, "page": page})
         runs = data.get("workflow_runs", [])
         if not runs:
             break
         for r in runs:
-            if r.get("status") != "completed" or not r.get("completed_at"):
+            if r.get("status") != "completed":
                 continue
             created = datetime.fromisoformat(r["created_at"].replace("Z", "+00:00"))
             if stop_created is not None and created < stop_created:
-                # 已翻到积压宽限期之前（按 created 倒序），提前终止
+                # 已翻到积压宽限期之前（按 created 倒序），提前终止。
+                # 注意：此检查只依赖 created_at，必须放在 completed_at 依赖之前，
+                # 否则 completed_at 缺失的 run 被 continue 跳过会导致分页无法终止
                 stop = True
                 break
             if start_utc is not None:
-                completed = datetime.fromisoformat(
-                    r["completed_at"].replace("Z", "+00:00")
-                )
+                ts = r.get("completed_at") or r.get("updated_at")
+                completed = datetime.fromisoformat(ts.replace("Z", "+00:00"))
                 if completed < start_utc or completed >= end_utc:
                     continue  # 不在“昨天完成”窗口内
             all_runs.append(r)
@@ -266,6 +272,46 @@ def fetch_ci_runs():
 # ============================================================
 
 
+# 失败日志关键词归因规则：按顺序匹配，首个命中的直接作为归因结果返回，
+# 不再调用 AI（确定性模式用规则，避免 AI 误判，如把 exit code 5 臆断为"无用例收集"）
+LOG_ATTRIBUTION_RULES = [
+    (
+        (
+            "Malloc pin memory failed, host out of memory",
+            "rtsMallocHost execution failed",
+        ),
+        {
+            "category": "环境问题",
+            "summary": "宿主机内存不足，host 内存分配失败，server 崩溃/被杀",
+            "detail": "日志命中 host 内存分配失败（'Malloc pin memory failed' 或 "
+                      "'rtsMallocHost ... out of memory'）：server 各 TP/EP 调度器因 host "
+                      "OOM 同时异常退出，随后被 SIGKILL（exit -9/137）。常见于同一作业内"
+                      "多个用例连跑、前一用例资源未完全释放，需检查 runner 内存水位与用例间清理",
+        },
+    ),
+    (
+        (
+            "Server process exited with code -9",
+            "exited rc=-9",
+        ),
+        {
+            "category": "环境问题",
+            "summary": "sglang server 进程被 SIGKILL(-9)，通常为 host OOM 所致",
+            "detail": "测试框架/fixture 检测到 server 进程异常终止（rc=-9，用例表现为 "
+                      "exit code 137），用例未真正执行即失败，属于环境/资源问题而非精度回归",
+        },
+    ),
+]
+
+
+def rule_based_attribution(log_text):
+    """对日志做关键词规则归因，命中返回归因 dict，未命中返回 None"""
+    for patterns, result in LOG_ATTRIBUTION_RULES:
+        if any(p in log_text for p in patterns):
+            return dict(result)
+    return None
+
+
 def ai_analyze_ci_log(job_name, log_text):
     """将日志尾部 + 关键错误片段发给 AI 分析失败原因"""
     if not AI_API_KEY:
@@ -274,6 +320,11 @@ def ai_analyze_ci_log(job_name, log_text):
             "summary": "AI_API_KEY 未配置，跳过分析",
             "detail": "",
         }
+
+    # 关键词规则归因：命中确定性模式直接返回，不调用 AI
+    ruled = rule_based_attribution(log_text)
+    if ruled:
+        return ruled
 
     # 截取：日志开头2000字 + 最后5000字（错误通常在末尾）
     if len(log_text) > 8000:
@@ -288,6 +339,11 @@ def ai_analyze_ci_log(job_name, log_text):
 
 日志:
 {log_snippet}
+
+背景知识：
+- 本流水线用例脚本退出码 5 表示 unittest 存在 errors（FAILED (errors=N)），最常见原因是
+  setUpClass 阶段 sglang server 启动失败（如 host OOM、进程被 SIGKILL），不要臆断为
+  "pytest 无用例收集/用例未找到"；请以日志中的真实错误（Traceback/RuntimeError/Exception）为准。
 
 请用JSON格式回答：
 {{"category": "性能回归|精度回归|环境问题|代码错误|超时|其他", "summary": "一句话原因（中文）", "detail": "具体说明（中文，100字以内）"}}"""
