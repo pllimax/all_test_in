@@ -838,14 +838,19 @@ def _attach_script_urls(items):
                         ph_cands = _suite_name_candidates(ph_suite, item.get("image_norm", ""))
                         if (
                             len(ph_cands) > 1
-                            and ph_cands[0] not in jobs_for_run
-                            and ph_cands[1] in jobs_for_run
+                            and not _suite_has_jobs(ph_cands[0], jobs_for_run)
+                            and _suite_has_jobs(ph_cands[1], jobs_for_run)
                         ):
                             ph_cands = ph_cands[::-1]
                         for name in ph_cands[:1]:
                             if name in jobs_for_run:
                                 ph_job = jobs_for_run[name]
                                 break
+                        if ph_job is None:
+                            # matrix suite（multi-node-mix-poc 等）：聚合 job 不存在，
+                            # 本用例的 job 形如 "suite (case, ...)"，一个 job 对应一个
+                            # 用例，可安全采用（单镜像 run，无跨镜像误归因风险）
+                            ph_job = _match_matrix_suite_job(base, jobs_for_run, ph_suite)
                 if (
                     ph_job
                     and str(ph_job.get("status", "")).lower() == "completed"
@@ -919,8 +924,8 @@ def _attach_script_urls(items):
                 jobs_ph = jobs_cache.get((repo, run_id)) or {}
                 if (
                     len(suite_candidates) > 1
-                    and suite_candidates[0] not in jobs_ph
-                    and suite_candidates[1] in jobs_ph
+                    and not _suite_has_jobs(suite_candidates[0], jobs_ph)
+                    and _suite_has_jobs(suite_candidates[1], jobs_ph)
                 ):
                     suite_candidates = suite_candidates[::-1]
                 suite_candidates = suite_candidates[:1]
@@ -966,14 +971,16 @@ def _attach_script_urls(items):
             continue
         pmap = entry.get("map", {})
         if base not in pmap:
+            if entry.get("running"):
+                # suite 仍有 job 执行中且本用例尚无结论（如 matrix 中未完成的
+                # 用例）：显示执行中，等下一轮刷新拿到最终结论
+                item["func_status"] = "running"
             continue
         case_info = pmap[base]
         # per-case 状态（功能与性能/精度用例均从聚合 suite job 日志解析，
-        # 保证单用例状态与 GitHub 实际执行结果一致，而非套件级结论）
-        if entry.get("running"):
-            item["func_status"] = "running"
-        else:
-            item["func_status"] = "pass" if case_info.get("passed") else "fail"
+        # 保证单用例状态与 GitHub 实际执行结果一致，而非套件级结论；
+        # suite 部分执行中时，已完成用例按各自结论显示而非一律 running）
+        item["func_status"] = "pass" if case_info.get("passed") else "fail"
         # eval 指标兜底：CI 无法上传指标的用例（如 a5）无真实数据行，仅占位行，
         # 从 suite job 日志解析的 [METRIC] 指标行补充 eval_score（不覆盖已上传指标）
         case_metrics = (entry.get("metrics") or {}).get(base)
@@ -981,11 +988,23 @@ def _attach_script_urls(items):
             acc = case_metrics.get("accuracy")
             if acc is not None:
                 item["eval_score"] = acc
+        # 性能指标兜底：multi-node mix 等 CI 不上传指标文件的用例，从 matrix
+        # job 日志的 [METRIC] 行补充前端性能展示字段（不覆盖已上传的真实数据）
+        if case_metrics:
+            for mname, field in (
+                ("ttft", "mean_ttft"),
+                ("tpot", "mean_tpot"),
+                ("throughput", "output_token_throughput"),
+                ("e2e_latency", "mean_e2e_latency"),
+            ):
+                v = case_metrics.get(mname)
+                if v is not None and item.get(field) is None:
+                    item[field] = v
         # 覆盖 job 链接：仅当用例未被 job 名直配（matrix job）时，
         # 用日志解析出的真实 job（处理并行分区/重试同名 job 场景）。
         jobs_for_run = jobs_cache.get((repo, run_id))
         name_job = _match_job_for_case(yaml_name, jobs_for_run) if jobs_for_run else None
-        if name_job is None and case_info.get("job_id"):
+        if case_info.get("job_id") and (name_job is None or not item.get("job_url")):
             item["job_url"] = f"{run_url}/job/{case_info['job_id']}"
             item["job_status"] = case_info.get("status", "")
             item["job_conclusion"] = case_info.get("conclusion", "")
@@ -1286,6 +1305,18 @@ FUNC_LOG_MAX_DAYS = 7               # 只解析最近 N 天日期的 job 日志�
 # {yaml_name: suite job 名}；注册表 case_suite_map 命中时优先用注册表。
 JOB_LOG_METRIC_FALLBACK_SUITES = {
     "test_npu_deepseek_v4_flash_fp8_4p_gpqa_a5": "nightly-acc-4-npu-a5",
+    # multi-node mix 用例：CI 不产出 bench_serving_metrics.txt（aisbench 工具链），
+    # 平台直接解析 matrix job（"multi-node-mix-poc (case, ...)"，一个 job 对应一个
+    # 用例）的 GitHub 日志得到执行结果与性能指标
+    "test_npu_kimi_k3_w4a8_32p_mix_in128k_out1_prefill": "multi-node-mix-poc",
+    "test_npu_kimi_k3_w4a8_32p_mix_in128k_out1k_decode_prefix": "multi-node-mix-poc",
+    "test_npu_deepseek_v4_pro_w4a8_16p_in128k_out1k_prefix90_20ms": "multi-node-mix-poc",
+    # multi-node poc 用例（1p1d/2p2d 大模型精度与性能，同样仅以 matrix job 形式存在）
+    "test_npu_deepseek_v4_flash_0731_w8a8_1p1d_16p_gpqa": "multi-node-poc",
+    "test_npu_deepseek_v4_flash_w8a8_1p1d_16p_in128k_out1k_prefix90_20ms": "multi-node-poc",
+    "test_npu_deepseek_v4_pro_0813_w4a8_1p1d_32p_gpqa": "multi-node-poc",
+    "test_npu_glm_5_2_w8a8_2p2d_32p_dcp_gpqa": "multi-node-poc",
+    "test_npu_glm_5_2_w8a8_2p2d_32p_pcp_gpqa": "multi-node-poc",
 }
 
 _func_log_cache = {}       # {(repo, run_id, suite, is_function): {"map": {case: {...}}, "metrics": {case: {metric: value}}}}，缺失=日志中未找到该用例
@@ -1391,7 +1422,9 @@ def _parse_job_log_metrics(log_text, case_map):
         if target is None and len(case_map) == 1:
             target = next(iter(case_map))
         if target:
-            result.setdefault(target, {}).setdefault(name, val)
+            # 后写覆盖：用例内 @retry 重跑时日志会有多组 [METRIC] 行，
+            # 最终（决定 job 结论）attempt 的指标在日志中靠后，应取后者
+            result.setdefault(target, {})[name] = val
     return result
 
 
@@ -1471,6 +1504,15 @@ def _fetch_func_log(key):
         name = str(j.get("name", "") or "")
         if name == suite or name.startswith(suite + " /") or name.startswith(suite + "/"):
             matches.append((_attempt_of(name), j))
+        elif name.startswith(suite + " (") and re.search(r"\(\s*[^,()]+?,", name):
+            # matrix job（job 名形如 "suite (case, ...)"，一个 job 对应一个用例，
+            # 如 multi-node-mix-poc）：用 run_attempt 排序，重跑取最高 attempt。
+            # 要求 " (case," 逗号形式，与聚合 suite 的 "(part 0/3)" 分区名区分。
+            try:
+                ra = int(j.get("run_attempt") or 1)
+            except (TypeError, ValueError):
+                ra = 1
+            matches.append((ra, j))
     if not matches:
         # 该 run 未执行此 suite → 该 suite 全部用例无结果
         with _func_log_lock:
@@ -1478,14 +1520,13 @@ def _fetch_func_log(key):
             _func_log_running[key] = False
             _func_log_ts[key] = time.time()
         return
-    if any(str(j.get("status", "") or "") != "completed" for _, j in matches):
-        # 存在执行中的 job：标记 running，由调度按刷新间隔重新抓取
-        with _func_log_lock:
-            _func_log_running[key] = True
-            _func_log_ts[key] = time.time()
-        return
+    has_running = any(str(j.get("status", "") or "") != "completed" for _, j in matches)
     with _func_log_lock:
-        _func_log_running[key] = False
+        _func_log_running[key] = has_running
+        _func_log_ts[key] = time.time()
+    # 有执行中的 job 时仍继续解析已完成 job 的结果（matrix suite 部分用例
+    # 已完成时应及时展示），running 标记由调度按刷新间隔重抓；执行中的
+    # 用例无结论、不入 map，enrichment 按 running 显示。
     # 合并所有已完成 attempt 的 per-case 结果：重试 job（run (N)）与并行分区
     # 可能运行不同的用例子集，需解析全部日志补齐缺口。
     # 同一用例多个 attempt 都有结果时，高 attempt（最终状态）优先。
@@ -1515,6 +1556,17 @@ def _fetch_func_log(key):
         if log_text is None:
             continue
         case_map = _parse_func_log(log_text)
+        if not case_map:
+            # multi-node matrix job 日志无 per-case JSON 行：一个 job 对应一个
+            # 用例，per-case 结果 = 该 job 的最终结论（重跑时高 attempt 排前、
+            # 先占坑，保证最终状态优先）
+            jname = str(j.get("name", "") or "")
+            mm = re.search(r"\(\s*([^,()]+?)\s*,", jname) if jname.startswith(suite + " (") else None
+            if mm:
+                case_map = {
+                    mm.group(1).strip():
+                        str(j.get("conclusion", "") or "").lower() == "success"
+                }
         for c, passed in case_map.items():
             if c not in merged:
                 merged[c] = {
@@ -1534,7 +1586,12 @@ def _fetch_func_log(key):
             _func_log_failed_ts.pop(key, None)
         return
     with _func_log_lock:
-        _func_log_failed_ts[key] = time.time()
+        if has_running:
+            # 无已完成用例结果但 suite 仍在执行：缓存空 map 保留 running 标记，
+            # 让行状态显示「执行中」而非回退为解析失败
+            _func_log_cache[key] = {"map": {}, "metrics": {}}
+        else:
+            _func_log_failed_ts[key] = time.time()
 
 
 def fetch_func_logs_for_items(items):
@@ -3264,6 +3321,36 @@ def _suite_name_candidates(suite, image_norm=""):
     if image_norm == IMAGE_CANN910_NORM:
         return [suite + IMAGE_CANN910_SUITE_SUFFIX, suite]
     return [suite, suite + IMAGE_CANN910_SUITE_SUFFIX]
+
+
+def _suite_has_jobs(suite_name, jobs):
+    """判断 run 中是否存在该 suite 的 job：聚合 job 名直接命中，或 matrix
+    job 名以 "suite (" 开头（如 "multi-node-mix-poc (kimi_..., 4, ...)"）。
+    jobs 为 _extract_case_names 产出的 case 名 → job 索引，suite 名不是 key。
+    """
+    if not jobs:
+        return False
+    if suite_name in jobs:
+        return True
+    prefix = suite_name + " ("
+    return any(
+        str(v.get("name", "") or "").startswith(prefix) for v in jobs.values()
+    )
+
+
+def _match_matrix_suite_job(case_base, jobs, suite):
+    """在 matrix suite job（job 名形如 "suite (case, ...)"，一个 job 对应一个
+    用例）中定位本用例的 job；未命中返回 None。"""
+    if not jobs or not suite:
+        return None
+    prefix = suite + " ("
+    for info in jobs.values():
+        name = str(info.get("name", "") or "")
+        if not name.startswith(prefix):
+            continue
+        if case_base in _extract_case_names(name):
+            return info
+    return None
 
 
 def _match_job_for_case_with_suite(case_key, jobs, case_suite_map, image_norm=""):
