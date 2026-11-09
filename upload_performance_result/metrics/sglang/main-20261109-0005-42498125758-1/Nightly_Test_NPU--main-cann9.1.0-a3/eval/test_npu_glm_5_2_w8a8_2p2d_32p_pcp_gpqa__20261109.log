@@ -1,0 +1,300 @@
+2026-11-09 02:52:26 - evalscope - INFO: Running with native backend
+2026-11-09 02:52:26 - evalscope - INFO: Dump task config to /root/.cache/tests/output/main-20261109-0005-42498125758-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_2p2d_32p_pcp_gpqa/20261109_025226/configs/task_config.yaml
+2026-11-09 02:52:26 - evalscope - INFO: {
+    "model_id": "GLM-5.2-w8a8",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gpqa_diamond"
+    ],
+    "dataset_args": {
+        "gpqa_diamond": {
+            "filters": {
+                "remove_until": "</think>"
+            },
+            "system_prompt": "Your response should be in the following format:\nExplanation: {your explanation for your final answer}\nExact Answer: {your succinct, final answer}\nConfidence: {your confidence score between 0% and 100% for your answer}."
+        }
+    },
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 32,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20261109-0005-42498125758-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_2p2d_32p_pcp_gpqa/20261109_025226",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "dry_run": false,
+    "seed": 42,
+    "api_url": "http://172.22.3.160:6677/v1/chat/completions",
+    "api_key": "**********",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge": {
+        "strategy": "auto",
+        "models": [],
+        "contract": {
+            "system_prompt": null,
+            "prompt_template": null,
+            "score_mapping": null,
+            "score_type": "pattern"
+        },
+        "repeats": 1,
+        "position_swap": "auto",
+        "aggregation": "mean",
+        "min_valid_judges": 1
+    },
+    "analysis_report": false,
+    "collect_perf": true,
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "evalscope_version": "1.14.1",
+    "model": "GLM-5.2-w8a8",
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 32,
+        "stream": true,
+        "max_tokens": 131072,
+        "top_p": 0.95,
+        "temperature": 1.0
+    },
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "agent_config": null
+}
+2026-11-09 02:52:26 - evalscope - INFO: Start loading benchmark dataset: gpqa_diamond
+2026-11-09 02:52:27 - evalscope - WARNING: gpqa_diamond: 198 samples to evaluate (1 subset, --limit=100000 per subset). Remove `--limit` for a formal evaluation.
+2026-11-09 02:52:27 - evalscope - INFO: Subsets of gpqa_diamond: ['default']
+2026-11-09 02:52:27 - evalscope - INFO: Loading model for prediction...
+2026-11-09 02:52:27 - evalscope - INFO: Creating model GLM-5.2-w8a8 with eval_type=openai_api base_url=http://172.22.3.160:6677/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 32, 'stream': True, 'max_tokens': 131072, 'top_p': 0.95, 'temperature': 1.0, 'anthropic_cache_strategy': 'evaluation'}, model_args={}
+2026-11-09 02:52:27 - evalscope - INFO: Model loaded successfully.
+2026-11-09 02:52:52 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='7ac7a767ff4d44a6997fc8dffb0f79a4' decode_req.req.bootstrap_room=8298011460421947134 with exception KVTransferError(bootstrap_room=8298011460421947134): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:15 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='90aa60b3b6504296b8b9d09cb1fb2503' decode_req.req.bootstrap_room=8085274030047887462 with exception KVTransferError(bootstrap_room=8085274030047887462): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:19 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='83890081b23e45888ecd214b5988310e' decode_req.req.bootstrap_room=5479498038368170854 with exception KVTransferError(bootstrap_room=5479498038368170854): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:19 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='b36cb63b755b42b5b61fbb48e21a358b' decode_req.req.bootstrap_room=8135702455243815531 with exception KVTransferError(bootstrap_room=8135702455243815531): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:19 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='13c8025d061c4904a480febe5acb5d47' decode_req.req.bootstrap_room=2372105116036988762 with exception KVTransferError(bootstrap_room=2372105116036988762): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:19 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='1fe8fc76d3b140bfb688646a2ace66cb' decode_req.req.bootstrap_room=8236161488362814486 with exception KVTransferError(bootstrap_room=8236161488362814486): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:19 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='ae3f0f6dae3b4934b94bf926f020a722' decode_req.req.bootstrap_room=5221137506735029202 with exception KVTransferError(bootstrap_room=5221137506735029202): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:19 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='a50b3a07bffa4d1aaafdd19a78a3febb' decode_req.req.bootstrap_room=3374696674340964883 with exception KVTransferError(bootstrap_room=3374696674340964883): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:20 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='4237a31a22ad461eb16103b9ebd259ee' decode_req.req.bootstrap_room=6480741049695967785 with exception KVTransferError(bootstrap_room=6480741049695967785): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:27 - evalscope - INFO: Evaluating[gpqa_diamond]   2%| 3/198 [Elapsed: 01:00 < Remaining: 44:16, 13.62s/it]
+2026-11-09 02:53:30 - evalscope - WARNING: Attempt 2 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='6a34f9faf5af4345b88744259bb29cc6' decode_req.req.bootstrap_room=1549228221384146899 with exception KVTransferError(bootstrap_room=1549228221384146899): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:30 - evalscope - WARNING: Attempt 2 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='2d0fdb1e93c24b8288290700f1c1a619' decode_req.req.bootstrap_room=5543107274585003658 with exception KVTransferError(bootstrap_room=5543107274585003658): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:53:41 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='73ba6391c5944d9aa0e6914fa4a0ec3f' decode_req.req.bootstrap_room=6382722075215016692 with exception KVTransferError(bootstrap_room=6382722075215016692): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:54:01 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='4f815e1877d840d2bde00c9059321338' decode_req.req.bootstrap_room=2751672959906411511 with exception KVTransferError(bootstrap_room=2751672959906411511): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:54:20 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='35be4a08b5244c3b8d23f325f7003efd' decode_req.req.bootstrap_room=5172080269819462012 with exception KVTransferError(bootstrap_room=5172080269819462012): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:54:27 - evalscope - INFO: Evaluating[gpqa_diamond]   5%| 10/198 [Elapsed: 02:00 < Remaining: 22:26,  7.16s/it]
+2026-11-09 02:55:27 - evalscope - INFO: Evaluating[gpqa_diamond]   6%| 12/198 [Elapsed: 03:00 < Remaining: 54:09, 17.47s/it]
+2026-11-09 02:56:07 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='4372d004a94a4bdfa80b71cedfedea61' decode_req.req.bootstrap_room=5338800968891791061 with exception KVTransferError(bootstrap_room=5338800968891791061): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:56:27 - evalscope - INFO: Evaluating[gpqa_diamond]   7%| 13/198 [Elapsed: 04:00 < Remaining: 1:18:40, 25.52s/it]
+2026-11-09 02:57:28 - evalscope - INFO: Evaluating[gpqa_diamond]   8%| 15/198 [Elapsed: 05:01 < Remaining: 1:08:05, 22.33s/it]
+2026-11-09 02:58:25 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='0dc0ee81383e4d89ba383c38f884f5e0' decode_req.req.bootstrap_room=9145509695608537192 with exception KVTransferError(bootstrap_room=9145509695608537192): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 02:58:28 - evalscope - INFO: Evaluating[gpqa_diamond]   8%| 16/198 [Elapsed: 06:01 < Remaining: 2:17:46, 45.42s/it]
+2026-11-09 02:59:28 - evalscope - INFO: Evaluating[gpqa_diamond]   9%| 18/198 [Elapsed: 07:01 < Remaining: 1:52:34, 37.52s/it]
+2026-11-09 02:59:35 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='a9dfb6a7c1e9412888a4cb6539a8aaaf' decode_req.req.bootstrap_room=6553960042587153936 with exception KVTransferError(bootstrap_room=6553960042587153936): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:00:28 - evalscope - INFO: Evaluating[gpqa_diamond]  11%| 21/198 [Elapsed: 08:01 < Remaining: 1:05:37, 22.24s/it]
+2026-11-09 03:00:42 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='d2dd2e3106c8449c84875b7b7378652e' decode_req.req.bootstrap_room=8751294690798020872 with exception KVTransferError(bootstrap_room=8751294690798020872): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:01:28 - evalscope - INFO: Evaluating[gpqa_diamond]  12%| 23/198 [Elapsed: 09:01 < Remaining: 1:07:56, 23.30s/it]
+2026-11-09 03:02:29 - evalscope - INFO: Evaluating[gpqa_diamond]  12%| 24/198 [Elapsed: 10:01 < Remaining: 2:07:05, 43.83s/it]
+2026-11-09 03:03:06 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='e90c0026e86b41eba6b7e852210fa2bc' decode_req.req.bootstrap_room=7243388031944156866 with exception KVTransferError(bootstrap_room=7243388031944156866): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:03:29 - evalscope - INFO: Evaluating[gpqa_diamond]  13%| 26/198 [Elapsed: 11:02 < Remaining: 1:34:31, 32.97s/it]
+2026-11-09 03:04:26 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='1b0f6acf00234ba5b547b2a6ee2e2e5b' decode_req.req.bootstrap_room=4803859453066936118 with exception KVTransferError(bootstrap_room=4803859453066936118): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:04:29 - evalscope - INFO: Evaluating[gpqa_diamond]  14%| 28/198 [Elapsed: 12:02 < Remaining: 1:29:57, 31.75s/it]
+2026-11-09 03:04:55 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='acad369c214240e998bd91e095900b19' decode_req.req.bootstrap_room=2654724190541139741 with exception KVTransferError(bootstrap_room=2654724190541139741): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:05:29 - evalscope - INFO: Evaluating[gpqa_diamond]  16%| 32/198 [Elapsed: 13:02 < Remaining: 37:21, 13.50s/it]
+2026-11-09 03:06:20 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='4359b89e00a041ec9831c7e9bafdb375' decode_req.req.bootstrap_room=762767699139247448 with exception KVTransferError(bootstrap_room=762767699139247448): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:06:29 - evalscope - INFO: Evaluating[gpqa_diamond]  18%| 35/198 [Elapsed: 14:02 < Remaining: 49:28, 18.21s/it]
+2026-11-09 03:07:11 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='ad4aaccfe78447ceafe6f9b031745efa' decode_req.req.bootstrap_room=4101980737963566366 with exception KVTransferError(bootstrap_room=4101980737963566366): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:07:30 - evalscope - INFO: Evaluating[gpqa_diamond]  19%| 37/198 [Elapsed: 15:02 < Remaining: 55:27, 20.67s/it]
+2026-11-09 03:08:30 - evalscope - INFO: Evaluating[gpqa_diamond]  20%| 39/198 [Elapsed: 16:02 < Remaining: 52:48, 19.93s/it]
+2026-11-09 03:09:23 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='a9aba4bbcff84139938a1c184d671abb' decode_req.req.bootstrap_room=1427857157966569147 with exception KVTransferError(bootstrap_room=1427857157966569147): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:09:30 - evalscope - INFO: Evaluating[gpqa_diamond]  20%| 40/198 [Elapsed: 17:02 < Remaining: 1:45:38, 40.12s/it]
+2026-11-09 03:10:09 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='f84de36b2598458ebc7ad501e29425ec' decode_req.req.bootstrap_room=2570650696277384281 with exception KVTransferError(bootstrap_room=2570650696277384281): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:10:30 - evalscope - INFO: Evaluating[gpqa_diamond]  22%| 43/198 [Elapsed: 18:03 < Remaining: 57:47, 22.37s/it]
+2026-11-09 03:11:12 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='b053696ca61b4c07a28c17871e42e539' decode_req.req.bootstrap_room=2861517155811633091 with exception KVTransferError(bootstrap_room=2861517155811633091): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:11:30 - evalscope - INFO: Evaluating[gpqa_diamond]  24%| 47/198 [Elapsed: 19:03 < Remaining: 38:45, 15.40s/it]
+2026-11-09 03:12:23 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='dd93fe5a133d44bf88c6d28cb3c7bc90' decode_req.req.bootstrap_room=393444509221958244 with exception KVTransferError(bootstrap_room=393444509221958244): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:12:30 - evalscope - INFO: Evaluating[gpqa_diamond]  25%| 49/198 [Elapsed: 20:03 < Remaining: 1:04:56, 26.15s/it]
+2026-11-09 03:12:49 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='55f43667f80e4d62bfc1c0010ffacc4e' decode_req.req.bootstrap_room=8132692632885390895 with exception KVTransferError(bootstrap_room=8132692632885390895): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:13:31 - evalscope - INFO: Evaluating[gpqa_diamond]  27%| 53/198 [Elapsed: 21:03 < Remaining: 39:16, 16.25s/it]
+2026-11-09 03:14:31 - evalscope - INFO: Evaluating[gpqa_diamond]  27%| 53/198 [Elapsed: 22:03 < Remaining: 39:16, 16.25s/it]
+2026-11-09 03:15:31 - evalscope - INFO: Evaluating[gpqa_diamond]  27%| 54/198 [Elapsed: 23:04 < Remaining: 1:41:21, 42.24s/it]
+2026-11-09 03:16:23 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='b0c1e1d36b1d498784615a331db7f845' decode_req.req.bootstrap_room=8374140629425135375 with exception KVTransferError(bootstrap_room=8374140629425135375): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:16:32 - evalscope - INFO: Evaluating[gpqa_diamond]  29%| 57/198 [Elapsed: 24:04 < Remaining: 1:04:41, 27.52s/it]
+2026-11-09 03:16:45 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='6e1feec683714b24af63728b06e28d2f' decode_req.req.bootstrap_room=3496685571412725546 with exception KVTransferError(bootstrap_room=3496685571412725546): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:17:32 - evalscope - INFO: Evaluating[gpqa_diamond]  30%| 59/198 [Elapsed: 25:04 < Remaining: 1:10:30, 30.43s/it]
+2026-11-09 03:18:32 - evalscope - INFO: Evaluating[gpqa_diamond]  30%| 59/198 [Elapsed: 26:04 < Remaining: 1:10:30, 30.43s/it]
+2026-11-09 03:19:04 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='ebaf7f7d827f4144895d419de7e42a27' decode_req.req.bootstrap_room=4184825727230601859 with exception KVTransferError(bootstrap_room=4184825727230601859): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:19:33 - evalscope - INFO: Evaluating[gpqa_diamond]  32%| 63/198 [Elapsed: 27:06 < Remaining: 47:13, 20.99s/it]
+2026-11-09 03:19:46 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='e922359905bb4775b83d0d68275e593f' decode_req.req.bootstrap_room=8329444112876254239 with exception KVTransferError(bootstrap_room=8329444112876254239): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:20:33 - evalscope - INFO: Evaluating[gpqa_diamond]  33%| 65/198 [Elapsed: 28:06 < Remaining: 57:40, 26.02s/it]
+2026-11-09 03:20:50 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='9d1b0a1ffbb143549a657ea87895dce8' decode_req.req.bootstrap_room=4578636084555348318 with exception KVTransferError(bootstrap_room=4578636084555348318): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:21:33 - evalscope - INFO: Evaluating[gpqa_diamond]  34%| 67/198 [Elapsed: 29:06 < Remaining: 42:36, 19.52s/it]
+2026-11-09 03:22:33 - evalscope - INFO: Evaluating[gpqa_diamond]  34%| 68/198 [Elapsed: 30:06 < Remaining: 1:02:44, 28.96s/it]
+2026-11-09 03:23:33 - evalscope - INFO: Evaluating[gpqa_diamond]  35%| 69/198 [Elapsed: 31:06 < Remaining: 1:28:04, 40.97s/it]
+2026-11-09 03:24:32 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='354a9411cdc44995aa586158483ab201' decode_req.req.bootstrap_room=6459954035233079381 with exception KVTransferError(bootstrap_room=6459954035233079381): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:24:33 - evalscope - INFO: Evaluating[gpqa_diamond]  35%| 70/198 [Elapsed: 32:06 < Remaining: 2:06:33, 59.32s/it]
+2026-11-09 03:25:33 - evalscope - INFO: Evaluating[gpqa_diamond]  36%| 72/198 [Elapsed: 33:06 < Remaining: 1:33:00, 44.29s/it]
+2026-11-09 03:26:18 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='2901bb388e26486f8076f79f95ac4d8d' decode_req.req.bootstrap_room=8251976045455185773 with exception KVTransferError(bootstrap_room=8251976045455185773): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:26:34 - evalscope - INFO: Evaluating[gpqa_diamond]  37%| 74/198 [Elapsed: 34:06 < Remaining: 1:11:05, 34.40s/it]
+2026-11-09 03:27:34 - evalscope - INFO: Evaluating[gpqa_diamond]  37%| 74/198 [Elapsed: 35:06 < Remaining: 1:11:05, 34.40s/it]
+2026-11-09 03:28:34 - evalscope - INFO: Evaluating[gpqa_diamond]  37%| 74/198 [Elapsed: 36:06 < Remaining: 1:11:05, 34.40s/it]
+2026-11-09 03:29:34 - evalscope - INFO: Evaluating[gpqa_diamond]  38%| 75/198 [Elapsed: 37:06 < Remaining: 2:16:08, 66.41s/it]
+2026-11-09 03:30:34 - evalscope - INFO: Evaluating[gpqa_diamond]  38%| 75/198 [Elapsed: 38:07 < Remaining: 2:16:08, 66.41s/it]
+2026-11-09 03:30:35 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='ab77d0eb6df0449daa388c6d204f89c6' decode_req.req.bootstrap_room=8246146717312388081 with exception KVTransferError(bootstrap_room=8246146717312388081): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:31:34 - evalscope - INFO: Evaluating[gpqa_diamond]  38%| 76/198 [Elapsed: 39:07 < Remaining: 2:40:31, 78.95s/it]
+2026-11-09 03:32:12 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='de5d0fefd69d4097b937c17b5d089655' decode_req.req.bootstrap_room=4336073568726665550 with exception KVTransferError(bootstrap_room=4336073568726665550): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:32:34 - evalscope - INFO: Evaluating[gpqa_diamond]  40%| 80/198 [Elapsed: 40:07 < Remaining: 1:12:48, 37.02s/it]
+2026-11-09 03:33:35 - evalscope - INFO: Evaluating[gpqa_diamond]  41%| 81/198 [Elapsed: 41:08 < Remaining: 1:23:11, 42.66s/it]
+2026-11-09 03:34:22 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='dba59630109240a3a7ed9192cfa7cdc0' decode_req.req.bootstrap_room=4717603986200088156 with exception KVTransferError(bootstrap_room=4717603986200088156): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:34:35 - evalscope - INFO: Evaluating[gpqa_diamond]  41%| 82/198 [Elapsed: 42:08 < Remaining: 1:29:04, 46.07s/it]
+2026-11-09 03:35:27 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='bf88944d41af4c17a3553bbf2f379c90' decode_req.req.bootstrap_room=2963443428576245801 with exception KVTransferError(bootstrap_room=2963443428576245801): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:35:35 - evalscope - INFO: Evaluating[gpqa_diamond]  43%| 85/198 [Elapsed: 43:08 < Remaining: 50:10, 26.64s/it]
+2026-11-09 03:36:35 - evalscope - INFO: Evaluating[gpqa_diamond]  44%| 87/198 [Elapsed: 44:08 < Remaining: 42:15, 22.84s/it]
+2026-11-09 03:37:32 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='908bed1fe9bd40948c3d63c5af1f738a' decode_req.req.bootstrap_room=3966787252721296688 with exception KVTransferError(bootstrap_room=3966787252721296688): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:37:35 - evalscope - INFO: Evaluating[gpqa_diamond]  44%| 88/198 [Elapsed: 45:08 < Remaining: 1:16:53, 41.94s/it]
+2026-11-09 03:38:35 - evalscope - INFO: Evaluating[gpqa_diamond]  45%| 90/198 [Elapsed: 46:08 < Remaining: 55:02, 30.58s/it]
+2026-11-09 03:39:23 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='78dc44eda93c4617b895936f25fa4263' decode_req.req.bootstrap_room=5543119601558771487 with exception KVTransferError(bootstrap_room=5543119601558771487): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:39:35 - evalscope - INFO: Evaluating[gpqa_diamond]  46%| 92/198 [Elapsed: 47:08 < Remaining: 53:53, 30.50s/it]
+2026-11-09 03:40:35 - evalscope - INFO: Evaluating[gpqa_diamond]  47%| 93/198 [Elapsed: 48:08 < Remaining: 44:43, 25.55s/it]
+2026-11-09 03:40:59 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='04dc2e2f91954202ae9e9241b0a2ea28' decode_req.req.bootstrap_room=2691607011635108375 with exception KVTransferError(bootstrap_room=2691607011635108375): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:41:35 - evalscope - INFO: Evaluating[gpqa_diamond]  48%| 95/198 [Elapsed: 49:08 < Remaining: 56:01, 32.63s/it]
+2026-11-09 03:42:18 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='4a794be742664155907a199d21b0c351' decode_req.req.bootstrap_room=6424750145271247398 with exception KVTransferError(bootstrap_room=6424750145271247398): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:42:36 - evalscope - INFO: Evaluating[gpqa_diamond]  49%| 98/198 [Elapsed: 50:09 < Remaining: 39:31, 23.72s/it]
+2026-11-09 03:43:36 - evalscope - INFO: Evaluating[gpqa_diamond]  50%| 99/198 [Elapsed: 51:09 < Remaining: 40:45, 24.70s/it]
+2026-11-09 03:44:27 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='f513e8ba0a95433ebca87992511ade49' decode_req.req.bootstrap_room=273447684441822669 with exception KVTransferError(bootstrap_room=273447684441822669): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:44:36 - evalscope - INFO: Evaluating[gpqa_diamond]  51%| 101/198 [Elapsed: 52:09 < Remaining: 53:41, 33.21s/it]
+2026-11-09 03:45:12 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='3d7a01275fe749d7b40e05b3539bc851' decode_req.req.bootstrap_room=8701893318789528492 with exception KVTransferError(bootstrap_room=8701893318789528492): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:45:37 - evalscope - INFO: Evaluating[gpqa_diamond]  52%| 103/198 [Elapsed: 53:09 < Remaining: 43:23, 27.41s/it]
+2026-11-09 03:46:37 - evalscope - INFO: Evaluating[gpqa_diamond]  53%| 105/198 [Elapsed: 54:10 < Remaining: 46:09, 29.78s/it]
+2026-11-09 03:47:37 - evalscope - INFO: Evaluating[gpqa_diamond]  54%| 106/198 [Elapsed: 55:10 < Remaining: 1:09:14, 45.16s/it]
+2026-11-09 03:47:38 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=24 decode_req.req.rid='6f982b961f96452d9dc9c011b1ad49b6' decode_req.req.bootstrap_room=8040532485128208655 with exception KVTransferError(bootstrap_room=8040532485128208655): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:48:37 - evalscope - INFO: Evaluating[gpqa_diamond]  54%| 106/198 [Elapsed: 56:10 < Remaining: 1:09:14, 45.16s/it]
+2026-11-09 03:49:37 - evalscope - INFO: Evaluating[gpqa_diamond]  54%| 106/198 [Elapsed: 57:10 < Remaining: 1:09:14, 45.16s/it]
+2026-11-09 03:50:37 - evalscope - INFO: Evaluating[gpqa_diamond]  54%| 106/198 [Elapsed: 58:10 < Remaining: 1:09:14, 45.16s/it]
+2026-11-09 03:51:37 - evalscope - INFO: Evaluating[gpqa_diamond]  54%| 106/198 [Elapsed: 59:10 < Remaining: 1:09:14, 45.16s/it]
+2026-11-09 03:52:37 - evalscope - INFO: Evaluating[gpqa_diamond]  54%| 106/198 [Elapsed: 1:00:10 < Remaining: 1:09:14, 45.16s/it]
+2026-11-09 03:53:37 - evalscope - INFO: Evaluating[gpqa_diamond]  54%| 106/198 [Elapsed: 1:01:10 < Remaining: 1:09:14, 45.16s/it]
+2026-11-09 03:54:37 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='9ff5371198e14a3bb8ca77524781a4d0' decode_req.req.bootstrap_room=869683978478883873 with exception KVTransferError(bootstrap_room=869683978478883873): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:54:37 - evalscope - INFO: Evaluating[gpqa_diamond]  55%| 109/198 [Elapsed: 1:02:10 < Remaining: 2:01:30, 81.92s/it]
+2026-11-09 03:55:37 - evalscope - INFO: Evaluating[gpqa_diamond]  55%| 109/198 [Elapsed: 1:03:10 < Remaining: 2:01:30, 81.92s/it]
+2026-11-09 03:56:37 - evalscope - INFO: Evaluating[gpqa_diamond]  56%| 110/198 [Elapsed: 1:04:10 < Remaining: 2:14:17, 91.56s/it]
+2026-11-09 03:57:38 - evalscope - INFO: Evaluating[gpqa_diamond]  56%| 110/198 [Elapsed: 1:05:10 < Remaining: 2:14:17, 91.56s/it]
+2026-11-09 03:58:38 - evalscope - INFO: Evaluating[gpqa_diamond]  57%| 113/198 [Elapsed: 1:06:10 < Remaining: 1:14:51, 52.84s/it]
+2026-11-09 03:59:13 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='13e3d079706946659178384e59026646' decode_req.req.bootstrap_room=5933081125076161591 with exception KVTransferError(bootstrap_room=5933081125076161591): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 03:59:38 - evalscope - INFO: Evaluating[gpqa_diamond]  59%| 117/198 [Elapsed: 1:07:10 < Remaining: 36:55, 27.35s/it]
+2026-11-09 04:00:38 - evalscope - INFO: Evaluating[gpqa_diamond]  60%| 118/198 [Elapsed: 1:08:11 < Remaining: 30:06, 22.58s/it]
+2026-11-09 04:01:38 - evalscope - INFO: Evaluating[gpqa_diamond]  60%| 119/198 [Elapsed: 1:09:11 < Remaining: 52:04, 39.55s/it]
+2026-11-09 04:02:38 - evalscope - INFO: Evaluating[gpqa_diamond]  61%| 121/198 [Elapsed: 1:10:11 < Remaining: 33:57, 26.46s/it]
+2026-11-09 04:02:59 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='4a2b04b44ece4898b6fe41b0258e624a' decode_req.req.bootstrap_room=6601086643642118065 with exception KVTransferError(bootstrap_room=6601086643642118065): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 04:03:38 - evalscope - INFO: Evaluating[gpqa_diamond]  63%| 124/198 [Elapsed: 1:11:11 < Remaining: 36:57, 29.97s/it]
+2026-11-09 04:04:25 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='3fd9957274204093b7126de54d07205f' decode_req.req.bootstrap_room=8006474687863478567 with exception KVTransferError(bootstrap_room=8006474687863478567): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 04:04:38 - evalscope - INFO: Evaluating[gpqa_diamond]  66%| 130/198 [Elapsed: 1:12:11 < Remaining: 10:36,  9.35s/it]
+2026-11-09 04:05:38 - evalscope - INFO: Evaluating[gpqa_diamond]  67%| 132/198 [Elapsed: 1:13:11 < Remaining: 17:44, 16.13s/it]
+2026-11-09 04:06:38 - evalscope - INFO: Evaluating[gpqa_diamond]  67%| 133/198 [Elapsed: 1:14:11 < Remaining: 38:51, 35.87s/it]
+2026-11-09 04:07:39 - evalscope - INFO: Evaluating[gpqa_diamond]  68%| 135/198 [Elapsed: 1:15:12 < Remaining: 28:57, 27.58s/it]
+2026-11-09 04:08:39 - evalscope - INFO: Evaluating[gpqa_diamond]  68%| 135/198 [Elapsed: 1:16:12 < Remaining: 28:57, 27.58s/it]
+2026-11-09 04:09:11 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='b2b6fc97148a4c108d7311ff53acc5eb' decode_req.req.bootstrap_room=5513838882703521078 with exception KVTransferError(bootstrap_room=5513838882703521078): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 04:09:39 - evalscope - INFO: Evaluating[gpqa_diamond]  69%| 137/198 [Elapsed: 1:17:12 < Remaining: 42:28, 41.78s/it]
+2026-11-09 04:10:39 - evalscope - INFO: Evaluating[gpqa_diamond]  71%| 141/198 [Elapsed: 1:18:12 < Remaining: 22:07, 23.28s/it]
+2026-11-09 04:11:16 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='90c3ee1697424682b5488f786430a0bf' decode_req.req.bootstrap_room=1297601884892976531 with exception KVTransferError(bootstrap_room=1297601884892976531): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 04:11:39 - evalscope - INFO: Evaluating[gpqa_diamond]  73%| 144/198 [Elapsed: 1:19:12 < Remaining: 14:13, 15.80s/it]
+2026-11-09 04:12:39 - evalscope - INFO: Evaluating[gpqa_diamond]  73%| 145/198 [Elapsed: 1:20:12 < Remaining: 28:04, 31.77s/it]
+2026-11-09 04:13:39 - evalscope - INFO: Evaluating[gpqa_diamond]  75%| 148/198 [Elapsed: 1:21:12 < Remaining: 16:46, 20.12s/it]
+2026-11-09 04:14:12 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='a5cc2038e2dd4cf3aa3fff1a10247fb6' decode_req.req.bootstrap_room=6750484391567048416 with exception KVTransferError(bootstrap_room=6750484391567048416): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 04:14:39 - evalscope - INFO: Evaluating[gpqa_diamond]  76%| 151/198 [Elapsed: 1:22:12 < Remaining: 14:35, 18.63s/it]
+2026-11-09 04:15:39 - evalscope - INFO: Evaluating[gpqa_diamond]  78%| 154/198 [Elapsed: 1:23:12 < Remaining: 20:37, 28.13s/it]
+2026-11-09 04:16:40 - evalscope - INFO: Evaluating[gpqa_diamond]  79%| 156/198 [Elapsed: 1:24:12 < Remaining: 10:49, 15.47s/it]
+2026-11-09 04:17:40 - evalscope - INFO: Evaluating[gpqa_diamond]  79%| 157/198 [Elapsed: 1:25:12 < Remaining: 20:08, 29.48s/it]
+2026-11-09 04:17:57 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='4b340e93848c43a68e3e3930f13c2c21' decode_req.req.bootstrap_room=2895048684534671565 with exception KVTransferError(bootstrap_room=2895048684534671565): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 04:18:40 - evalscope - INFO: Evaluating[gpqa_diamond]  80%| 159/198 [Elapsed: 1:26:12 < Remaining: 23:54, 36.77s/it]
+2026-11-09 04:19:40 - evalscope - INFO: Evaluating[gpqa_diamond]  83%| 164/198 [Elapsed: 1:27:13 < Remaining: 08:51, 15.64s/it]
+2026-11-09 04:19:59 - evalscope - WARNING: Attempt 1 / 5 failed: Decode transfer failed for request rank=8 decode_req.req.rid='accecc950f0840f187db0b7b03c390e2' decode_req.req.bootstrap_room=4706355219209576827 with exception KVTransferError(bootstrap_room=4706355219209576827): Failed to get kvcache from prefill instance, it might be dead. Retrying...
+2026-11-09 04:20:40 - evalscope - INFO: Evaluating[gpqa_diamond]  84%| 167/198 [Elapsed: 1:28:13 < Remaining: 09:21, 18.11s/it]
+2026-11-09 04:21:40 - evalscope - INFO: Evaluating[gpqa_diamond]  86%| 170/198 [Elapsed: 1:29:13 < Remaining: 06:18, 13.50s/it]
+2026-11-09 04:22:40 - evalscope - INFO: Evaluating[gpqa_diamond]  87%| 172/198 [Elapsed: 1:30:13 < Remaining: 09:08, 21.11s/it]
+2026-11-09 04:23:40 - evalscope - INFO: Evaluating[gpqa_diamond]  88%| 174/198 [Elapsed: 1:31:13 < Remaining: 12:48, 32.01s/it]
+2026-11-09 04:24:40 - evalscope - INFO: Evaluating[gpqa_diamond]  88%| 175/198 [Elapsed: 1:32:13 < Remaining: 15:01, 39.22s/it]
+2026-11-09 04:25:40 - evalscope - INFO: Evaluating[gpqa_diamond]  89%| 176/198 [Elapsed: 1:33:13 < Remaining: 15:34, 42.46s/it]
+2026-11-09 04:26:40 - evalscope - INFO: Evaluating[gpqa_diamond]  90%| 179/198 [Elapsed: 1:34:13 < Remaining: 08:42, 27.51s/it]
+2026-11-09 04:27:40 - evalscope - INFO: Evaluating[gpqa_diamond]  91%| 180/198 [Elapsed: 1:35:13 < Remaining: 09:55, 33.06s/it]
+2026-11-09 04:28:40 - evalscope - INFO: Evaluating[gpqa_diamond]  91%| 180/198 [Elapsed: 1:36:13 < Remaining: 09:55, 33.06s/it]
+2026-11-09 04:29:40 - evalscope - INFO: Evaluating[gpqa_diamond]  91%| 180/198 [Elapsed: 1:37:13 < Remaining: 09:55, 33.06s/it]
+2026-11-09 04:30:41 - evalscope - INFO: Evaluating[gpqa_diamond]  91%| 181/198 [Elapsed: 1:38:13 < Remaining: 20:04, 70.87s/it]
+2026-11-09 04:31:41 - evalscope - INFO: Evaluating[gpqa_diamond]  92%| 182/198 [Elapsed: 1:39:13 < Remaining: 19:54, 74.63s/it]
+2026-11-09 04:32:41 - evalscope - INFO: Evaluating[gpqa_diamond]  92%| 183/198 [Elapsed: 1:40:14 < Remaining: 17:51, 71.47s/it]
+2026-11-09 04:33:41 - evalscope - INFO: Evaluating[gpqa_diamond]  92%| 183/198 [Elapsed: 1:41:14 < Remaining: 17:51, 71.47s/it]
+2026-11-09 04:34:41 - evalscope - INFO: Evaluating[gpqa_diamond]  93%| 185/198 [Elapsed: 1:42:14 < Remaining: 13:59, 64.55s/it]
+2026-11-09 04:35:41 - evalscope - INFO: Evaluating[gpqa_diamond]  94%| 186/198 [Elapsed: 1:43:14 < Remaining: 11:58, 59.89s/it]
+2026-11-09 04:36:41 - evalscope - INFO: Evaluating[gpqa_diamond]  94%| 186/198 [Elapsed: 1:44:14 < Remaining: 11:58, 59.89s/it]
+2026-11-09 04:37:41 - evalscope - INFO: Evaluating[gpqa_diamond]  96%| 190/198 [Elapsed: 1:45:14 < Remaining: 04:28, 33.61s/it]
+2026-11-09 04:38:41 - evalscope - INFO: Evaluating[gpqa_diamond]  96%| 190/198 [Elapsed: 1:46:14 < Remaining: 04:28, 33.61s/it]
+2026-11-09 04:39:41 - evalscope - INFO: Evaluating[gpqa_diamond]  96%| 191/198 [Elapsed: 1:47:14 < Remaining: 06:13, 53.35s/it]
+2026-11-09 04:40:41 - evalscope - INFO: Evaluating[gpqa_diamond]  96%| 191/198 [Elapsed: 1:48:14 < Remaining: 06:13, 53.35s/it]
+2026-11-09 04:41:41 - evalscope - INFO: Evaluating[gpqa_diamond]  97%| 192/198 [Elapsed: 1:49:14 < Remaining: 07:11, 71.85s/it]
+2026-11-09 04:42:41 - evalscope - INFO: Evaluating[gpqa_diamond]  97%| 192/198 [Elapsed: 1:50:14 < Remaining: 07:11, 71.85s/it]
+2026-11-09 04:43:41 - evalscope - INFO: Evaluating[gpqa_diamond]  97%| 192/198 [Elapsed: 1:51:14 < Remaining: 07:11, 71.85s/it]
+2026-11-09 04:44:41 - evalscope - INFO: Evaluating[gpqa_diamond]  97%| 193/198 [Elapsed: 1:52:14 < Remaining: 08:29, 101.90s/it]
+2026-11-09 04:45:41 - evalscope - INFO: Evaluating[gpqa_diamond]  97%| 193/198 [Elapsed: 1:53:14 < Remaining: 08:29, 101.90s/it]
+2026-11-09 04:46:41 - evalscope - INFO: Evaluating[gpqa_diamond]  98%| 194/198 [Elapsed: 1:54:14 < Remaining: 06:58, 104.64s/it]
+2026-11-09 04:47:41 - evalscope - INFO: Evaluating[gpqa_diamond]  98%| 195/198 [Elapsed: 1:55:14 < Remaining: 05:04, 101.45s/it]
+2026-11-09 04:48:41 - evalscope - INFO: Evaluating[gpqa_diamond]  98%| 195/198 [Elapsed: 1:56:14 < Remaining: 05:04, 101.45s/it]
+2026-11-09 04:49:41 - evalscope - INFO: Evaluating[gpqa_diamond]  98%| 195/198 [Elapsed: 1:57:14 < Remaining: 05:04, 101.45s/it]
+2026-11-09 04:50:41 - evalscope - INFO: Evaluating[gpqa_diamond]  99%| 196/198 [Elapsed: 1:58:14 < Remaining: 04:02, 121.43s/it]
+2026-11-09 04:51:41 - evalscope - INFO: Evaluating[gpqa_diamond]  99%| 196/198 [Elapsed: 1:59:14 < Remaining: 04:02, 121.43s/it]
+2026-11-09 04:52:41 - evalscope - INFO: Evaluating[gpqa_diamond]  99%| 197/198 [Elapsed: 2:00:14 < Remaining: 02:07, 127.31s/it]
+2026-11-09 04:53:41 - evalscope - INFO: Evaluating[gpqa_diamond]  99%| 197/198 [Elapsed: 2:01:14 < Remaining: 02:07, 127.31s/it]
+2026-11-09 04:54:41 - evalscope - INFO: Evaluating[gpqa_diamond]  99%| 197/198 [Elapsed: 2:02:14 < Remaining: 02:07, 127.31s/it]
+2026-11-09 04:55:36 - evalscope - INFO: Evaluating[gpqa_diamond] 100%| 198/198 [Elapsed: 2:03:08 < Remaining: 00:00, 143.49s/it]
+2026-11-09 04:55:36 - evalscope - INFO: gpqa_diamond: predictions complete, aggregating scores...
+2026-11-09 04:55:36 - evalscope - INFO: Aggregating scores for subset: default
+2026-11-09 04:55:36 - evalscope - INFO: Generating report...
+2026-11-09 04:55:36 - evalscope - INFO: 
+gpqa_diamond report table:
+┌──────────────┬──────────────┬────────────┬──────────┬───────┬─────────┐
+│ Model        │ Dataset      │ Metric     │ Subset   │   Num │ Score   │
+├──────────────┼──────────────┼────────────┼──────────┼───────┼─────────┤
+│ GLM-5.2-w8a8 │ GPQA-Diamond │ Accuracy ↑ │ default  │   198 │ 89.9%   │
+└──────────────┴──────────────┴────────────┴──────────┴───────┴─────────┘ 
+
+2026-11-09 04:55:36 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-11-09 04:55:36 - evalscope - INFO: Dump report to: /root/.cache/tests/output/main-20261109-0005-42498125758-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_2p2d_32p_pcp_gpqa/20261109_025226/reports/GLM-5.2-w8a8/gpqa_diamond.json 
+
+2026-11-09 04:55:36 - evalscope - INFO: 
+gpqa_diamond perf table:
+Model         Dataset         Num  Avg Lat    Avg TTFT     Avg TPOT    Avg Thpt       Avg In    Avg Out
+------------  ------------  -----  ---------  -----------  ----------  -----------  --------  ---------
+GLM-5.2-w8a8  GPQA-Diamond    198  973.103 s  276099.2 ms  39.2 ms     22.17 tok/s       321      21570
+
+2026-11-09 04:55:36 - evalscope - INFO: Benchmark gpqa_diamond evaluation finished.
+2026-11-09 04:55:36 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 2:03:09 < Remaining: 00:00, 7389.23s/benchmark]
+2026-11-09 04:55:36 - evalscope - INFO: Overall report table: 
+┌──────────────┬──────────────┬────────────┬──────────┬───────┬─────────┐
+│ Model        │ Dataset      │ Metric     │ Subset   │   Num │ Score   │
+├──────────────┼──────────────┼────────────┼──────────┼───────┼─────────┤
+│ GLM-5.2-w8a8 │ GPQA-Diamond │ Accuracy ↑ │ default  │   198 │ 89.9%   │
+└──────────────┴──────────────┴────────────┴──────────┴───────┴─────────┘ 
+
+2026-11-09 04:55:36 - evalscope - INFO: Overall perf table: 
+Model         Dataset         Num  Avg Lat    Avg TTFT     Avg TPOT    Avg Thpt       Avg In    Avg Out
+------------  ------------  -----  ---------  -----------  ----------  -----------  --------  ---------
+GLM-5.2-w8a8  GPQA-Diamond    198  973.103 s  276099.2 ms  39.2 ms     22.17 tok/s       321      21570 
+
+2026-11-09 04:55:36 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/main-20261109-0005-42498125758-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_2p2d_32p_pcp_gpqa/20261109_025226/reports/report.html
+2026-11-09 04:55:37 - evalscope - INFO: Finished evaluation for GLM-5.2-w8a8 on ['gpqa_diamond']
+2026-11-09 04:55:37 - evalscope - INFO: Output directory: /root/.cache/tests/output/main-20261109-0005-42498125758-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/test_npu_glm_5_2_w8a8_2p2d_32p_pcp_gpqa/20261109_025226
+
+# [collect_metrics] 文件原始修改时间: 2026-11-09 04:55:37
