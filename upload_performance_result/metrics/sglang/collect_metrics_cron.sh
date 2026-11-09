@@ -160,13 +160,19 @@ fi
 TOTAL_FAIL=0
 
 # 3.1 分支模式（支持多个分支，逐个收集）
+# 子脚本退出码语义：0=成功 1=真实错误 2=分支暂无可收集任务目录（空采集）。
+# rc=2 属预期状态（如分支 CI 尚未运行或非连续调度），记提示不计入 TOTAL_FAIL。
 for b in ${COLLECT_BRANCHES}; do
     [ -n "${b}" ] || continue
     _log "==== 开始收集分支: ${b} ===="
-    if bash "${COLLECT_SCRIPT}" --branch "${b}" ${LOGS_FLAG} >> "${LOG_FILE}" 2>&1; then
+    rc=0
+    bash "${COLLECT_SCRIPT}" --branch "${b}" ${LOGS_FLAG} >> "${LOG_FILE}" 2>&1 || rc=$?
+    if [ "${rc}" -eq 0 ]; then
         _log "分支 ${b} 收集完成"
+    elif [ "${rc}" -eq 2 ]; then
+        _log "分支 ${b} 暂无可收集任务目录（新分支或 CI 尚未运行），本次跳过"
     else
-        _log "[error] 分支 ${b} 收集失败（详见日志 ${LOG_FILE}）"
+        _log "[error] 分支 ${b} 收集失败（rc=${rc}，详见日志 ${LOG_FILE}）"
         TOTAL_FAIL=$((TOTAL_FAIL + 1))
     fi
 done

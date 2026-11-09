@@ -259,8 +259,11 @@ if [ -n "${BRANCH:-}" ]; then
         fi
     done
     if [ ${#SEARCH_ROOTS[@]} -eq 0 ]; then
-        echo "错误: 未找到匹配分支前缀 ${BRANCH} 的任务目录 (${SRC_BASE}/${BRANCH}*，且排除日期目录)"
-        exit 1
+        # 退出码语义：0=成功 1=真实错误 2=分支暂无可收集任务目录（空采集）
+        # cron 层（collect_metrics_cron.sh）对 rc=2 记警告不计失败，
+        # 避免分支 CI 尚未运行时定时日志持续报错淹没真实失败。
+        echo "警告: 未找到匹配分支前缀 ${BRANCH} 的任务目录 (${SRC_BASE}/${BRANCH}*，且排除日期目录)，本次跳过"
+        exit 2
     fi
     echo "分支筛选: ${BRANCH} (前缀匹配, 排除日期目录) → 匹配 ${#SEARCH_ROOTS[@]} 个任务目录"
 else
