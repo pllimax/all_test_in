@@ -3,6 +3,16 @@
 #   cp collect_metrics_cron.conf.example collect_metrics_cron.conf
 # 此文件为 bash 语法：变量赋值即可，会被 collect_metrics_cron.sh 加载。
 # 未设置项使用 collect_metrics_cron.sh 内置默认。
+#
+# ============================================================
+# 配置分工（避免重复配置）：
+#   本文件（cron.conf）  —— 只放"调度行为"：收集哪些分支/日期、是否拉日志、是否同步代码、日志与锁
+#   collect_metrics.local.conf —— 放"环境与凭据"：SRC_BASE / LOG_BASE / WF_FILTER / GIT_REPO /
+#                                GIT_TOKEN / 推送重试等，见 collect_metrics.local.conf.example
+#
+# 注意：local.conf 在 collect_metrics.sh 内部最后加载，优先级高于本文件经环境变量透传的值。
+#       同一变量两处都配时以 local.conf 为准，因此环境类配置请只写在 local.conf。
+# ============================================================
 
 # ------------------------------------------------------------
 # 要收集的分支前缀（空格分隔，可多个，留空则跳过分支模式）
@@ -35,24 +45,3 @@ SYNC_CODE="true"
 
 # 防重叠锁文件
 # LOCK_FILE="/tmp/collect_metrics_cron.lock"
-
-# ------------------------------------------------------------
-# 以下变量会由 collect_metrics_cron.sh export 透传给 collect_metrics.sh
-# （否则子进程会回落到脚本内置默认，如 GIT_REPO 默认 github 而非 gitee，导致推错仓库）
-# ------------------------------------------------------------
-# 源目录基础路径（CI 输出目录）
-SRC_BASE="/data/ascend-ci-share-pkking-sglang/tests/output"
-
-# 多机用例日志基础路径（仅 --branch 时拉取 test_npu_* 完整日志）
-LOG_BASE="/data/ascend-ci-share-pkking-sglang/tests/logs/log"
-
-# workflow 白名单过滤（20261016 新增）：只收集指定 workflow，逗号分隔前缀匹配，
-# 留空或注释=不过滤。Release_Branch_Cut 等非 nightly run 会被排除。
-WF_FILTER="Nightly_Test_NPU"
-
-# 数据仓地址（默认 gitee，公开仓可直接 clone；推送 token 见下方）
-GIT_REPO="https://gitee.com/pllimax_admin/all_test_in.git"
-
-# GIT_TOKEN 建议放在 collect_metrics.local.conf（git-ignored，collect_metrics.sh 自动加载），
-# 此处无需重复配置；若放这里注意该 conf 不要提交。
-# GIT_TOKEN="..."

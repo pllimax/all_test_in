@@ -78,7 +78,7 @@ done
 # bash 中 source 的普通变量不会自动传给子进程；若不 export，子进程 collect_metrics.sh
 # 会回落到内置默认值（如 GIT_REPO 默认 github 而非 gitee），导致推送错仓库。
 # 此处显式 export 需透传的变量（未设置时 export 空值，子进程使用其内置默认，安全）。
-export SRC_BASE LOG_BASE GIT_REPO GIT_TARGET_PATH GIT_LOCAL_DIR GIT_USER_NAME GIT_USER_EMAIL UPLOAD_RETRY UPLOAD_RETRY_DELAY UPLOAD_TIMEOUT
+export SRC_BASE LOG_BASE WF_FILTER GIT_REPO GIT_TARGET_PATH GIT_LOCAL_DIR GIT_USER_NAME GIT_USER_EMAIL UPLOAD_RETRY UPLOAD_RETRY_DELAY UPLOAD_TIMEOUT
 
 # ---------- 日志函数（写入 LOG_FILE + 输出到终端） ----------
 _log() {

@@ -2,24 +2,62 @@
 #
 # 用法:
 #   1. 复制本文件为同目录下的 collect_metrics.local.conf
-#   2. 在 collect_metrics.local.conf 中填入真实 GIT_TOKEN
+#   2. 按本机实际情况填写 SRC_BASE / LOG_BASE / WF_FILTER，并填入真实 GIT_TOKEN
 #   3. collect_metrics.sh 启动时会自动加载 collect_metrics.local.conf
 #
 # 说明:
 #   - collect_metrics.local.conf 已被 .gitignore 忽略，不会被提交到仓库，
 #     因此可安全存放 token 等敏感信息。
-#   - 未配置 GIT_TOKEN 时，脚本按 GIT_REPO（默认 https）直连，公开仓可直接 clone。
+#   - 本文件承载"环境与凭据"类配置；"调度行为"（收集哪些分支/日期、是否拉日志、
+#     日志与锁）放在 collect_metrics_cron.conf，二者不重复配置。
+#   - 本文件在 collect_metrics.sh 内部最后加载，优先级高于 collect_metrics_cron.conf
+#     经环境变量透传的值，也是唯一能影响手动执行（--branch / 日期模式）的配置。
 #   - 命令行/环境变量仍可覆盖此处设置。
+#   - 未配置 GIT_TOKEN 时，脚本按 GIT_REPO（默认 https）直连，公开仓可直接 clone。
 
-# 本地 git 提交身份（可选，默认 pllimax）
+# ============================================================
+# 1) CI 源目录（每台机器必须按实际路径修改）
+# ============================================================
+# 源目录基础路径（CI 输出目录，不含日期部分）
+SRC_BASE="/data/ascend-ci-share-pkking-sglang/tests/output"
+
+# 多机用例日志基础路径（仅 --branch 且开启 COLLECT_LOGS 时才使用）
+LOG_BASE="/data/ascend-ci-share-pkking-sglang/tests/logs/log"
+
+# workflow 白名单过滤：逗号分隔、前缀匹配（兼容 {workflow}--{image_label} 目录名）
+# 留空 = 不过滤，会把 Release_Branch_Cut 等非 nightly run 也一起收集
+#   WF_FILTER="Nightly_Test_NPU"
+#   WF_FILTER="Nightly_Test_NPU,Full_Test_NPU"
+WF_FILTER="Nightly_Test_NPU"
+
+# ============================================================
+# 2) 数据仓与提交身份
+# ============================================================
+# 数据仓地址（collect_metrics.sh 内置默认是 github，务必显式配置为 gitee，否则会推错仓库）
+GIT_REPO="https://gitee.com/pllimax_admin/all_test_in.git"
+
+# Git 仓库内目标路径（一般无需修改）
+#GIT_TARGET_PATH="upload_performance_result/metrics/sglang"
+
+# 本地工作副本目录（默认脚本所在目录下的 .all_test_in_repo）
+#GIT_LOCAL_DIR="/data/collect_metrics/.all_test_in_repo"
+
+# 本地 git 提交身份（可选，脚本默认已固化为 pllimax）
 #GIT_USER_NAME="pllimax"
 #GIT_USER_EMAIL="pllimax2556769@163.com"
 
-# 数据仓地址（已迁移到 Gitee，默认即指向 Gitee，一般无需修改）
-#GIT_REPO="https://gitee.com/pllimax_admin/all_test_in.git"
-
+# ============================================================
+# 3) 推送认证与重试策略
+# ============================================================
 # 推送认证 token（填入真实 Gitee 个人访问令牌；git-ignored，勿提交）
 # 认证格式为 oauth2:TOKEN@gitee.com，脚本会自动内嵌，无需手动拼接。
-# 说明：example 会被提交到 GitHub，此处用占位符；真实 token 请填到 git-ignored 的
+# 说明：example 会被提交到仓库，此处用占位符；真实 token 请填到 git-ignored 的
 #       collect_metrics.local.conf 中。
 GIT_TOKEN="gitee_personal_access_token_xxxxxxxx"
+
+# git push 失败/超时重试次数（默认 5）
+#UPLOAD_RETRY="5"
+# 每次重试间隔秒数（默认 10）
+#UPLOAD_RETRY_DELAY="10"
+# 单次推送超时秒数（默认 300，需 coreutils timeout）
+#UPLOAD_TIMEOUT="300"
