@@ -56,13 +56,17 @@ def load_nightly_suites(repo):
 
 
 def scan_registered_cases(repo, suites):
-    """扫描 test/registered/npu 下注册到 nightly suite 的用例，及 workflow matrix 引用。"""
+    """扫描 test/registered/{npu,unit,accuracy} 下注册到 nightly suite 的用例，
+    及 workflow matrix 引用。NPU suite 用例不限于 npu 子树（如 nightly-1 的
+    unit 功能用例、nightly-acc-4-npu-a5 的 accuracy/models 用例）。"""
     registered = {}
-    test_root = os.path.join(repo, "test", "registered", "npu")
-    if os.path.isdir(test_root):
+    for subdir in ("npu", "unit", "accuracy"):
+        test_root = os.path.join(repo, "test", "registered", subdir)
+        if not os.path.isdir(test_root):
+            continue
         for root, _dirs, files in os.walk(test_root):
             for fn in files:
-                if not (fn.startswith("test_npu_") and fn.endswith(".py")):
+                if not (fn.startswith("test_") and fn.endswith(".py")):
                     continue
                 path = os.path.join(root, fn)
                 rel = os.path.relpath(path, repo).replace("\\", "/")
@@ -83,12 +87,16 @@ def scan_registered_cases(repo, suites):
     yml = os.path.join(repo, NIGHTLY_YML)
     if os.path.isfile(yml):
         body = open(yml, encoding="utf-8", errors="replace").read()
-        for rel in TEST_CASE_RE.findall(body):
-            case = os.path.basename(rel)[:-3]
-            if case not in registered:
-                low = rel.lower()
-                t = "performance" if "/performance/" in low else "accuracy"
-                registered[case] = {"suites": ["multi-node-matrix"], "type": t}
+        for line in body.splitlines():
+            # 注释掉的 matrix 条目不会执行，不应计入平台期望用例
+            if line.lstrip().startswith("#"):
+                continue
+            for rel in TEST_CASE_RE.findall(line):
+                case = os.path.basename(rel)[:-3]
+                if case not in registered:
+                    low = rel.lower()
+                    t = "performance" if "/performance/" in low else "accuracy"
+                    registered[case] = {"suites": ["multi-node-matrix"], "type": t}
     return registered
 
 

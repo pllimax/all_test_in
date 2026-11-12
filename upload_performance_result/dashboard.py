@@ -52,6 +52,10 @@ SPARSE_CHECKOUT_PATHS = [
     ".github/workflows",
     "test/registered/ascend",
     "test/registered/npu",
+    # NPU suite 也可能注册 npu 子树之外的用例（如 nightly-1 的 unit 用例、
+    # nightly-acc-4-npu-a5 的 accuracy/models 用例），需一并检出
+    "test/registered/unit",
+    "test/registered/accuracy",
 ]
 # 源码仓周期性同步间隔（秒），与基线/链接缓存 TTL 一致（默认每 2 小时）
 SOURCE_SYNC_INTERVAL = int(os.environ.get("SOURCE_SYNC_INTERVAL", "7200"))
@@ -73,7 +77,12 @@ SUITE_REGISTRY_REPO_URL = os.environ.get(
 SUITE_REGISTRY_BRANCH = os.environ.get(
     "SUITE_REGISTRY_BRANCH", "main"
 )
-SUITE_REGISTRY_SUBDIR = "test/registered/npu"
+# NPU suite 用例可能分布在 npu 之外的子树（unit / accuracy），全部纳入扫描
+SUITE_REGISTRY_SUBDIRS = [
+    "test/registered/npu",
+    "test/registered/unit",
+    "test/registered/accuracy",
+]
 
 # ============================================================
 # 平台展示用例的本地配置文件（权威来源）
@@ -2055,62 +2064,73 @@ def _collect_registry_expected_test_cases():
     # 功能用例仅收集 nightly 来源（见函数 docstring 说明）
     function_only_sources = {"nightly"}
     found = {}
+    # 扫描根目录：npu 子树按一级子目录判断类型；unit/accuracy 子树仅出现在
+    # nightly 来源（社区 main），其用例同样可注册到 NPU nightly suite
+    # （如 nightly-1 的 unit 功能用例、nightly-acc-4-npu-a5 的 accuracy/models 用例）
+    scan_roots = [
+        ("npu", None),        # None = 按一级子目录 accuracy/performance 判断，其余 function
+        ("unit", "function"),
+        ("accuracy", "accuracy"),
+    ]
     for src_name, src_cfg in SOURCES.items():
         repo_root = src_cfg.get("repo_root", "")
         if not repo_root:
             continue
-        npu_root = os.path.join(repo_root, "test", "registered", "npu")
-        if not os.path.isdir(npu_root):
-            continue
-        for root, _, files in os.walk(npu_root):
-            rel = os.path.relpath(root, npu_root)
-            top_dir = rel.split(os.sep)[0] if rel != "." else ""
-            case_type = type_map.get(top_dir, "function")
-            if case_type == "function" and src_name not in function_only_sources:
+        for subdir, fixed_type in scan_roots:
+            if subdir != "npu" and src_name != "nightly":
                 continue
-            for fname in sorted(files):
-                if not fname.endswith(".py"):
+            scan_root = os.path.join(repo_root, "test", "registered", subdir)
+            if not os.path.isdir(scan_root):
+                continue
+            for root, _, files in os.walk(scan_root):
+                rel = os.path.relpath(root, scan_root)
+                top_dir = rel.split(os.sep)[0] if rel != "." else ""
+                case_type = fixed_type or type_map.get(top_dir, "function")
+                if case_type == "function" and src_name not in function_only_sources:
                     continue
-                case_name = fname[:-3]  # 去掉 .py，如 test_npu_xxx
-                yaml_name = case_name  # 保留 test_npu_ 前缀，与 python 文件名（及配置文件 key）一致
-                # EXCLUDED_TEST_CASES 中同时含裸名与带前缀两种形式，均需匹配
-                bare_name = case_name[len("test_npu_"):] if case_name.startswith("test_npu_") else case_name
-                if case_name in EXCLUDED_TEST_CASES or bare_name in EXCLUDED_TEST_CASES:
-                    continue
-                filepath = os.path.join(root, fname)
-                try:
-                    with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-                        content = f.read()
-                except OSError:
-                    continue
-                if not _is_nightly_registered(content):
-                    continue
-                # 排除已禁用(disabled)的单机用例：单机用例只能通过注册器执行，
-                # 注册器一旦 disabled 即不会在 nightly 流水线运行；多机 disabled
-                # 用例仍会通过 nightly-test-npu.yml 执行，予以保留。
-                if _is_disabled_single_node(content, case_name):
-                    continue
-                # 功能用例需额外筛选：suite 以 nightly- 开头（仅收集 nightly 流水线执行的
-                # 功能用例，排除 full-* 等 fulltest 流水线用例）且为标准聚合 suite
-                # （排除 test_npu_api 的 nightly-npu-a3-merged 等无实际用例的非标准 suite）
-                if case_type == "function":
-                    suite = _nightly_suite_of(content)
-                    if not suite.startswith("nightly-") or not _is_standard_suite(suite):
+                for fname in sorted(files):
+                    if not fname.endswith(".py"):
                         continue
-                labels = parse_yaml_test_name(yaml_name)
-                if yaml_name not in found:
-                    found[yaml_name] = {
-                        "labels": labels,
-                        "source": src_name,
-                        "yaml_name": yaml_name,
-                        "type": case_type,
-                    }
-                else:
-                    existing = found[yaml_name]
-                    if src_name not in existing["source"].split(","):
-                        existing["source"] = existing["source"] + "," + src_name
-                    if existing.get("type") == "unknown":
-                        existing["type"] = case_type
+                    case_name = fname[:-3]  # 去掉 .py，如 test_npu_xxx
+                    yaml_name = case_name  # 保留 test_npu_ 前缀，与 python 文件名（及配置文件 key）一致
+                    # EXCLUDED_TEST_CASES 中同时含裸名与带前缀两种形式，均需匹配
+                    bare_name = case_name[len("test_npu_"):] if case_name.startswith("test_npu_") else case_name
+                    if case_name in EXCLUDED_TEST_CASES or bare_name in EXCLUDED_TEST_CASES:
+                        continue
+                    filepath = os.path.join(root, fname)
+                    try:
+                        with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                            content = f.read()
+                    except OSError:
+                        continue
+                    if not _is_nightly_registered(content):
+                        continue
+                    # 排除已禁用(disabled)的单机用例：单机用例只能通过注册器执行，
+                    # 注册器一旦 disabled 即不会在 nightly 流水线运行；多机 disabled
+                    # 用例仍会通过 nightly-test-npu.yml 执行，予以保留。
+                    if _is_disabled_single_node(content, case_name):
+                        continue
+                    # 功能用例需额外筛选：suite 以 nightly- 开头（仅收集 nightly 流水线执行的
+                    # 功能用例，排除 full-* 等 fulltest 流水线用例）且为标准聚合 suite
+                    # （排除 test_npu_api 的 nightly-npu-a3-merged 等无实际用例的非标准 suite）
+                    if case_type == "function":
+                        suite = _nightly_suite_of(content)
+                        if not suite.startswith("nightly-") or not _is_standard_suite(suite):
+                            continue
+                    labels = parse_yaml_test_name(yaml_name)
+                    if yaml_name not in found:
+                        found[yaml_name] = {
+                            "labels": labels,
+                            "source": src_name,
+                            "yaml_name": yaml_name,
+                            "type": case_type,
+                        }
+                    else:
+                        existing = found[yaml_name]
+                        if src_name not in existing["source"].split(","):
+                            existing["source"] = existing["source"] + "," + src_name
+                        if existing.get("type") == "unknown":
+                            existing["type"] = case_type
     if found:
         print(f"[registry] 识别到 {len(found)} 个 register_npu_ci(nightly=True) 注册用例")
     return found
@@ -3201,7 +3221,7 @@ def sync_suite_registry():
             # 下次同步重新克隆（避免留下只有 .git 而无检出文件的损坏目录）
             for cmd, step in [
                 (["git", "sparse-checkout", "init", "--cone"], "sparse-checkout init"),
-                (["git", "sparse-checkout", "set", SUITE_REGISTRY_SUBDIR], "sparse-checkout set"),
+                (["git", "sparse-checkout", "set"] + SUITE_REGISTRY_SUBDIRS, "sparse-checkout set"),
                 (["git", "checkout", SUITE_REGISTRY_BRANCH], "checkout"),
             ]:
                 result = _run(
@@ -3231,52 +3251,53 @@ def _build_suite_maps_from_registry(repo_root):
     suite_cases = {}
     case_suite = {}
     nightly_cases = set()
-    scan_root = os.path.join(repo_root, SUITE_REGISTRY_SUBDIR)
-    if not os.path.isdir(scan_root):
-        return suite_cases, case_suite, nightly_cases
-    for root, _, files in os.walk(scan_root):
-        for fname in sorted(files):
-            if not fname.endswith(".py"):
-                continue
-            filepath = os.path.join(root, fname)
-            try:
-                with open(filepath, "r", encoding="utf-8", errors="replace") as f:
-                    content = f.read()
-            except OSError:
-                continue
-            case_name = fname[:-3]  # 去掉 .py，如 test_npu_xxx
-            # 解析 register_npu_ci(...) 的 suite= 与 nightly= 参数
-            # 简化处理：提取所有 suite="X" 与 nightly=True 出现位置，
-            # 通过括号配对找到同一调用内的参数。
-            for m in re.finditer(r"register_npu_ci\s*\(", content):
-                depth = 0
-                start = m.end() - 1
-                end = start
-                for i in range(start, len(content)):
-                    if content[i] == "(":
-                        depth += 1
-                    elif content[i] == ")":
-                        depth -= 1
-                        if depth == 0:
-                            end = i + 1
-                            break
-                args_block = content[m.end() - 1:end]
-                suite_m = re.search(r"suite\s*=\s*['\"]([^'\"]+)['\"]", args_block)
-                nightly_m = re.search(r"nightly\s*=\s*True", args_block)
-                if nightly_m:
-                    nightly_cases.add(case_name)
-                if suite_m and nightly_m:
-                    suite = suite_m.group(1).strip()
-                    if suite:
-                        suite_cases.setdefault(suite, [])
-                        if case_name not in suite_cases[suite]:
-                            suite_cases[suite].append(case_name)
-                        # 用例可能注册到多个 nightly suite（如 nightly-perf-2-npu-a3 与
-                        # full-16-npu-a3）。聚合 job 名与 nightly- 前缀 suite 对应，
-                        # 优先记录 nightly- 开头的 suite，保证匹配到正确的聚合 job。
-                        if case_name not in case_suite or \
-                           (suite.startswith("nightly-") and not case_suite[case_name].startswith("nightly-")):
-                            case_suite[case_name] = suite
+    for subdir in SUITE_REGISTRY_SUBDIRS:
+        scan_root = os.path.join(repo_root, subdir)
+        if not os.path.isdir(scan_root):
+            continue
+        for root, _, files in os.walk(scan_root):
+            for fname in sorted(files):
+                if not fname.endswith(".py"):
+                    continue
+                filepath = os.path.join(root, fname)
+                try:
+                    with open(filepath, "r", encoding="utf-8", errors="replace") as f:
+                        content = f.read()
+                except OSError:
+                    continue
+                case_name = fname[:-3]  # 去掉 .py，如 test_npu_xxx
+                # 解析 register_npu_ci(...) 的 suite= 与 nightly= 参数
+                # 简化处理：提取所有 suite="X" 与 nightly=True 出现位置，
+                # 通过括号配对找到同一调用内的参数。
+                for m in re.finditer(r"register_npu_ci\s*\(", content):
+                    depth = 0
+                    start = m.end() - 1
+                    end = start
+                    for i in range(start, len(content)):
+                        if content[i] == "(":
+                            depth += 1
+                        elif content[i] == ")":
+                            depth -= 1
+                            if depth == 0:
+                                end = i + 1
+                                break
+                    args_block = content[m.end() - 1:end]
+                    suite_m = re.search(r"suite\s*=\s*['\"]([^'\"]+)['\"]", args_block)
+                    nightly_m = re.search(r"nightly\s*=\s*True", args_block)
+                    if nightly_m:
+                        nightly_cases.add(case_name)
+                    if suite_m and nightly_m:
+                        suite = suite_m.group(1).strip()
+                        if suite:
+                            suite_cases.setdefault(suite, [])
+                            if case_name not in suite_cases[suite]:
+                                suite_cases[suite].append(case_name)
+                            # 用例可能注册到多个 nightly suite（如 nightly-perf-2-npu-a3 与
+                            # full-16-npu-a3）。聚合 job 名与 nightly- 前缀 suite 对应，
+                            # 优先记录 nightly- 开头的 suite，保证匹配到正确的聚合 job。
+                            if case_name not in case_suite or \
+                               (suite.startswith("nightly-") and not case_suite[case_name].startswith("nightly-")):
+                                case_suite[case_name] = suite
     return suite_cases, case_suite, nightly_cases
 
 
