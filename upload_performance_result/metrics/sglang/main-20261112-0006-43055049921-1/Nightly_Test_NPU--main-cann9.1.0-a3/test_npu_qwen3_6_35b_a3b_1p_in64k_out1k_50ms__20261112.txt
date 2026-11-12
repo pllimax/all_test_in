@@ -1,0 +1,111 @@
+memfabric_hybrid          1.3.0
+sgl_kernel_npu            2026.9.0
+sglang                    0.5.24.dev1113+gc31c8b814      /sgl-workspace/sglang/python
+sglang-router             0.3.2
+torch                     2.10.0+cpu
+torch_memory_saver        0.0.8
+torch_npu                 2.10.0.post6
+torchaudio                2.10.0+cpu
+torchvision               0.25.0+cpu
+CANN: 9.1.0
+transformers: 5.19.0
+benchmark_args=Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=20866, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Qwen/Qwen3.6-35B-A3B', served_model_name=None, tokenizer=None, num_prompts=40, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=64000, random_output_len=1000, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=10, output_file=None, output_details=False, goodput=None, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None, rust_client=False, rust_worker_threads=None)
+Waiting up to 60s for http://127.0.0.1:20866/v1/models to become ready...
+Server ready in 0.0s.
+Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=20866, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Qwen/Qwen3.6-35B-A3B', served_model_name=None, tokenizer=None, num_prompts=40, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=64000, random_output_len=1000, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=10, output_file=None, output_details=False, goodput=None, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=1, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None, rust_client=False, rust_worker_threads=None)
+
+#Input tokens: 2560000
+#Output tokens: 40000
+Starting warmup with 1 sequences...
+Warmup completed with 1 sequences. Starting main benchmark run...
+
+  0%|          | 0/40 [00:00<?, ?it/s]
+  2%|▎         | 1/40 [00:30<19:31, 30.03s/it]
+  8%|▊         | 3/40 [00:36<06:11, 10.05s/it]
+ 10%|█         | 4/40 [00:39<04:43,  7.87s/it]
+ 12%|█▎        | 5/40 [00:45<04:12,  7.22s/it]
+ 15%|█▌        | 6/40 [00:48<03:20,  5.90s/it]
+ 18%|█▊        | 7/40 [00:57<03:37,  6.60s/it]
+ 20%|██        | 8/40 [01:03<03:31,  6.61s/it]
+ 22%|██▎       | 9/40 [01:06<02:50,  5.51s/it]
+ 25%|██▌       | 10/40 [01:14<03:04,  6.15s/it]
+ 28%|██▊       | 11/40 [01:17<02:32,  5.24s/it]
+ 30%|███       | 12/40 [01:23<02:34,  5.53s/it]
+ 32%|███▎      | 13/40 [01:26<02:09,  4.80s/it]
+ 35%|███▌      | 14/40 [01:30<01:57,  4.53s/it]
+ 38%|███▊      | 15/40 [01:35<01:54,  4.59s/it]
+ 40%|████      | 16/40 [01:43<02:13,  5.55s/it]
+ 42%|████▎     | 17/40 [01:47<01:59,  5.21s/it]
+ 45%|████▌     | 18/40 [01:50<01:40,  4.55s/it]
+ 48%|████▊     | 19/40 [01:54<01:32,  4.42s/it]
+ 50%|█████     | 20/40 [01:58<01:24,  4.22s/it]
+ 52%|█████▎    | 21/40 [02:09<01:57,  6.17s/it]
+ 55%|█████▌    | 22/40 [02:12<01:35,  5.31s/it]
+ 57%|█████▊    | 23/40 [02:20<01:44,  6.12s/it]
+ 60%|██████    | 24/40 [02:25<01:30,  5.66s/it]
+ 62%|██████▎   | 25/40 [02:29<01:18,  5.25s/it]
+ 65%|██████▌   | 26/40 [02:34<01:13,  5.23s/it]
+ 68%|██████▊   | 27/40 [02:41<01:12,  5.60s/it]
+ 70%|███████   | 28/40 [02:45<01:03,  5.27s/it]
+ 72%|███████▎  | 29/40 [02:48<00:51,  4.71s/it]
+ 75%|███████▌  | 30/40 [02:52<00:43,  4.31s/it]
+ 78%|███████▊  | 31/40 [02:59<00:45,  5.04s/it]
+ 80%|████████  | 32/40 [03:02<00:36,  4.59s/it]
+ 82%|████████▎ | 33/40 [03:06<00:29,  4.26s/it]
+ 85%|████████▌ | 34/40 [03:10<00:25,  4.26s/it]
+ 88%|████████▊ | 35/40 [03:16<00:23,  4.68s/it]
+ 90%|█████████ | 36/40 [03:20<00:18,  4.62s/it]
+ 92%|█████████▎| 37/40 [03:25<00:14,  4.70s/it]
+ 95%|█████████▌| 38/40 [03:29<00:08,  4.46s/it]
+ 98%|█████████▊| 39/40 [03:29<00:03,  3.16s/it]
+100%|██████████| 40/40 [03:30<00:00,  2.50s/it]
+100%|██████████| 40/40 [03:30<00:00,  5.26s/it]
+
+============ Serving Benchmark Result ============
+Backend:                                 sglang    
+Traffic request rate:                    inf       
+Max request concurrency:                 10        
+Successful requests:                     40        
+Benchmark duration (s):                  210.40    
+Total input tokens:                      2560000   
+Total input text tokens:                 2560000   
+Total generated tokens:                  40000     
+Total generated tokens (retokenized):    39346     
+Request throughput (req/s):              0.19      
+Input token throughput (tok/s):          12167.34  
+Output token throughput (tok/s):         190.11    
+Peak output token throughput (tok/s):    586.00    
+Peak concurrent requests:                12        
+Total token throughput (tok/s):          12357.46  
+Concurrency:                             9.36      
+Accept length:                           3.32      
+----------------End-to-End Latency----------------
+Mean E2E Latency (ms):                   49225.40  
+Median E2E Latency (ms):                 48866.97  
+P90 E2E Latency (ms):                    59623.15  
+P95 E2E Latency (ms):                    64814.39  
+P99 E2E Latency (ms):                    71318.13  
+---------------Time to First Token----------------
+Mean TTFT (ms):                          24259.76  
+Median TTFT (ms):                        23213.67  
+P90 TTFT (ms):                           30118.40  
+P95 TTFT (ms):                           35838.75  
+P99 TTFT (ms):                           41306.54  
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          24.99     
+Median TPOT (ms):                        24.03     
+P90 TPOT (ms):                           35.96     
+P95 TPOT (ms):                           37.17     
+P99 TPOT (ms):                           39.64     
+---------------Inter-Token Latency----------------
+Mean ITL (ms):                           24.99     
+Median ITL (ms):                         9.52      
+P90 ITL (ms):                            18.86     
+P95 ITL (ms):                            37.54     
+P99 ITL (ms):                            689.27    
+Max ITL (ms):                            3035.98   
+==================================================
+
+# [collect_metrics] 文件原始修改时间: 2026-11-12 00:59:36
+# [collect_metrics] 源目录日期: 20261112
+# [collect_metrics] CI运行目录: nightly-perf-2-npu-a3/test_npu_qwen3_6_35b_a3b_1p_in64k_out1k_50ms
