@@ -1315,8 +1315,9 @@ JOB_LOG_METRIC_FALLBACK_SUITES = {
     "test_npu_deepseek_v4_flash_0731_w8a8_1p1d_16p_gpqa": "multi-node-poc",
     "test_npu_deepseek_v4_flash_w8a8_1p1d_16p_in128k_out1k_prefix90_20ms": "multi-node-poc",
     "test_npu_deepseek_v4_pro_0813_w4a8_1p1d_32p_gpqa": "multi-node-poc",
-    "test_npu_glm_5_2_w8a8_2p2d_32p_dcp_gpqa": "multi-node-poc",
-    "test_npu_glm_5_2_w8a8_2p2d_32p_pcp_gpqa": "multi-node-poc",
+    "test_npu_glm_5_3_w8a8_1p1d_32p_dcp_gpqa": "multi-node-poc",
+    "test_npu_glm_5_3_w8a8_1p1d_32p_pcp_gpqa": "multi-node-poc",
+    "test_npu_glm_5_3_w8a8_1p1d_32p_in128k_out1k_prefix90_20ms": "multi-node-poc",
 }
 
 _func_log_cache = {}       # {(repo, run_id, suite, is_function): {"map": {case: {...}}, "metrics": {case: {metric: value}}}}，缺失=日志中未找到该用例
