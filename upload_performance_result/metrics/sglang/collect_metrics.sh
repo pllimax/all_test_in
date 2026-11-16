@@ -4,9 +4,9 @@
 #   指定日期: ./collect_metrics.sh 20260716
 #   多个日期: ./collect_metrics.sh 20260716 20260717 20260718   (按先后顺序轮流执行)
 #   （已取消自动模式：必须显式指定日期，或使用 --branch 分支模式）
-#   自定义配置: SRC_BASE=/custom/path GIT_REPO=https://gitee.com/pllimax_admin/all_test_in.git ./collect_metrics.sh 20260716
+#   自定义配置: SRC_BASE=/custom/path GIT_REPO=git@github.com:user/repo.git ./collect_metrics.sh 20260716
 #   使用配置文件: ./collect_metrics.sh 20260716 --config /path/to/config.conf
-#   命令行覆盖: ./collect_metrics.sh --src-base /custom/path --git-repo https://gitee.com/pllimax_admin/all_test_in.git 20260716
+#   命令行覆盖: ./collect_metrics.sh --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716
 #   分支模式:   ./collect_metrics.sh --branch pllimax            (按 CI 目录名 {branch}-{date}-{run_id}-{attempt} 归类)
 #               多机用例完整日志默认不收集，需 COLLECT_LOGS=true 或 --collect-logs 显式开启
 # 从指定目录下各子目录中收集 bench_serving_metrics.txt（性能）与 eval_log.log（精度）文件。
@@ -42,14 +42,9 @@ WF_FILTER="${WF_FILTER:-}"
 UPLOAD_RETRY="${UPLOAD_RETRY:-5}"
 UPLOAD_RETRY_DELAY="${UPLOAD_RETRY_DELAY:-10}"
 UPLOAD_TIMEOUT="${UPLOAD_TIMEOUT:-300}"  # 单次推送超时（秒，需 coreutils timeout）
-# 推送目标仓库：不再提供默认值，必须显式配置为 Gitee 数据仓。
-# 背景：性能数据只允许写入 Gitee 数据仓，再由 sync_gitee_to_github.sh 同步到 GitHub；
-#       若默认回落到 GitHub，本地配置丢失/未透传时 CI 会把数据直接推到 GitHub 主仓。
-# 校验规则见下方“目标仓库白名单校验”（可用 GIT_REPO_ALLOW_REGEX 覆盖白名单）。
-GIT_REPO="${GIT_REPO:-}"
-# 目标仓库白名单（grep -E 扩展正则）。默认仅允许 Gitee：
-#   https://[user:token@]gitee.com/...   或   git@gitee.com:...
-GIT_REPO_ALLOW_REGEX="${GIT_REPO_ALLOW_REGEX:-^(https?://([^/@]+@)?gitee\.com/|git@gitee\.com:)}"
+# 默认使用 HTTPS（与 prometheus_exporter.py 默认一致，公开仓可直接 clone）；
+# 私有仓推送请通过 GIT_REPO 环境变量或 --git-repo 指定带凭据地址（如 git@github.com:org/repo.git）
+GIT_REPO="${GIT_REPO:-https://github.com/pllimax/all_test_in.git}"
 GIT_TARGET_PATH="${GIT_TARGET_PATH:-upload_performance_result/metrics/sglang}"
 GIT_LOCAL_DIR="${GIT_LOCAL_DIR:-}"
 BRANCH="${BRANCH:-}"
@@ -126,7 +121,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --config FILE         配置文件路径"
             echo "  --src-base PATH       源目录基础路径（不包含日期部分）"
             echo "  --log-base PATH       多机用例日志源目录基础路径（仅 --branch 时拉取 test_npu_* 完整日志）"
-            echo "  --git-repo REPO       Git仓库地址（仅允许 Gitee 数据仓，可用 GIT_REPO_ALLOW_REGEX 覆盖白名单）"
+            echo "  --git-repo REPO       Git仓库地址"
             echo "  --git-target-path PATH Git仓库中的目标路径"
             echo "  --branch NAME         按前缀筛选收集任务结果"
             echo "                        如 --branch pllimax 匹配所有以 pllimax 开头的目录"
@@ -163,7 +158,7 @@ while [[ $# -gt 0 ]]; do
             echo "  $0 --branch pllimax 20260727             # 前缀匹配 + 日期过滤"
             echo "  $0 --branch pllimax --no-collect-logs    # 分支模式但不拉取多机日志（防超时）"
             echo "  SRC_BASE=/custom/path $0 20260716"
-            echo "  $0 --src-base /custom/path --git-repo https://gitee.com/pllimax_admin/all_test_in.git 20260716"
+            echo "  $0 --src-base /custom/path --git-repo git@github.com:user/repo.git 20260716"
             echo "  $0 --log-base /custom/logs --branch pllimax   # 分支模式并指定多机日志目录"
             echo "  $0 --config my_config.conf 20260716"
             exit 0
@@ -189,24 +184,6 @@ if [ -n "${CONFIG_FILE:-}" ]; then
         echo "错误: 配置文件不存在: $CONFIG_FILE"
         exit 1
     fi
-fi
-
-# ============================================================
-# 目标仓库白名单校验（入口必检）
-# 性能数据只允许推送到 Gitee 数据仓。若 GIT_REPO 为空（本地配置丢失、
-# cron 未透传变量）或指向其他仓库（如 GitHub），直接报错退出，杜绝推错仓库。
-# ============================================================
-if [ -z "${GIT_REPO}" ]; then
-    echo "错误: 未配置 GIT_REPO（性能数据推送目标仓库）。"
-    echo "      请在 collect_metrics.local.conf 或环境变量中设置 Gitee 数据仓地址，"
-    echo "      例如: GIT_REPO=https://gitee.com/pllimax_admin/all_test_in.git"
-    exit 1
-fi
-if ! printf '%s' "${GIT_REPO}" | grep -Eq "${GIT_REPO_ALLOW_REGEX}"; then
-    echo "错误: GIT_REPO 不在白名单内，拒绝推送: ${GIT_REPO}"
-    echo "      默认仅允许 Gitee 数据仓（正则: ${GIT_REPO_ALLOW_REGEX}）。"
-    echo "      如确需推送到其他仓库（如自建 GitLab），请显式设置 GIT_REPO_ALLOW_REGEX 覆盖白名单。"
-    exit 1
 fi
 
 # 已取消自动模式：必须显式指定日期，或使用 --branch 分支模式。
