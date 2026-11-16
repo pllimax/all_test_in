@@ -1361,7 +1361,7 @@ function restoreExpandedState() {
       allRows.forEach((r, i) => {
         const isLast = i === allRows.length - 1;
         const rd = r.getAttribute('data-date');
-        const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
+        const show = isLast || (rd != null && rd >= cutoff);
         r.style.display = show ? '' : 'none';
         if (show) r.classList.add('selected');
       });
@@ -1428,7 +1428,7 @@ function applyHistoryFilter() {
       allRows.forEach((r, i) => {
         const isLast = i === allRows.length - 1;
         const rd = r.getAttribute('data-date');
-        const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
+        const show = isLast || (rd != null && rd >= cutoff);
         r.style.display = show ? '' : 'none';
         if (show) r.classList.add('selected');
       });
@@ -1558,13 +1558,13 @@ document.getElementById('tableBody').addEventListener('click', function(e) {
       }
     });
 
-    // Expand: 显示该用例该镜像"历史天数"窗口内的历史执行结果行
-    // （无结果的占位行不显示；最新一天行始终显示）
+    // Expand: 显示该用例该镜像"历史天数"窗口内的全部历史执行记录行
+    // （含无结果的占位行——状态/链接同样是有效执行记录；最新一天行始终显示）
     const cutoff = getDateCutoff(parseInt(document.getElementById('historyDays').value) || 7);
     allRows.forEach((r, i) => {
       const isLast = i === allRows.length - 1;
       const rd = r.getAttribute('data-date');
-      const show = isLast || (rd != null && rd >= cutoff && r.getAttribute('data-hasdata') === '1');
+      const show = isLast || (rd != null && rd >= cutoff);
       r.style.display = show ? '' : 'none';
       if (show) r.classList.add('selected');
     });
