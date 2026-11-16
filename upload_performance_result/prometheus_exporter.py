@@ -432,10 +432,74 @@ PERF_ONLY_FIELDS = [
 ]
 
 
+def _split_table_cells(line):
+    """按 │ 切分 evalscope 表格行，返回去空白的单元格列表。"""
+    s = line.strip()
+    if s.startswith("│"):
+        s = s[1:]
+    if s.endswith("│"):
+        s = s[:-1]
+    return [c.strip() for c in s.split("│")]
+
+
+def _cell_score(cell):
+    """把 Score 单元格转成 0-1 小数（兼容 "53%" 百分比与旧版 0.7567 小数）。"""
+    if not cell or cell == "-":
+        return None
+    is_pct = "%" in cell
+    try:
+        v = float(re.sub(r"[^0-9.eE+-]", "", cell))
+    except ValueError:
+        return None
+    if is_pct or v > 1.0:
+        v /= 100.0
+    return v if 0.0 <= v <= 1.0 else None
+
+
+def _parse_report_table(text):
+    """按表头定位 Score 列解析 evalscope 汇总表，兼容新旧列结构。
+
+    旧版: Model │ Dataset │ Metric │ Subset │ Num │ Score │ Cat.0      （0-1 小数）
+    新版: Model │ Dataset │ Metric │ Subset │ Num │ Correct │ Score  （百分比，
+            evalscope 1.12+ 新增 Correct 列，若按列位置取值会误取题数，如 168/53）
+    多行时优先 Subset=OVERALL 行（MMMU 多子集汇总），否则取第一条有效数据行。
+    """
+    rows = []
+    score_idx = None
+    subset_idx = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("│"):
+            continue
+        cells = _split_table_cells(stripped)
+        lowered = [c.lower() for c in cells]
+        if score_idx is None:
+            if any(c.startswith("score") for c in lowered):
+                score_idx = next(i for i, c in enumerate(lowered) if c.startswith("score"))
+                subset_idx = next((i for i, c in enumerate(lowered) if c == "subset"), None)
+            continue
+        rows.append(cells)
+    if score_idx is None:
+        return None
+    if subset_idx is not None:
+        for cells in rows:
+            if subset_idx < len(cells) and "OVERALL" in cells[subset_idx].upper():
+                if score_idx < len(cells):
+                    score = _cell_score(cells[score_idx])
+                    if score is not None:
+                        return score
+    for cells in rows:
+        if score_idx < len(cells):
+            score = _cell_score(cells[score_idx])
+            if score is not None:
+                return score
+    return None
+
+
 def parse_eval_log(filepath, content=None):
     """Parse an eval log file and extract the accuracy score.
     Handles both MMMU (multi-subset with OVERALL row) and non-MMMU (single row) formats.
-    Returns the score as a float, or None if not found.
+    Returns the score in [0, 1], or None if not found.
     """
     if content is None:
         try:
@@ -444,50 +508,15 @@ def parse_eval_log(filepath, content=None):
         except Exception:
             return None
 
-    # Pattern for a data row with OVERALL in the Subset column:
-    # │ ... │ ... │ ... │ ...OVERALL... │ digits │ float │ ... │
-    # Score 列兼容百分比格式（新版 evalscope 1.12.0 表格输出 "89.9%"）
-    overall_data_pattern = r"│[^│]*OVERALL[^│]*│\s*\d+\s*│\s*([\d.]+)\s*(%?)\s*│"
-    # Generic data row pattern: │ ... │ ... │ ... │ ... │ digits │ float │ ... │
-    generic_data_pattern = r"│[^│]*│[^│]*│[^│]*│[^│]*│\s*\d+\s*│\s*([\d.]+)\s*(%?)\s*│"
-
-    def _to_score(m):
-        # 百分比 → 归一化为 0-1（与旧版 mean_acc 的 0.8687 口径一致）
-        try:
-            v = float(m.group(1))
-        except (ValueError, IndexError):
-            return None
-        return v / 100.0 if m.group(2) else v
-
-    # Strategy 1: look for "Overall report table" section
+    # Strategy 1: "Overall report table" 之后的汇总表（按表头 Score 列取值）
     overall_idx = content.rfind("Overall report table")
     if overall_idx != -1:
-        tail = content[overall_idx:]
+        score = _parse_report_table(content[overall_idx:])
+        if score is not None:
+            return score
 
-        # Try to find an OVERALL row first (MMMU-style multi-subset)
-        match = re.search(overall_data_pattern, tail)
-        if match:
-            return _to_score(match)
-
-        # Fallback: first data row (single-subset, e.g., gsm8k/aime25)
-        match = re.search(generic_data_pattern, tail)
-        if match:
-            return _to_score(match)
-
-        return None
-
-    # Strategy 2: no "Overall report table" → search entire content for OVERALL row
-    # (older evalscope versions with MMMU breakdown table)
-    match = re.search(overall_data_pattern, content)
-    if match:
-        return _to_score(match)
-
-    # Strategy 3: last resort — single score row anywhere in content
-    match = re.search(generic_data_pattern, content)
-    if match:
-        return _to_score(match)
-
-    return None
+    # Strategy 2: 无该标题时，全文最后一个带 Score 表头的表格
+    return _parse_report_table(content)
 
 
 def _eval_log_duration(content):

@@ -18,7 +18,7 @@ import http.server
 import socketserver
 import subprocess
 import shutil
-from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, GIT_PULL_ENABLED, GIT_METRICS_DIR, get_metrics_dir, _iter_metrics_files, PERF_ONLY_FIELDS
+from prometheus_exporter import parse_filename, parse_benchmark_file, collect_eval_data, collect_accuracy_only_data, GIT_PULL_ENABLED, GIT_METRICS_DIR, get_metrics_dir, _iter_metrics_files, PERF_ONLY_FIELDS, git_pull
 
 
 def _run(cmd, **kw):
@@ -994,7 +994,8 @@ def _attach_script_urls(items):
         # 从 suite job 日志解析的 [METRIC] 指标行补充 eval_score（不覆盖已上传指标）
         case_metrics = (entry.get("metrics") or {}).get(base)
         if case_metrics and item.get("eval_score") is None:
-            acc = case_metrics.get("accuracy")
+            # 日志里的 accuracy 可能是百分比数值（如 89.9），统一归一化到 0-1
+            acc = _normalize_accuracy(case_metrics.get("accuracy"))
             if acc is not None:
                 item["eval_score"] = acc
         # 性能指标兜底：multi-node mix 等 CI 不上传指标文件的用例，从 matrix
@@ -1398,6 +1399,17 @@ def _norm_case_token(s):
     if n.startswith("testnpu"):
         n = n[len("testnpu"):]
     return n
+
+
+def _normalize_accuracy(v):
+    """精度归一化到 0-1：兼容日志里直接输出百分比数值（如 53、89.9）的情况。"""
+    try:
+        v = float(v)
+    except (TypeError, ValueError):
+        return None
+    if v > 1.0:
+        v /= 100.0
+    return v if 0.0 <= v <= 1.0 else None
 
 
 def _parse_job_log_metrics(log_text, case_map):
@@ -2728,6 +2740,9 @@ def _revalidate_data():
     global _rebuilding
     with _rebuild_lock:
         try:
+            # 重建前同步 Gitee 数据仓（内部 60s 节流），避免平台长期停留在旧数据
+            if GIT_PULL_ENABLED:
+                git_pull()
             payload = _collect_all_data_cached()
             attach_notes(payload)
             body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
@@ -3524,6 +3539,10 @@ def _ensure_notes_git_thread():
 
 def start_dashboard():
     print("=" * 60)
+    # 启动时先从 Gitee 数据仓拉取最新 metrics（GIT_PULL_ENABLED 控制）
+    print("[startup] Syncing metrics data from git...")
+    if GIT_PULL_ENABLED:
+        git_pull()
     print("[startup] Syncing test case repos...")
     sync_repos()
     # 启动时从两个代码仓的测试脚本刷新基线缓存
