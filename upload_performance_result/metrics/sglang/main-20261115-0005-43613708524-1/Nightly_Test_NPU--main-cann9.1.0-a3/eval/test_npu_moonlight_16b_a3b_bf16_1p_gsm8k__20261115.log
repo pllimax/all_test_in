@@ -1,0 +1,124 @@
+2026-11-14 16:47:46 - evalscope - INFO: Running with native backend
+2026-11-14 16:47:46 - evalscope - INFO: Dump task config to /root/.cache/tests/output/main-20261115-0005-43613708524-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_moonlight_16b_a3b_bf16_1p_gsm8k/20261114_164746/configs/task_config.yaml
+2026-11-14 16:47:46 - evalscope - INFO: {
+    "model_id": "Moonlight-16B-A3B-Instruct",
+    "model_args": {},
+    "model_task": "text_generation",
+    "chat_template": null,
+    "datasets": [
+        "gsm8k"
+    ],
+    "dataset_args": {},
+    "dataset_dir": "/root/.cache/modelscope/hub/datasets",
+    "dataset_hub": "modelscope",
+    "repeats": 1,
+    "eval_type": "openai_api",
+    "eval_backend": "Native",
+    "eval_config": null,
+    "limit": 100000,
+    "eval_batch_size": 64,
+    "use_cache": null,
+    "rerun_review": false,
+    "work_dir": "/root/.cache/tests/output/main-20261115-0005-43613708524-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_moonlight_16b_a3b_bf16_1p_gsm8k/20261114_164746",
+    "no_timestamp": false,
+    "enable_progress_tracker": false,
+    "ignore_errors": false,
+    "debug": false,
+    "dry_run": false,
+    "seed": 42,
+    "api_url": "http://127.0.0.1:20666/v1/chat/completions",
+    "api_key": "**********",
+    "timeout": 60000.0,
+    "stream": true,
+    "judge": {
+        "strategy": "auto",
+        "models": [],
+        "contract": {
+            "system_prompt": null,
+            "prompt_template": null,
+            "score_mapping": null,
+            "score_type": "pattern"
+        },
+        "repeats": 1,
+        "position_swap": "auto",
+        "aggregation": "mean",
+        "min_valid_judges": 1
+    },
+    "analysis_report": false,
+    "collect_perf": true,
+    "use_sandbox": false,
+    "sandbox_type": "docker",
+    "sandbox_manager_config": {},
+    "evalscope_version": "1.14.1",
+    "model": "Moonlight-16B-A3B-Instruct",
+    "generation_config": {
+        "timeout": 60000.0,
+        "batch_size": 64,
+        "stream": true,
+        "max_tokens": 7168,
+        "temperature": 1.0
+    },
+    "sandbox": {
+        "enabled": false,
+        "engine": "docker",
+        "default_config": {},
+        "manager_config": {},
+        "pool_size": null
+    },
+    "agent_config": null
+}
+2026-11-14 16:47:46 - evalscope - INFO: Start loading benchmark dataset: gsm8k
+2026-11-14 16:47:46 - evalscope - WARNING: gsm8k: 1319 samples to evaluate (1 subset, --limit=100000 per subset). Remove `--limit` for a formal evaluation.
+2026-11-14 16:47:46 - evalscope - INFO: Subsets of gsm8k: ['main']
+2026-11-14 16:47:46 - evalscope - INFO: Loading model for prediction...
+2026-11-14 16:47:46 - evalscope - INFO: Creating model Moonlight-16B-A3B-Instruct with eval_type=openai_api base_url=http://127.0.0.1:20666/v1/chat/completions, config={'timeout': 60000.0, 'retries': 5, 'retry_interval': 10, 'batch_size': 64, 'stream': True, 'max_tokens': 7168, 'temperature': 1.0, 'anthropic_cache_strategy': 'evaluation'}, model_args={}
+2026-11-14 16:47:46 - evalscope - INFO: Model loaded successfully.
+2026-11-14 16:48:46 - evalscope - INFO: Evaluating[gsm8k]  10%| 126/1319 [Elapsed: 01:00 < Remaining: 06:30,  3.06it/s]
+2026-11-14 16:49:47 - evalscope - INFO: Evaluating[gsm8k]  20%| 267/1319 [Elapsed: 02:00 < Remaining: 09:07,  1.92it/s]
+2026-11-14 16:50:48 - evalscope - INFO: Evaluating[gsm8k]  32%| 417/1319 [Elapsed: 03:01 < Remaining: 07:15,  2.07it/s]
+2026-11-14 16:51:49 - evalscope - INFO: Evaluating[gsm8k]  43%| 564/1319 [Elapsed: 04:02 < Remaining: 05:22,  2.34it/s]
+2026-11-14 16:52:49 - evalscope - INFO: Evaluating[gsm8k]  54%| 708/1319 [Elapsed: 05:03 < Remaining: 05:47,  1.76it/s]
+2026-11-14 16:53:50 - evalscope - INFO: Evaluating[gsm8k]  66%| 870/1319 [Elapsed: 06:04 < Remaining: 02:05,  3.59it/s]
+2026-11-14 16:54:51 - evalscope - INFO: Evaluating[gsm8k]  77%| 1014/1319 [Elapsed: 07:04 < Remaining: 02:20,  2.17it/s]
+2026-11-14 16:55:51 - evalscope - INFO: Evaluating[gsm8k]  88%| 1162/1319 [Elapsed: 08:05 < Remaining: 00:50,  3.11it/s]
+2026-11-14 16:56:52 - evalscope - INFO: Evaluating[gsm8k]  98%| 1296/1319 [Elapsed: 09:05 < Remaining: 00:12,  1.78it/s]
+2026-11-14 16:56:56 - evalscope - INFO: Evaluating[gsm8k] 100%| 1319/1319 [Elapsed: 09:09 < Remaining: 00:00,  2.11it/s]
+2026-11-14 16:56:56 - evalscope - INFO: gsm8k: predictions complete, aggregating scores...
+2026-11-14 16:56:56 - evalscope - INFO: Aggregating scores for subset: main
+2026-11-14 16:56:56 - evalscope - INFO: Generating report...
+2026-11-14 16:56:56 - evalscope - INFO: 
+gsm8k report table:
+┌────────────────────────────┬───────────┬────────────┬──────────┬───────┬─────────┐
+│ Model                      │ Dataset   │ Metric     │ Subset   │   Num │ Score   │
+├────────────────────────────┼───────────┼────────────┼──────────┼───────┼─────────┤
+│ Moonlight-16B-A3B-Instruct │ GSM8K     │ Accuracy ↑ │ main     │  1319 │ 82.1%   │
+└────────────────────────────┴───────────┴────────────┴──────────┴───────┴─────────┘ 
+
+2026-11-14 16:56:56 - evalscope - INFO: Skipping report analysis (`analysis_report=False`).
+2026-11-14 16:56:56 - evalscope - INFO: Dump report to: /root/.cache/tests/output/main-20261115-0005-43613708524-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_moonlight_16b_a3b_bf16_1p_gsm8k/20261114_164746/reports/Moonlight-16B-A3B-Instruct/gsm8k.json 
+
+2026-11-14 16:56:56 - evalscope - INFO: 
+gsm8k perf table:
+Model                       Dataset      Num  Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt       Avg In    Avg Out
+--------------------------  ---------  -----  ---------  ----------  ----------  -----------  --------  ---------
+Moonlight-16B-A3B-Instruct  GSM8K       1319  25.353 s   322 ms      98.7 ms     10.04 tok/s       594        255
+
+2026-11-14 16:56:56 - evalscope - INFO: Benchmark gsm8k evaluation finished.
+2026-11-14 16:56:56 - evalscope - INFO: Running[eval] 100%| 1/1 [Elapsed: 09:09 < Remaining: 00:00, 549.69s/benchmark]
+2026-11-14 16:56:56 - evalscope - INFO: Overall report table: 
+┌────────────────────────────┬───────────┬────────────┬──────────┬───────┬─────────┐
+│ Model                      │ Dataset   │ Metric     │ Subset   │   Num │ Score   │
+├────────────────────────────┼───────────┼────────────┼──────────┼───────┼─────────┤
+│ Moonlight-16B-A3B-Instruct │ GSM8K     │ Accuracy ↑ │ main     │  1319 │ 82.1%   │
+└────────────────────────────┴───────────┴────────────┴──────────┴───────┴─────────┘ 
+
+2026-11-14 16:56:56 - evalscope - INFO: Overall perf table: 
+Model                       Dataset      Num  Avg Lat    Avg TTFT    Avg TPOT    Avg Thpt       Avg In    Avg Out
+--------------------------  ---------  -----  ---------  ----------  ----------  -----------  --------  ---------
+Moonlight-16B-A3B-Instruct  GSM8K       1319  25.353 s   322 ms      98.7 ms     10.04 tok/s       594        255 
+
+2026-11-14 16:56:56 - evalscope - INFO: HTML report generated: /root/.cache/tests/output/main-20261115-0005-43613708524-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_moonlight_16b_a3b_bf16_1p_gsm8k/20261114_164746/reports/report.html
+2026-11-14 16:56:57 - evalscope - INFO: Finished evaluation for Moonlight-16B-A3B-Instruct on ['gsm8k']
+2026-11-14 16:56:57 - evalscope - INFO: Output directory: /root/.cache/tests/output/main-20261115-0005-43613708524-1/Nightly_Test_NPU--main-cann9.1.0-a3/accuracy/nightly-acc-2-npu-a3-p3/test_npu_moonlight_16b_a3b_bf16_1p_gsm8k/20261114_164746
+
+# [collect_metrics] 文件原始修改时间: 2026-11-15 00:56:57
