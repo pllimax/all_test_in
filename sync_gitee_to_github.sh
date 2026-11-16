@@ -156,4 +156,23 @@ else
     git push github "$BRANCH"
 fi
 
+# ---- 非同步路径差异告警 ----
+# Gitee 侧可能存在非 SYNC_PATH 的改动（用例配置、脚本、代码等），本脚本不会同步这些文件。
+# 这里把差异列出来（仅告警不中断），避免“Gitee 改了但 GitHub 收不到”被静默忽略。
+_excludes=()
+for p in ${SYNC_PATH}; do
+    [ -n "$p" ] || continue
+    _excludes+=(":(exclude)${p}")
+done
+_nondata_diff="$(git diff --name-status "gitee/${BRANCH}" HEAD -- . ${_excludes[@]+"${_excludes[@]}"} 2>/dev/null || true)"
+if [ -n "${_nondata_diff}" ]; then
+    _nondata_count="$(printf '%s\n' "${_nondata_diff}" | wc -l | tr -d ' ')"
+    echo "[sync] 警告: Gitee 与 GitHub 在非同步路径（${SYNC_PATH} 之外）存在 ${_nondata_count} 处差异，本脚本不会同步:"
+    printf '%s\n' "${_nondata_diff}" | head -n 50 || true
+    if [ "${_nondata_count}" -gt 50 ]; then
+        echo "[sync] ...（仅显示前 50 条，共 ${_nondata_count} 条）"
+    fi
+    echo "[sync] 请人工核对上述文件：如属 Gitee 侧合法改动，需手动提交到 GitHub（勿依赖本同步脚本）。"
+fi
+
 echo "[sync] 完成: $(git rev-parse --short HEAD)"
