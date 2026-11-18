@@ -138,9 +138,9 @@ thead th.sticky-col { z-index: 5; }
   <div class="filter-group">
     <label>来源</label>
     <select id="sourceFilter" multiple onchange="onFilterChange()">
-      <option value="__all__" selected>全部</option>
+      <option value="__all__">全部</option>
       <option value="fulltest">fulltest</option>
-      <option value="nightly">nightly</option>
+      <option value="nightly" selected>nightly</option>
     </select>
   </div>
   <div class="filter-group">
@@ -1014,6 +1014,8 @@ function resetFilters() {
     const sel = document.getElementById(id);
     [...sel.options].forEach(o => o.selected = o.value === '__all__');
   });
+  // 来源恢复页面默认选中项：仅显示 nightly 用例
+  [...document.getElementById('sourceFilter').options].forEach(o => o.selected = o.value === 'nightly');
   // 历史天数一并重置为默认 7 天
   document.getElementById('historyDays').value = 7;
   onFilterChange();
