@@ -1,0 +1,88 @@
+name: Sync Nightly Testcases
+
+# 每日 12:00 Asia/Shanghai（= 04:00 UTC）扫描社区 sgl-project/sglang main 上注册到
+# nightly suite / 多机 matrix 的用例，把平台缺失的用例增量追加到
+# upload_performance_result/testcases_config.json 并提交到 Gitee。
+# 线上服务器每 10 分钟的 git fetch + merge --ff-only cron 会自动下发，无需人工同步。
+#
+# 只增不删：社区已下线的用例、类型差异只记录在任务日志，人工确认后处理。
+# 依赖仓库 secret: GITEE_TOKEN（Gitee 推送权限）。
+
+on:
+  schedule:
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly-testcases-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check Gitee token
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          if [ -z "${GITEE_TOKEN}" ]; then
+            echo "::error::缺少 GITEE_TOKEN secret，请在 Settings → Secrets and variables → Actions 添加"
+            exit 1
+          fi
+
+      - name: Checkout platform scripts (GitHub)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Clone platform config from Gitee (authoritative)
+        env:
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --filter=blob:none --no-checkout \
+            "https://oauth2:${GITEE_TOKEN}@gitee.com/pllimax_admin/all_test_in.git" "${RUNNER_TEMP}/platform"
+          cd "${RUNNER_TEMP}/platform"
+          git sparse-checkout set --no-cone '/upload_performance_result/testcases_config.json'
+          git checkout main
+          git config user.name "nightly-testcases-sync"
+          git config user.email "nightly-testcases-sync@users.noreply.github.com"
+
+      - name: Clone community sglang (sparse)
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --filter=blob:none --no-checkout \
+            https://github.com/sgl-project/sglang.git "${RUNNER_TEMP}/sglang"
+          cd "${RUNNER_TEMP}/sglang"
+          git sparse-checkout set --no-cone '/test/registered/' '/test/run_suite.py' '/.github/workflows/'
+          git checkout main
+
+      - name: Sync nightly cases
+        run: |
+          set -euo pipefail
+          python3 upload_performance_result/sync_nightly_cases.py \
+            --repo-dir "${RUNNER_TEMP}/sglang" --no-fetch \
+            --config "${RUNNER_TEMP}/platform/upload_performance_result/testcases_config.json" \
+            --report-dir "${RUNNER_TEMP}/platform/logs/testcases_drift" \
+            | tee "${RUNNER_TEMP}/sync.log"
+
+      - name: Commit and push to Gitee
+        run: |
+          set -euo pipefail
+          cd "${RUNNER_TEMP}/platform"
+          if [ -z "$(git status --porcelain -- upload_performance_result/testcases_config.json)" ]; then
+            echo "无新增用例，无需提交"
+            exit 0
+          fi
+          git add upload_performance_result/testcases_config.json
+          git commit -m "testcases: auto sync nightly cases $(date -u +%Y-%m-%d)"
+          git push origin HEAD:main
