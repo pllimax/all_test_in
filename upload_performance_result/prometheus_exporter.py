@@ -275,6 +275,12 @@ def parse_filename(filename):
     # Strip chip marker suffix (must be before field extraction below)
     name = re.sub(r"_(a2|a5)$", "", name)
 
+    # Strip deepseek off_cp/off_dspark variant suffix (feature-switch variants,
+    # e.g. test_npu_deepseek_v4_flash_0731_w8a8_1p1d_16p_gpqa_off_cp).
+    # They belong to the same model family as the base case, so drop the marker
+    # before field extraction to keep model/labels aligned.
+    name = re.sub(r"_(?:off_cp|off_dspark)$", "", name)
+
     # Extract extra parameters that distinguish test cases:
     #   _prefix\d+  (prefix cache ratio) -> appended to input_len
     #   _bs\d+      (batch size)         -> appended to output_len
