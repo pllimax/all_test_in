@@ -1,0 +1,81 @@
+memfabric_hybrid          1.3.0
+sgl_kernel_npu            2026.11.0.post4           1_refactor_2201_all_e679f6ca83_tp_4837bd83e3
+sglang                    0.5.24.dev2153+gac0380c7f                                              /sgl-workspace/sglang/python
+torch                     2.10.0+cpu
+torch_memory_saver        0.0.8
+torch_npu                 2.10.0.post6
+torchaudio                2.10.0+cpu
+torchvision               0.25.0+cpu
+CANN: 9.1.0
+transformers: 5.19.0
+You have used a large amount of egress over the last 30 days. To protect our platform health, once you reach your account's max quota, your downloads will be throttled or blocked. If you regularly need more, you may consider upgrading your current user or organization plan to benefit from higher allowances.
+benchmark_args=Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=20966, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Eco-Tech/Qwen3.5-397B-A17B-w4a8-mtp', served_model_name=None, tokenizer=None, num_prompts=432, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=3500, random_output_len=1500, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=432, output_file=None, output_details=False, goodput=None, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, admin_api_key=None, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=16, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None, rust_client=False, rust_worker_threads=None)
+Waiting up to 60s for http://127.0.0.1:20966/v1/models to become ready...
+Server ready in 0.0s.
+Namespace(backend='sglang', base_url=None, host='127.0.0.1', port=20966, ready_check_timeout_sec=60, dataset_name='random', dataset_path='/tmp/ShareGPT_V3_unfiltered_cleaned_split.json', dataset_offset=0, agentic_max_turns=None, speed_bench_category=None, speed_bench_output_len=512, model='/root/.cache/modelscope/hub/models/Eco-Tech/Qwen3.5-397B-A17B-w4a8-mtp', served_model_name=None, tokenizer=None, num_prompts=432, sharegpt_output_len=None, sharegpt_context_len=None, random_input_len=3500, random_output_len=1500, random_range_ratio=1.0, image_count=1, image_resolution='1080p', random_image_count=False, image_format='jpeg', image_content='random', request_rate=inf, use_trace_timestamps=False, max_concurrency=432, output_file=None, output_details=False, goodput=None, print_requests=False, disable_tqdm=False, disable_stream=False, return_logprob=False, top_logprobs_num=0, token_ids_logprob=None, logprob_start_len=-1, return_routed_experts=False, cache_report=False, seed=1, disable_ignore_eos=False, temperature=0.0, top_p=1.0, extra_request_body=None, apply_chat_template=False, profile=False, admin_api_key=None, plot_throughput=False, profile_activities=['CPU', 'GPU'], profile_start_step=None, profile_steps=None, profile_num_steps=None, profile_by_stage=False, profile_stages=None, profile_output_dir=None, profile_prefix=None, lora_name=None, lora_request_distribution='uniform', lora_zipf_alpha=1.5, prompt_suffix='', pd_separated=False, profile_prefill_url=None, profile_decode_url=None, flush_cache=False, flush_cache_timeout=60.0, warmup_requests=16, tokenize_prompt=False, gsp_num_groups=64, gsp_prompts_per_group=16, gsp_system_prompt_len=2048, gsp_question_len=128, gsp_output_len=256, gsp_range_ratio=1.0, gsp_fast_prepare=False, gsp_send_routing_key=False, gsp_num_turns=1, gsp_ordered=False, gsp_group_distribution='uniform', gsp_zipf_alpha=None, mooncake_slowdown_factor=1.0, mooncake_num_rounds=1, mooncake_workload='conversation', fake_prefill=False, tag=None, header=None, rust_client=False, rust_worker_threads=None)
+
+#Input tokens: 1512000
+#Output tokens: 648000
+Starting warmup with 16 sequences...
+Warmup completed with 16 sequences. Starting main benchmark run...
+
+  0%|          | 0/432 [00:00<?, ?it/s]
+  0%|          | 1/432 [01:20<9:38:00, 80.47s/it]
+ 34%|███▍      | 149/432 [01:20<01:47,  2.63it/s]
+ 65%|██████▍   | 280/432 [01:32<00:33,  4.59it/s]
+ 67%|██████▋   | 288/432 [01:32<00:30,  4.79it/s]
+ 80%|███████▉  | 345/432 [01:34<00:13,  6.60it/s]
+ 88%|████████▊ | 378/432 [01:34<00:06,  8.03it/s]
+ 93%|█████████▎| 400/432 [01:35<00:03,  9.42it/s]
+ 96%|█████████▋| 416/432 [01:35<00:01, 10.39it/s]
+ 99%|█████████▉| 428/432 [01:39<00:00,  7.78it/s]
+100%|██████████| 432/432 [01:43<00:00,  4.18it/s]
+
+============ Serving Benchmark Result ============
+Backend:                                 sglang    
+Traffic request rate:                    inf       
+Max request concurrency:                 432       
+Successful requests:                     432       
+Benchmark duration (s):                  103.49    
+Total input tokens:                      1512000   
+Total input text tokens:                 1512000   
+Total generated tokens:                  648000    
+Total generated tokens (retokenized):    646846    
+Request throughput (req/s):              4.17      
+Input token throughput (tok/s):          14610.08  
+Output token throughput (tok/s):         6261.46   
+Peak output token throughput (tok/s):    13969.00  
+Peak concurrent requests:                432       
+Total token throughput (tok/s):          20871.54  
+Concurrency:                             364.05    
+Accept length:                           3.44      
+----------------End-to-End Latency----------------
+Mean E2E Latency (ms):                   87210.94  
+Median E2E Latency (ms):                 87707.19  
+P90 E2E Latency (ms):                    94901.49  
+P95 E2E Latency (ms):                    95393.13  
+P99 E2E Latency (ms):                    99623.23  
+---------------Time to First Token----------------
+Mean TTFT (ms):                          22941.04  
+Median TTFT (ms):                        24583.25  
+P90 TTFT (ms):                           36331.84  
+P95 TTFT (ms):                           36353.62  
+P99 TTFT (ms):                           36537.06  
+-----Time per Output Token (excl. 1st token)------
+Mean TPOT (ms):                          42.88     
+Median TPOT (ms):                        42.04     
+P90 TPOT (ms):                           55.16     
+P95 TPOT (ms):                           57.03     
+P99 TPOT (ms):                           58.99     
+---------------Inter-Token Latency----------------
+Mean ITL (ms):                           42.88     
+Median ITL (ms):                         29.28     
+P90 ITL (ms):                            39.59     
+P95 ITL (ms):                            58.32     
+P99 ITL (ms):                            117.98    
+Max ITL (ms):                            29821.51  
+==================================================
+
+# [collect_metrics] 文件原始修改时间: 2026-11-25 00:28:01
+# [collect_metrics] 源目录日期: 20261125
+# [collect_metrics] CI运行目录: nightly-perf-test-16-npu-a3/test_npu_qwen3_5_397b_w4a8_8p_in3k5_out1k5_50ms
