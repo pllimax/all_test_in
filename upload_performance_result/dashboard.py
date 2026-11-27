@@ -98,12 +98,13 @@ TESTCASES_CONFIG_FILE = os.environ.get(
 )
 
 # 镜像版本配置：用例可通过 testcases_config.json 的 images 字段配置在哪些镜像上
-# 执行/展示；不配置时默认视为仅在 DEFAULT_CASE_IMAGE（a3-cann9.1.0）上执行。
+# 执行/展示；不配置时默认视为仅在 DEFAULT_CASE_IMAGE（a3-cann9.2.0）上执行。
 DEFAULT_IMAGE_VERSION = "a3-cann9.0.0"  # 历史无镜像标签数据的归一化兜底（历史数据实际运行于 cann9.0.0，保持不变）
-DEFAULT_CASE_IMAGE = "a3-cann9.1.0"     # 用例未配置 images 字段时的默认镜像（nightly 主镜像已切换 cann9.1.0）
+DEFAULT_CASE_IMAGE = "a3-cann9.2.0"     # 用例未配置 images 字段时的默认镜像（nightly 主镜像已切换 cann9.2.0）
 # cann9.0.0 已下线（镜像不再使用），不再作为合法展示版本；
 # 历史无镜像标签数据兜底到 a3-cann9.0.0 后会被过滤，不再展示。
-VALID_IMAGE_VERSIONS = {"a3-cann9.1.0", "a5"}
+# cann9.1.0 保留用于展示历史数据；nightly 主镜像已切换 cann9.2.0。
+VALID_IMAGE_VERSIONS = {"a3-cann9.1.0", "a3-cann9.2.0", "a5"}
 
 # 占位行（未执行行）生成时间窗（天）：仅生成近 N 天及各分支最新一天的占位符。
 # 前端历史窗口默认 7 天、最大 365 天，窗口外的"未执行"行无展示价值；
